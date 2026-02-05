@@ -6,10 +6,12 @@ This Guix configuration has *not* been tested yet, so take whatever you see here
 
 # Usage
 Clone this repository via `git clone https://github.com/nixpup/geex`, then move the files to their respective destinations:
- - `cp channels/channels.scm ~/.config/guix/channels.scm`
- - `mv channels /etc/guix/channels`
- - `mv home /etc/guix/home`
- - `mv systems /etc/guix/systems`
+ - `cp channels.scm ~/.config/guix/channels.scm`
+ - `cp channels.scm /etc/guix/channels.scm`
+ - `cp -r channels /etc/guix/channels`
+ - `cp -r files /etc/guix/files`
+ - `cp home.scm /etc/guix/home.scm`
+ - `cp config.scm /etc/guix/config.scm`
 
 Don't forget to import the [Nonguix](https://gitlab.com/nonguix/nonguix) Key via `sudo guix archive --authorize < /etc/guix/channels/nonguix.pub`.
 
