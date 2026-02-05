@@ -8,6 +8,7 @@
    "opendoas"
    "xmonad"
    "ghc-xmonad-contrib"
+   "gammastep"
    "pipewire"
    "wireplumber"
    "flatpak"
