@@ -335,7 +335,13 @@ g() {
       git commit -m "$commitMessage"
       ;;
     p|push)
-      git push -u origin main
+      if [[ $(echo $(git branch | sed 's/* //g')) == "main" ]]; then
+        git push -u origin main
+      else
+        printf "Branch: "
+        read -r pushBranch
+        git push -u origin "$pushBranch"
+      fi
       ;;
     n|new)
       git init
