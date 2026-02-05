@@ -1,0 +1,75 @@
+#+TITLE: Guix Notes
+#+AUTHOR: librepup/nixpup
+#+DESCRIPTION: Notes, Tips, and useful Information about GNU Guix
+* Chapters
+** Commands
+*** After Fist Install
+To update the Guix Channels and pull the latest Guix and Channel Versions, run `guix pull`.
+Then, to rebuild your system, run `sudo guix system reconfigure /path/to/config.scm`.
+After running `guix pull`, remember to run `hash guix` to update bash's cache and clear it of the old guix binary location.
+Also make sure that "~/.config/guix/channels.scm" or "/etc/guix/channels.scm" is the *first* item in your $PATH.
+*** Wifi Configuration
+**** Commands
+1. `rfkill unblock all`
+2. `ifconfig -a`
+   + Find WiFi Device/Cards Name
+3. `wpa_supplicant -c wifi.conf -i interface1s0 -B`
+4. `dhclient -v interface1s0`
+**** wifi.conf
+```
+network={
+  ssid="ssid-name"
+  ket_mgmt=WPA-PSK
+  psk="password"
+}
+```
+*** Useful Commands
+1. List System Generations
+   + `guix system list-generations`
+2. Describe System Generation
+   + `guix system describe`
+3. Delete Generations older than 1 Month
+   + `sudo guix system delete-generations 1m`
+4. Roll Back to Older Generation
+   + `sudo guix system roll-back`
+5. Guix Garbage Collector
+   + `guix gc -d 1m -F 10G`
+   - Delete Generations older than 1 Month, and try to free up at least 10GiB.
+6. Deduplicate/Optimize Guix Store
+   + `guix gc --optimize`
+7. Reconfigure Guix Home
+   + `guix home reconfigure /path/to/home.scm`
+8. Describe/List Channels
+   + `guix describe`
+9. Upgrade Packages
+   + `guix upgrade`
+10. Reformat/Style Scheme File
+    + `guix style -f config.scm`
+    - This can help to find syntax errors, such as misplaced brackets, easier.
+11. List Installed Packages
+    + `guix package --list-installed`
+12. Install Package
+    + `guix install`
+13. Remove Package
+    + `guix remove`
+14. Delete Old Package Generations
+    + `guix package --delete-generations`
+*** Shepherd Commands
+1. Start Service
+   + `sudo herd start name`
+2. Stop Service
+   + `sudo herd stop name`
+3. Restart Service
+   + `sudo herd restart name`
+4. Service Status
+   + `sudo herd status name`
+5. List Services
+   + `sudo herd status`
+*** Combinations
+**** Guix Garbage Collecting
+1. `guix gc`
+2. `sudo guix system delete-generations 1d`
+3. `guix package --delete-generations`
+**** Guix Pull and Daemon Restart
+1. `guix pull`
+2. `sudo systemctl restart guix-daemon.service` or `sudo herd restart guix-daemon`
