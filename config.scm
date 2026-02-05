@@ -1,3 +1,32 @@
+(use-modules (gnu)
+             (gnu system)
+             (gnu system nss)
+             (gnu packages)
+             (gnu packages xorg)
+             (gnu packages certs)
+             (gnu packages shells)
+             (gnu packages admin)
+             (gnu packages base)
+             (gnu services)
+             (gnu services xorg)
+             (gnu services desktop)
+             (gnu services nix)
+             (gnu services sound)
+             (gnu services audio)
+             (gnu services networking)
+             (gnu utils)
+             (guix)
+             ; Nongnu & Nonguix
+             (nongnu packages linux)
+             (nongnu packages nvidia)
+             (nongnu services nvidia)
+             (nongnu system linux-initrd)
+             (nonguix transformations)
+             ; Jonabron
+             (jonabron packages wm)
+             (jonabron packages fonts))
+
+#|
 (define-module (systems guix)
   #:use-modules (systems base-system)
   ; GNU
@@ -27,6 +56,7 @@
   ; Jonabron
   #:use-modules (jonabron packages wm)
   #:use-modules (jonabron packages fonts))
+|#
 
 ;(add-to-load-path (dirname (current-filename)))
 (use-service-modules desktop networking ssh xorg dbus)

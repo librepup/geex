@@ -15,7 +15,7 @@
            "2A39 3FFF 68F4 EF7A 3D29  12AF 6F51 20A0 22FB B2D5"))))
       (channel
        (name 'jonabron)
-       (url "file:///etc/guix/channels/jonabron"))
+       (url "https://github.com/nixpup/jonabron.git"))
       (channel
         (name 'guix)
         (url "https://git.guix.gnu.org/guix.git")

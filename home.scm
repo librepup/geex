@@ -1,3 +1,18 @@
+(use-modules (gnu)
+             (gnu home)
+             (gnu home services)
+             (gnu home services shells)
+             (gnu packages)
+             (gnu packages emacs)
+             (gnu packages emacs-xyz)
+             (gnu services)
+             (guix packages)
+             (guix gexp)
+             (guix git-download)
+             (guix build-system emacs)
+             (jonabron packages emacs))
+
+#|
 (define-module (home-config)
   ; GNU
   #:use-modules (gnu)
@@ -15,6 +30,7 @@
   #:use-modules (guix build-system emacs)
   ; Jonabron
   #:use-modules (jonabron packages emacs))
+|#
 
 (define zsh (specification->package "zsh"))
 (define zsh-autosuggestions (specification->package "zsh-autosuggestions"))
