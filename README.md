@@ -19,4 +19,4 @@ Then you can update Guix and its Channels by invoking `guix pull`, and afterward
 
 Update Bash's Guix binary and configuration with `hash guix` after `guix pull` is done.
 
-To apply the system configuration, run `sudo guix system -L /etc/guix reconfigure`. Similarly, to reconfigure or apply the Guix Home configuration, run `guix home -L /etc/guix reconfigure`.
+To apply the system configuration, run `sudo guix system reconfigure /etc/guix/config.scm`. Similarly, to reconfigure or apply the Guix Home configuration, run `guix home reconfigure /etc/guix/home.scm`.
