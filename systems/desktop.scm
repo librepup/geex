@@ -132,6 +132,7 @@
                    "discord" ; From GitHub Channel
                    "naitre" ; From Jonabron Channel
                    "font-bundle-synapsian-karamarea" ; From Jonabron Channel
+                   "vicinae" ; From Jonabron Channel
                    ))
             ))
 

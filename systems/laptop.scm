@@ -66,6 +66,7 @@
                    "steam" ; From Nonguix Channel
                    "discord" ; From Git Repo Channel
                    "mpv"
+                   "vicinae" ; From Jonabron Channel
                    ))
             ))
 
