@@ -24,7 +24,9 @@
              (nonguix transformations)
              ; Jonabron
              (jonabron packages wm)
-             (jonabron packages fonts))
+             (jonabron packages fonts)
+             ; Shared Packages
+             (systems shared))
 
 #|
 (define-module (systems guix)
@@ -122,109 +124,16 @@
               %base-user-accounts))
 
  ;; Packages
- (packages (append (map specification->package+output
-                        '("zsh"
-                          "naitre" ; From Jonabron Channel
-                          "nix"
-                          "nixfmt"
-                          "opendoas"
-                          "xmonad"
-                          "ghc-xmonad-contrib"
-                          "pipewire"
-                          "wireplumber"
-                          "flatpak"
-                          "polybar"
-                          "btop"
-                          "git"
-                          "wpa-supplicant"
-                          "curl"
-                          "emacs"
-                          "nss-certs"
-                          "firefox"
-                          "icecat"
-                          "icedove"
-                          "guix-backgrounds"
-                          "icedove-wayland"
-                          "kitty"
-                          "font-bundle-synapsian-karamarea" ; From Jonabron Channel
-                          "font-dejavu"
-                          "dunst"
-                          "feh"
-                          "zathura"
-                          "texlive"
-                          "emacs-org-texlive-collection"
-                          "rsync"
-                          "eza"
-                          "bat"
-                          "zoxide"
-                          "bottom"
-                          "redshift"
-                          "flameshot"
-                          "mpv-nvidia" ; From Nonguix Channel, .-nvidia Variant
-                          "mpvpaper"
-                          "sway-audio-idle-inhibit"
-                          "imv"
-                          "steam-nvidia" ; From Nonguix Channel, .-nvidia Variant
-                          "cmus"
-                          "alsa-utils"
-                          "hyfetch"
-                          "neofetch"
-                          "fastfetch"
-                          "pfetch"
-                          "pavucontrol"
-                          "pulseaudio"
-                          "pulsemixer"
-                          "krita"
-                          "pciutils"
-                          "fd"
-                          "imagemagick"
-                          "yt-dlp"
-                          "wl-clipboard"
-                          "dank-material-shell"
-                          "grim"
-                          "grimblast"
-                          "unrar-free"
-                          "unzip"
-                          "p7zip"
-                          "openssl"
-                          "coreutils"
-                          "thunar"
-                          "tumbler"
-                          "dbus"
-                          "ntfs-3g"
-                          "cryptsetup"
-                          "testdisk"
-                          "encfs"
-                          "usbutils"
-                          "pamixer"
-                          "node"
-                          "glib"
-                          "librewolf"
-                          "torbrowser"
-                          "rust"
-                          "rust-analyzer"
-                          "gcc"
-                          "wf-recorder"
-                          "swaybg"
-                          "waybar"
-                          "swayidle"
-                          "hyprlock"
-                          "wlsunset"
-                          "wofi"
-                          "wtype"
-                          "mako"
-                          "xwayland-satellite"
-                          "xwayland-run"
-                          "slurp"
-                          "grimshot"
-                          "hyprpicker"
-                          "cliphist"
-                          "fuzzel"
-                          "xdg-desktop-portal"
-                          "xdg-desktop-portal-wlr"
-                          "ripgrep"
-                          "discord" ; From Git Repo Channel
-                          ))))
+ (packages (append
+            (map specification->package+output %shared-packages)
+            (map specification->package+output
+                 '("mpv-nvidia" ; From Nonguix Channel, .-nvidia Variant
+                   "steam-nvidia" ; From Nonguix Channel, .-nvidia Variant
+                   "discord" ; From GitHub Channel
+                   "naitre" ; From Jonabron Channel
+                   "font-bundle-synapsian-karamarea" ; From Jonabron Channel
+                   ))
+            ))
 
  ;; Services
  (services
