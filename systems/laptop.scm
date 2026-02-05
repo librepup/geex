@@ -176,6 +176,11 @@
              (alsa-configuration
               (jack? #t)))
     (service dhcpcd-service-type)
+    (service tlp-service-type
+             (tlp-configuration
+              (cpu-scaling-governor-on-ac '("performace"))
+              (cpu-scaling-governor-on-bat '("powersave"))
+              (sched-powersave-on-bat? #t)))
     (simple-service 'doas-config etc-service-type
                     (list
                      `("doas.conf" ,(plain-file "doas.conf"
@@ -184,7 +189,7 @@ permit persist keepenv setenv :wheel"))))
     (service network-manager-service-type)
     (set-xorg-configuration
      (xorg-configuration
-      (keyboard-layout (keyboard-layout "us" "colemak"))
+      (keyboard-layout (keyboard-layout "us"))
       )))
 
    (modify-services %desktop-services
