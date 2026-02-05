@@ -88,13 +88,19 @@ Enable and automatically load doom-modeline-mode.
 ** Auto-Completion Popup Menu
 Enable a simple for of auto-completion preview using fancy dabbrev.
 #+BEGIN_SRC emacs-lisp
+(require 'fancy-dabbrev)
+(global-fancy-dabbrev-mode)
+(global-set-key (kbd "TAB") 'fancy-dabbrev-expand)
+(global-set-key (kbd "<backtab>") 'fancy-dabbrev-backward)
+;; Pabbrev
 ;(require 'pabbrev)
 ;(global-pabbrev-mode)
-(require 'corfu)
-(global-corfu-mode)
-(unless (display-graphic-p)
-  (corfu-terminal-mode +1))
-;(global-set-key (kbd "TAB") 'corfu-expand) ;- or 'corfu-complete
+;; Corfu
+;(require 'corfu)
+;(global-corfu-mode)
+;(unless (display-graphic-p)
+;  (corfu-terminal-mode +1))
+;;;(global-set-key (kbd "TAB") 'corfu-expand) ;- or 'corfu-complete
 #+END_SRC
 ** Sudo-Edit
 #+BEGIN_SRC emacs-lisp
@@ -153,6 +159,19 @@ Configure auto-suggestions for the Rust programming language.
 ;;(setq lsp-rust-analyzer-server-command '("rust-analyzer"))
 (require 'rustic)
 (setq rustic-lsp-client 'lsp-mode)
+#+END_SRC
+*** Hoon-Mode
+Set up Hoon syntax highlighting with hoon-mode and the included rune dictionary.
+#+BEGIN_SRC emacs-lisp
+  (require 'hoon-mode)
+  (add-to-list 'auto-mode-alist '("\\.hoon\\'" . hoon-mode))
+  (with-eval-after-load 'hoon-mode
+    (require 'hoon-mode)
+    (add-hook 'hoon-mode-hook
+              (lambda ()
+                (define-key hoon-mode-map (kbd "C-c r") 'hoon-eval-region-in-herb)
+                (define-key hoon-mode-map (kbd "C-c b") 'hoon-eval-buffer-in-herb))))
+    (add-to-list 'auto-mode-alist '("\\.hoon\\'" . hoon-mode))
 #+END_SRC
 *** Nix
 **** Recognition
