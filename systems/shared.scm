@@ -26,6 +26,7 @@
    "icedove-wayland"
    "kitty"
    "font-dejavu"
+   "font-google-noto-emoji"
    "dunst"
    "feh"
    "zathura"
