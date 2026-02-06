@@ -10,27 +10,8 @@
              (guix gexp)
              (guix git-download)
              (guix build-system emacs)
-             (jonabron packages emacs))
-
-#|
-(define-module (home-config)
-  ; GNU
-  #:use-modules (gnu)
-  #:use-modules (gnu home)
-  #:use-modules (gnu home services)
-  #:use-modules (gnu home services shells)
-  #:use-modules (gnu packages)
-  #:use-modules (gnu packages emacs)
-  #:use-modules (gnu packages emacs-xyz)
-  #:use-modules (gnu services)
-  ; Guix
-  #:use-modules (guix packages)
-  #:use-modules (guix gexp)
-  #:use-modules (guix git-download)
-  #:use-modules (guix build-system emacs)
-  ; Jonabron
-  #:use-modules (jonabron packages emacs))
-|#
+             (jonabron packages emacs)
+             (emacs packages melpa))
 
 (define zsh (specification->package "zsh"))
 (define zsh-autosuggestions (specification->package "zsh-autosuggestions"))
@@ -43,9 +24,10 @@
                   "zsh-completions"
                   "git"
                   "emacs"
-                  "emacs-fancy-dabbrev" ; Local Jonabron Package
-                  "emacs-hoon-mode" ; Local Jonabron Package
+                  "emacs-fancy-dabbrev" ; From Jonabron Channel
+                  "emacs-hoon-mode" ; From Jonabron Channel
                   "emacs-emms"
+                  "emacs-vim-tab-bar" ; From Emacs Channel
                   "emacs-erc"
                   "emacs-erc-image"
                   "emacs-company"
