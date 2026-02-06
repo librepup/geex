@@ -25,6 +25,7 @@
              ; Jonabron
              (jonabron packages wm)
              (jonabron packages fonts)
+             (jonabron packages games)
              ; Shared Packages
              (systems shared))
 
@@ -133,6 +134,7 @@
                    "naitre" ; From Jonabron Channel
                    "font-bundle-synapsian-karamarea" ; From Jonabron Channel
                    "vicinae" ; From Jonabron Channel
+                   "osu-lazer-bin" ; From Jonabron Channel
                    ))
             ))
 

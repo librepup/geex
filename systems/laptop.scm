@@ -21,7 +21,8 @@
              (nongnu system linux-initrd)
              ; Jonabron
              (jonabron packages wm)
-             (jonabron packages fonts))
+             (jonabron packages fonts)
+             (jonabron packages games))
 
 (use-service-modules desktop networking ssh xorg dbus)
 (use-package-modules wm bootloaders certs shells editors version-control xorg pipewire)
@@ -67,6 +68,7 @@
                    "discord" ; From Git Repo Channel
                    "mpv"
                    "vicinae" ; From Jonabron Channel
+                   "osu-lazer-bin" ; From Jonabron Channel
                    ))
             ))
 
