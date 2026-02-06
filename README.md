@@ -2,7 +2,16 @@
 ![Guix Banner](https://raw.githubusercontent.com/nixpup/geex/refs/heads/main/guixBanner.jpg)
 
 # Information
+## Preface
 This Guix configuration has *not* been tested yet, so take whatever you see here with a grain of salt. The configuration/setup included all necessary packages, sets up the **nonguix** channel, symlinks configuration files via **Guix Home**, installs Nvidia Drivers, and compiles the [NaitreHUD](https://github.com/nixpup/NaitreHUD) Wayland Window Manager and Compositor.
+
+## Channels
+This GNU Guix Configuration pre-configures a few useful channels to make certain Packages available that are otherwise missing in the official GNU Guix repository, these include:
+- jack-faller, this channel provides a Discord package.
+- nonguix, this channel provides nvidia drivers, firmware, and a full Linux kernel.
+- jonabron, this channel provides games, emacs packages, and window managers.
+- emacs, this channel provides melpa emacs packages.
+- guix, this is the default and official guix channel.
 
 # Usage
 Clone this repository via `git clone https://github.com/nixpup/geex`, then move the files to their respective destinations:
