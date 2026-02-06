@@ -24,6 +24,7 @@
                   "zsh-completions"
                   "git"
                   "emacs"
+                  "emacs-pgtk"
                   "emacs-fancy-dabbrev" ; From Jonabron Channel
                   "emacs-hoon-mode" ; From Jonabron Channel
                   "emacs-emms"
