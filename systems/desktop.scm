@@ -22,6 +22,8 @@
              (nongnu services nvidia)
              (nongnu system linux-initrd)
              (nonguix transformations)
+             ; PantherX
+             (px packages desktop-tools)
              ; Jonabron
              (jonabron packages wm)
              (jonabron packages fonts)
@@ -130,7 +132,7 @@
             (map specification->package+output
                  '("mpv-nvidia" ; From Nonguix Channel, .-nvidia Variant
                    "steam-nvidia" ; From Nonguix Channel, .-nvidia Variant
-                   "discord" ; From GitHub Channel
+                   "discord" ; From PantherX Channel
                    "naitre" ; From Jonabron Channel
                    "font-bundle-synapsian-karamarea" ; From Jonabron Channel
                    "vicinae" ; From Jonabron Channel
@@ -180,7 +182,8 @@ permit persist keepenv setenv :wheel"))))
                                                "https://berlin.guix.gnu.org"
                                                "https://bordeaux.guix.gnu.org"
                                                "https://substitutes.nonguix.org"
-                                               "https://hydra-guix-129.guix.gnu.org")
+                                               "https://hydra-guix-129.guix.gnu.org"
+                                               "https://substitutes.guix.gofranz.com")
                                                  %default-substitute-urls))
                                         ; Authorize via 'sudo guix archive --authorize < /etc/guix/channels/nonguix.pub'
                                         (authorized-keys

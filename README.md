@@ -23,7 +23,7 @@ Clone this repository via `git clone https://github.com/nixpup/geex`, then move 
  - `cp home.scm /etc/guix/home.scm`
  - `cp config.scm /etc/guix/config.scm`
 
-Don't forget to import the [Nonguix](https://gitlab.com/nonguix/nonguix) Key via `sudo guix archive --authorize < /etc/guix/channels/nonguix.pub`.
+    Don't forget to import the [Nonguix](https://gitlab.com/nonguix/nonguix) Key via `sudo guix archive --authorize < /etc/guix/channels/nonguix.pub`, as well as the panther key via `sudo guix archive --authorize < /etc/guix/channels/panther.pub`.
 
 Then you can update Guix and its Channels by invoking `guix pull`, and afterwards check whether all Channels were correctly set up with `guix describe`. Make sure that "~/.config/guix/channels.scm" is the **first** item in your "$PATH".
 

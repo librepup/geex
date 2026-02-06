@@ -1,9 +1,15 @@
 ;---
 ; Copy this Channel File to '/etc/guix/channels.scm' and '~/.config/guix/channels.scm'
 ;---
-(append (list (channel
-        (name 'jack-faller)
-        (url "https://github.com/jack-faller/guix.git"))
+(append (list
+         (channel
+          (name 'pantherx)
+          (url "https://codeberg.org/gofranz/panther.git")
+          (introduction
+           (make-channel-introduction
+            "54b4056ac571611892c743b65f4c47dc298c49da"
+            (openpgp-fingerprint
+             "A36A D41E ECC7 A871 1003  5D24 524F EB1A 9D33 C9CB"))))
       (channel
         (name 'nonguix)
         (url "https://gitlab.com/nonguix/nonguix")

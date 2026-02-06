@@ -19,6 +19,8 @@
              ; Nongnu & Nonguix
              (nongnu packages linux)
              (nongnu system linux-initrd)
+             ; PantherX
+             (px packages desktop-tools)
              ; Jonabron
              (jonabron packages wm)
              (jonabron packages fonts)
@@ -65,7 +67,7 @@
                  '("naitre" ; From Jonabron Channel
                    "font-bundle-synapsian-karamarea" ; From Jonabron Channel
                    "steam" ; From Nonguix Channel
-                   "discord" ; From Git Repo Channel
+                   "discord" ; From PantherX Channel
                    "mpv"
                    "vicinae" ; From Jonabron Channel
                    "osu-lazer-bin" ; From Jonabron Channel
@@ -112,7 +114,8 @@ permit persist keepenv setenv :wheel"))))
                                                "https://berlin.guix.gnu.org"
                                                "https://bordeaux.guix.gnu.org"
                                                "https://substitutes.nonguix.org"
-                                               "https://hydra-guix-129.guix.gnu.org")
+                                               "https://hydra-guix-129.guix.gnu.org"
+                                               "https://substitutes.guix.gofranz.com")
                                                  %default-substitute-urls))
                                         ; Authorize via 'sudo guix archive --authorize < /etc/guix/channels/nonguix.pub'
                                         (authorized-keys
