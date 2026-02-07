@@ -68,7 +68,6 @@
                  '("naitre" ; From Jonabron Channel
                    "font-jonafonts" ; From Jonabron Channel
                    "steam" ; From Nonguix Channel
-                   "discord" ; From PantherX Channel
                    "mpv"
                    "vicinae" ; From Jonabron Channel
                    "osu-lazer-bin" ; From Jonabron Channel

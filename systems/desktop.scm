@@ -133,7 +133,6 @@
             (map specification->package+output
                  '("mpv-nvidia" ; From Nonguix Channel, .-nvidia Variant
                    "steam-nvidia" ; From Nonguix Channel, .-nvidia Variant
-                   "discord" ; From PantherX Channel
                    "naitre" ; From Jonabron Channel
                    "font-jonafonts" ; From Jonabron Channel
                    "vicinae" ; From Jonabron Channel
