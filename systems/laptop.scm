@@ -15,6 +15,7 @@
              (gnu services audio)
              (gnu services networking)
              (guix)
+             (guix utils)
              ; Nongnu & Nonguix
              (nongnu packages linux)
              (nongnu system linux-initrd)

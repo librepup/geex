@@ -15,6 +15,7 @@
              (gnu services audio)
              (gnu services networking)
              (guix)
+             (guix utils)
              ; Nongnu & Nonguix
              (nongnu packages linux)
              (nongnu packages nvidia)
@@ -128,7 +129,6 @@ permit persist keepenv setenv :wheel"))))
                                       (gdm-configuration
                                        (inherit config)
                                        (wayland? #t)))
-
                     (delete pulseaudio-service-type)
                     (guix-service-type config =>
                                        (guix-configuration
