@@ -16,7 +16,13 @@
              (guix build-system emacs)
              (jonabron packages emacs)
              (jonabron packages fonts)
-             (emacs packages melpa))
+             (jonabron packages communication)
+             (jonabron packages games)
+             (jonabron packages wm)
+             (nongnu packages video)
+             (nongnu packages game-client)
+             (emacs packages melpa)
+             (systems shared))
 
 ;---
 ; To specify the channel a package should be pulled from, define the name like so:
@@ -34,8 +40,17 @@
 (define zsh-autosuggestions (specification->package "zsh-autosuggestions"))
 
 (home-environment
- (packages (specifications->packages
-            (list "git"
+ (packages (append
+            (map specification->packages %shared-packages)
+            (map specifications->packages
+                '("git"
+                  ; Desktop Applications
+                  "discord"
+                  "osu-lazer-bin"
+                  "vicinae"
+                  "naitre"
+                  "mpv-nvidia"
+                  "steam-nvidia"
                   ; ZSH
                   "zsh"
                   "zsh-autosuggestions"
@@ -104,9 +119,11 @@
                   "fastfetch"
                   "pfetch"
                   "ufetch"
-                  )))
+                  ))))
 
  (services (list
+            ;;; PipeWire
+            (service home-pipewire-service-type)
             ;;; ZSH Configuration
             (service home-zsh-service-type
                      (home-zsh-configuration

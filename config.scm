@@ -2,4 +2,4 @@
 
 (add-to-load-path (dirname (current-filename)))
 
-(load (string-append (dirname (current-filename)) "/systems/" %systemguix ".scm"))
+(load (string-append (dirname (current-filename)) "/systems/" %systemchoice ".scm"))

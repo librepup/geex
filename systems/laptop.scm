@@ -14,21 +14,20 @@
              (gnu services sound)
              (gnu services audio)
              (gnu services networking)
-             (gnu utils)
+             ;;;(gnu utils)
              (guix)
              ; Nongnu & Nonguix
              (nongnu packages linux)
              (nongnu system linux-initrd)
-             ; PantherX
-             (px packages desktop-tools)
              ; Jonabron
              (jonabron packages wm)
              (jonabron packages fonts)
              (jonabron packages communication)
-             (jonabron packages games))
+             (jonabron packages games)
+             (systems shared))
 
 (use-service-modules desktop networking ssh xorg dbus)
-(use-package-modules wm bootloaders certs shells editors version-control xorg pipewire)
+(use-package-modules wm bootloaders certs shells version-control xorg) ;;; editors pipewire)
 
 (define %guix-os (operating-system
  (kernel linux)
@@ -42,6 +41,7 @@
  ;; Bootloader
  (bootloader (bootloader-configuration
               (bootloader grub-bootloader)
+              (keyboard-layout keyboard-layout)
               (targets '("/dev/sdb1"))))
 
  ;; File Systems
@@ -61,18 +61,22 @@
                (shell (file-append zsh "/bin/zsh")))
               %base-user-accounts))
 
- ;; Packages
+  ;; Packages
  (packages (append
-            (map specification->package+output %shared-packages)
-            (map specification->package+output
-                 '("naitre" ; From Jonabron Channel
-                   "font-jonafonts" ; From Jonabron Channel
-                   "steam" ; From Nonguix Channel
-                   "mpv"
-                   "vicinae" ; From Jonabron Channel
-                   "osu-lazer-bin" ; From Jonabron Channel
-                   "discord" ; From Jonabron Channel
-                   ))
+            (map specification->package ;;; ->package+output
+                '("eza"
+                  "bat"
+                  "zoxide"
+                  "ripgrep"
+                  "grep"
+                  "coreutils"
+                  "glibc-locales"
+                  "ncurses"
+                  "zsh"
+                  "git-minimal"
+                  "emacs-no-x"
+                  )
+                )
             ))
 
  ;; Services
@@ -84,10 +88,10 @@
              (gdm-configuration
              (wayland? #t)))
     (service nix-service-type)
-    (service pipewire-service-type)
-    (service alsa-service-type
-             (alsa-configuration
-              (jack? #t)))
+    ;;;(service pipewire-service-type)
+    (service alsa-service-type)
+             ;;;(alsa-configuration
+             ;;; (jack? #t)))
     (service dhcpcd-service-type)
     (service tlp-service-type
              (tlp-configuration
@@ -102,7 +106,7 @@ permit persist keepenv setenv :wheel"))))
     (service network-manager-service-type)
     (set-xorg-configuration
      (xorg-configuration
-      (keyboard-layout (keyboard-layout "us"))
+      (keyboard-layout keyboard-layout)
       )))
 
    (modify-services %desktop-services

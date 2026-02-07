@@ -14,7 +14,7 @@
              (gnu services sound)
              (gnu services audio)
              (gnu services networking)
-             ;;;(gnu utils)
+             (gnu utils)
              (guix)
              ; Nongnu & Nonguix
              (nongnu packages linux)
@@ -22,6 +22,8 @@
              (nongnu services nvidia)
              (nongnu system linux-initrd)
              (nonguix transformations)
+             ; PantherX
+             (px packages desktop-tools)
              ; Jonabron
              (jonabron packages wm)
              (jonabron packages fonts)
@@ -30,35 +32,63 @@
              ; Shared Packages
              (systems shared))
 
-; Info:
-; - Three Semicolons ';;;' refer to latest changes and removes.
+#|
+(define-module (systems guix)
+  #:use-modules (systems base-system)
+  ; GNU
+  #:use-modules (gnu)
+  #:use-modules (gnu system)
+  #:use-modules (gnu system nss)
+  #:use-modules (gnu packages)
+  #:use-modules (gnu packages xorg)
+  #:use-modules (gnu packages certs)
+  #:use-modules (gnu packages shells)
+  #:use-modules (gnu packages admin)
+  #:use-modules (gnu packages base)
+  #:use-modules (gnu services)
+  #:use-modules (gnu services xorg)
+  #:use-modules (gnu services desktop)
+  #:use-modules (gnu services nix)
+  #:use-modules (gnu services sound)
+  #:use-modules (gnu services audio)
+  #:use-modules (gnu services networking)
+  #:use-modules (gnu utils)
+  ; Nongnu & Nonguix
+  #:use-modules (nongnu packages linux)
+  #:use-modules (nongnu packages nvidia)
+  #:use-modules (nongnu services nvidia)
+  #:use-modules (nongnu system linux-initrd)
+  #:use-modules (nonguix transformations)
+  ; Jonabron
+  #:use-modules (jonabron packages wm)
+  #:use-modules (jonabron packages fonts))
+|#
 
+;(add-to-load-path (dirname (current-filename)))
 (use-service-modules desktop networking ssh xorg dbus)
-(use-package-modules wm bootloaders certs shells version-control xorg) ;;; editors pipewire)
+(use-package-modules wm bootloaders certs shells editors version-control xorg pipewire)
 
 (define %guix-os (operating-system
  (kernel linux)
  (initrd microcode-initrd)
  (firmware (list intel-microcode linux-firmware %base-firmware))
  ;; Nvidia
- ;(kernel-arguments (append
- ;                   '("modprobe.blacklist=nouveau")
- ;                   %default-kernel-arguments))
- ;(kernel-loadable-modules (list nvidia-driver))
+ (kernel-arguments (append
+                    '("modprobe.blacklist=nouveau")
+                    %default-kernel-arguments))
+ (kernel-loadable-modules (list nvidia-driver))
  (host-name "guix")
  (timezone "Europe/Berlin")
  (locale "en_US.utf8")
- (keyboard-layout (keyboard-layout "us" "colemak")) ;;; (keyboard-layout (keyboard-layout "us" "colemak"))
+ (keyboard-layout (keyboard-layout "us" "colemak"))
 
  ;; Bootloader
  ;- (U)EFI
  (bootloader (bootloader-configuration
-              (keyboard-layout keyboard-layout)
               (bootloader grub-efi-bootloader)
               (targets '("/boot/efi"))))
  ;- Legacy/BIOS
  ;(bootloader (bootloader-configuration
- ;             (keyboard-layout keyboard-layout)
  ;             (bootloader grub-bootloader)
  ;             (targets '("/dev/sda1"))))
 
@@ -99,20 +129,21 @@
 
  ;; Packages
  (packages (append
-            (map specification->package ;;; ->package+output
-                '("eza"
-                  "bat"
-                  "zoxide"
-                  "ripgrep"
-                  "grep"
-                  "coreutils"
-                  "glibc-locales"
-                  "ncurses"
-                  "zsh"
-                  "git-minimal"
-                  "emacs-no-x"
-                  )
-                )
+            (map specification->package+output %shared-packages)
+            (map specification->package+output
+                 '("mpv-nvidia" ; From Nonguix Channel, .-nvidia Variant
+                   "steam-nvidia" ; From Nonguix Channel, .-nvidia Variant
+                   "naitre" ; From Jonabron Channel
+                   "font-jonafonts" ; From Jonabron Channel
+                   "vicinae" ; From Jonabron Channel
+                   "osu-lazer-bin" ; From Jonabron Channel
+                   ; Install Emacs system-wide, but rename
+                   ; the binary to "sysmacs":
+                   "discord" ; From Jonabron Channel
+                   (package
+                    (inherit emacs)
+                    (name "sysmacs"))
+                   ))
             ))
 
  ;; Services
@@ -123,17 +154,17 @@
     (service gdm-service-type
              (gdm-configuration
              (wayland? #t)))
-    ;;;(service nvidia-driver-service-type)
-    ;;;(service kernel-module-loader-service-type
-    ;;;         '("ipmi_devintf"
-    ;;;           "nvidia"
-    ;;;           "nvidia_modeset"
-    ;;;           "nvidia_uvm"))
+    (service nvidia-driver-service-type)
+    (service kernel-module-loader-service-type
+             '("ipmi_devintf"
+               "nvidia"
+               "nvidia_modeset"
+               "nvidia_uvm"))
     (service nix-service-type)
-    ;;;(service pipewire-service-type)
-    (service alsa-service-type)
-             ;;;(alsa-configuration
-             ;;; (jack? #t)))
+    (service pipewire-service-type)
+    (service alsa-service-type
+             (alsa-configuration
+              (jack? #t)))
     (service dhcpcd-service-type)
     (simple-service 'doas-config etc-service-type
                     (list
@@ -143,7 +174,7 @@ permit persist keepenv setenv :wheel"))))
     (service network-manager-service-type)
     (set-xorg-configuration
      (xorg-configuration
-      (keyboard-layout keyboard-layout)
+      (keyboard-layout (keyboard-layout "us" "colemak"))
       (modules (cons nvidia-driver %default-xorg-modules))
       (drivers '("nvidia")))))
 
