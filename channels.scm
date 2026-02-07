@@ -6,14 +6,16 @@
           (name 'jonabron)
           (branch "master")
           (url "https://github.com/librepup/jonabron.git"))
-         (channel
-          (name 'pantherx)
-          (url "https://codeberg.org/gofranz/panther.git")
-          (introduction
-           (make-channel-introduction
-            "54b4056ac571611892c743b65f4c47dc298c49da"
-            (openpgp-fingerprint
-             "A36A D41E ECC7 A871 1003  5D24 524F EB1A 9D33 C9CB"))))
+         ; PantherX is temporarily disabled, due to it being
+         ; broken and thus preventing Guix Pull and Guix Home from succeeding.
+         ;(channel
+         ; (name 'pantherx)
+         ; (url "https://codeberg.org/gofranz/panther.git")
+         ; (introduction
+         ;  (make-channel-introduction
+         ;   "54b4056ac571611892c743b65f4c47dc298c49da"
+         ;   (openpgp-fingerprint
+         ;    "A36A D41E ECC7 A871 1003  5D24 524F EB1A 9D33 C9CB"))))
          (channel
           (name 'nonguix)
           (url "https://gitlab.com/nonguix/nonguix")
