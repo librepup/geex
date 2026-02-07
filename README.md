@@ -43,4 +43,4 @@ This will then pick either the `/etc/guix/systems/desktop.scm` or `/etc/guix/sys
 To apply the system configuration, run `sudo guix system reconfigure /etc/guix/config.scm`. Similarly, to reconfigure or apply the Guix Home configuration, run `guix home reconfigure /etc/guix/home.scm`.
 
 ## Testing Guix Home
-If you copied all the files of this repository to their respective target directories, you can test the Guix Home environment this configuration sets up for you inside a container via `guix home containre /etc/guix/home.scm`. This gives you a minimal environment with only the packages, configuration files, variables, and settings provided by the `home.scm` file.
+If you copied all the files of this repository to their respective target directories, you can test the Guix Home environment this configuration sets up for you inside a container via `guix home container /etc/guix/home.scm`. This gives you a minimal environment with only the packages, configuration files, variables, and settings provided by the `home.scm` file.
