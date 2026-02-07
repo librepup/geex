@@ -15,32 +15,4 @@
 #+LATEX_HEADER: \pagecolor{bgcolor}
 #+LATEX_HEADER: \AtBeginDocument{\color{fgcolor}}
 #+LATEX_HEADER: \colorlet{normalcolor}{fgcolor}
-** Theme/Colorscheme
-For all available themes, check the guixmacs themes directory (/home/<USERNAME>/.guixmacs/themes).
-#+BEGIN_SRC emacs-lisp
-(load-theme 'guix t)
-#+END_SRC
-** Auto-Completion Popup Menu
-Enable a simple for of auto-completion preview using fancy dabbrev.
-#+BEGIN_SRC emacs-lisp
-(require 'fancy-dabbrev)
-(global-fancy-dabbrev-mode)
-(global-set-key (kbd "TAB") 'fancy-dabbrev-expand)
-(global-set-key (kbd "<backtab>") 'fancy-dabbrev-backward)
-#+END_SRC
-
-Old or optional code blocks for setting up Pabbrev and Corfu.
-1. Pabbrev
-#+BEGIN_SRC emacs-lisp
-;(require 'pabbrev)
-;(global-pabbrev-mode)
-#+END_SRC
-
-2. Corfu
-#+BEGIN_SRC emacs-lisp
-;(require 'corfu)
-;(global-corfu-mode)
-;(unless (display-graphic-p)
-;  (corfu-terminal-mode +1))
-;(global-set-key (kbd "TAB") 'corfu-expand) ;- or 'corfu-complete
-#+END_SRC
+* Additional User Configuration

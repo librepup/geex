@@ -10,9 +10,11 @@ The **Jonabron** Channel provides the following packages:
 - naitre
 - vicinae
 ### Fonts
-- font-bundle-synapsian-karamarea
+- font-jonafonts
 ### Games
 - osu-lazer-bin
+### Communication
+- discord
 # Usage
 Add the **Jonabron** Channel to your Guix `channels.scm`, located at "~/.config/guix/channels.scm":
 ```scm
@@ -20,7 +22,8 @@ Add the **Jonabron** Channel to your Guix `channels.scm`, located at "~/.config/
  ; ... your other Channels ...
  (channel
   (name 'jonabron)
-  (url "https://github.com/nixpup/jonabron.git"))
+  (branch "master")
+  (url "https://github.com/librepup/jonabron.git"))
  ; ... your other Channels ...
 ))
 ```
@@ -30,6 +33,7 @@ Afterwards, run `guix pull` to update Guix and your Channels. Once that is compl
              (jonabron packages wm)
              (jonabron packages fonts)
              (jonabron packages emacs)
+             (jonabron packages communication)
              (jonabron packages games))
 
 (define %guix-os (operating-system
@@ -37,9 +41,10 @@ Afterwards, run `guix pull` to update Guix and your Channels. Once that is compl
              (map specification->package+output
                   '("naitre" ; From (jonabron packages wm).
                     "vicinae" ; From (jonabron packages wm).
-                    "font-bundle-synapsian-karamarea" ; From (jonabron packages fonts).
+                    "font-jonafonts" ; From (jonabron packages fonts).
                     "osu-lazer-bin" ; From (jonabron packages games).
                     "emacs-fancy-dabbrev" ; From (jonabron packages emacs).
+                    "discord" ; From (jonabron packages communication).
                     ))
              ))
 ))

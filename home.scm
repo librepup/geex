@@ -3,15 +3,16 @@
              (gnu home services)
              (gnu home services shells)
              (gnu packages)
+             (gnu packages shellutils)
              (gnu packages emacs)
              (gnu packages emacs-xyz)
              (gnu services)
              (guix packages)
              (guix gexp)
              (guix git-download)
-             (guix build utils) ; For Renaming Emacs
-             (ice-9 ftw)        ;  /^
-             (ice-9 rdelim)     ; /^
+             (guix build utils)
+             (ice-9 ftw)
+             (ice-9 rdelim)
              (guix build-system emacs)
              (jonabron packages emacs)
              (jonabron packages fonts)
@@ -34,16 +35,18 @@
 
 (home-environment
  (packages (specifications->packages
-            (list "zsh"
+            (list "git"
+                  ; ZSH
+                  "zsh"
                   "zsh-autosuggestions"
                   "zsh-syntax-highlighting"
-                  "zsh-completions"
-                  "git"
+                  ; Emacs
                   "emacs"
                   "emacs-pgtk"
                   "emacs-fancy-dabbrev" ; From Jonabron Channel
                   "emacs-hoon-mode" ; From Jonabron Channel
                   "emacs-emms"
+                  "emacs-impatient-mode"
                   "emacs-vim-tab-bar" ; From Emacs Channel
                   "emacs-erc"
                   "emacs-erc-image"
@@ -82,6 +85,25 @@
                   "emacs-beacon"
                   "emacs-doom-modeline"
                   "emacs-org-texlive-collection"
+                  ; Tools
+                  "eza"
+                  "bat"
+                  "zoxide"
+                  "ripgrep"
+                  "grep"
+                  "coreutils"
+                  "glibc-locales"
+                  "ncurses"
+                  ; Fonts
+                  "font-jonafonts"
+                  ; Terminal
+                  "kitty"
+                  ; Fetchers
+                  "hyfetch"
+                  "neofetch"
+                  "fastfetch"
+                  "pfetch"
+                  "ufetch"
                   )))
 
  (services (list
@@ -90,13 +112,18 @@
                      (home-zsh-configuration
                       (environment-variables '(("PS1" . "  %~ ")
                                                ("PROMPT" . "  %~ ")
-                                               ("TERM" . "xterm")
+                                               ("TERMINFO_DIRS" . "$HOME/.guix-home/profile/share/terminfo")
+                                               ("TERM" . "kitty")
+                                               ;("TERM" . "xterm-256color")
+                                               ("LANG" . "en_US.UTF-8")
+                                               ("LC_CTYPE" . "en_US.UTF-8")
+                                               ("LC_ALL" . "en_US.UTF-8")
+                                               ("GUIX_LOCPATH" . "$HOME/.guix-home/profile/lib/locale:$HOME/.guix-profile/lib/locale:/guix/current/lib/locale")
                                                ("EDITOR" . "emacs")))
                       (zshrc
                        (list
-                        (local-file "files/config/zshrc")))
-                        ;(file-append zsh-autosuggestions "/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh")))
-                            ))
+                        (local-file "files/config/zshrc")
+                      ))))
 
                  ;;; Environment Variables
                  (simple-service 'environment-variables-config

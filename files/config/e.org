@@ -91,7 +91,6 @@ Set in "~/.guixmacs/config/user.org".
 ** Beacon
 Enable the Beacon Line-Highlighter Globally.
 #+BEGIN_SRC emacs-lisp
-(require 'beacon)
 (beacon-mode 1)
 #+END_SRC
 ** Resize Split Panes
@@ -113,34 +112,25 @@ Enable and automatically load doom-modeline-mode.
 (global-set-key (kbd "C-h") 'backward-kill-word)
 (global-set-key (kbd "M-[ 3 ; 5 ~") 'backward-kill-word)
 #+END_SRC
+** Magit
+#+BEGIN_SRC emacs-lisp
+(use-package magit
+  :ensure t)
+#+END_SRC
 ** Auto-Completion Popup Menu
-Enable a simple for of auto-completion preview using fancy dabbrev.
-#+BEGIN_SRC emacs-lisp
-(require 'fancy-dabbrev)
-(global-fancy-dabbrev-mode)
-(global-set-key (kbd "TAB") 'fancy-dabbrev-expand)
-(global-set-key (kbd "<backtab>") 'fancy-dabbrev-backward)
-#+END_SRC
-
-Old or optional code blocks for setting up Pabbrev and Corfu.
-1. Pabbrev:
-#+BEGIN_SRC emacs-lisp
-;(require 'pabbrev)
-;(global-pabbrev-mode)
-#+END_SRC
-
-2. Corfu:
-#+BEGIN_SRC emacs-lisp
-;(require 'corfu)
-;(global-corfu-mode)
-;(unless (display-graphic-p)
-;  (corfu-terminal-mode +1))
-;(global-set-key (kbd "TAB") 'corfu-expand) ;- or 'corfu-complete
-#+END_SRC
-
+#+BEGIN_COMMENT
+Set in "~/.guixmacs/config/user.org".
+#+END_COMMENT
 ** Sudo-Edit
 #+BEGIN_SRC emacs-lisp
 (global-set-key (kbd "C-x e") #'sudo-edit)
+#+END_SRC
+** EXWM
+#+BEGIN_SRC emacs-lisp
+(require 'exwm)
+;;(require 'exwm-config)
+(when (and (eq window-system 'x) (featurep 'exwm))
+  (load-file "~/.guixmacs/config/exwm.el"))
 #+END_SRC
 ** Company and Auto-Suggestions
 This Chapter sets up auto-suggestions for various programming languages, and a language server connection.
@@ -152,8 +142,6 @@ This Chapter sets up auto-suggestions for various programming languages, and a l
 "Start local HTTP server, enable impatient-mode, and open preview in browser."
 (interactive)
 (httpd-start)
-(impatient-mode 1)
-(browse-url "http://localhost:8080/imp/")
 (message "🌐 Live preview opened at http://localhost:8080/imp/"))
 
 (defun my/html-bind-live-preview-key ()
@@ -194,15 +182,15 @@ Configure auto-suggestions for the Rust programming language.
 *** Hoon-Mode
 Set up Hoon syntax highlighting with hoon-mode and the included rune dictionary.
 #+BEGIN_SRC emacs-lisp
-(require 'hoon-mode)
-(add-to-list 'auto-mode-alist '("\\.hoon\\'" . hoon-mode))
-(with-eval-after-load 'hoon-mode
   (require 'hoon-mode)
-  (add-hook 'hoon-mode-hook
-            (lambda ()
-              (define-key hoon-mode-map (kbd "C-c r") 'hoon-eval-region-in-herb)
-              (define-key hoon-mode-map (kbd "C-c b") 'hoon-eval-buffer-in-herb))))
   (add-to-list 'auto-mode-alist '("\\.hoon\\'" . hoon-mode))
+  (with-eval-after-load 'hoon-mode
+    (require 'hoon-mode)
+    (add-hook 'hoon-mode-hook
+              (lambda ()
+                (define-key hoon-mode-map (kbd "C-c r") 'hoon-eval-region-in-herb)
+                (define-key hoon-mode-map (kbd "C-c b") 'hoon-eval-buffer-in-herb))))
+    (add-to-list 'auto-mode-alist '("\\.hoon\\'" . hoon-mode))
 #+END_SRC
 *** Nix
 **** Recognition
@@ -265,8 +253,8 @@ Recognize and highlight Nix/NixOS files.
 *** Arduino Recognition
 Recognize and highlight Arduino Code.
 #+BEGIN_SRC emacs-lisp
-(global-flycheck-mode +1)
-(add-to-list 'auto-mode-alist '("\\.ino\\'" . arduino-mode))
+  (global-flycheck-mode +1)
+  (add-to-list 'auto-mode-alist '("\\.ino\\'" . arduino-mode))
 #+END_SRC
 *** Markdown Recognition
 Recognize and highlight Markdown files.
@@ -332,119 +320,119 @@ This option lets you visually see images you insert while in org-mode.
 ** Org to PDF Export
 This function allows you to press Ctrl+Shift+e to export any currently opened org document to PDF.
 #+BEGIN_SRC emacs-lisp
-(defun my/org-export-to-pdf ()
-  (interactive)
-  (let ((pdf-file (org-latex-export-to-pdf)))
-    (when (and pdf-file (file-exists-p pdf-file))
-      (start-process "open-pdf" nil "zathura" pdf-file))))
-(define-key org-mode-map (kbd "C-E") 'my/org-export-to-pdf)
+  (defun my/org-export-to-pdf ()
+    (interactive)
+    (let ((pdf-file (org-latex-export-to-pdf)))
+      (when (and pdf-file (file-exists-p pdf-file))
+        (start-process "open-pdf" nil "zathura" pdf-file))))
+  (define-key org-mode-map (kbd "C-E") 'my/org-export-to-pdf)
 #+END_SRC
 ** Org Snippets to Insert
 Here are a few basic useful org and LaTeX snippets that you can insert inside any org document.
 *** Insert Wrapfigure
 #+BEGIN_SRC emacs-lisp
-(defun my/insert-wrapfigure ()
-  (interactive)
-  (insert
-   "#+BEGIN_LaTeX\n"
-   "\\begin{wrapfigure}{r}{0.4\\textwidth}\n"
-   "  \\includegraphics[width=0.4\\textwidth]{/home/puppy/Pictures/Wallpapers/guix_wp_02.png}\n"
-   "\\end{wrapfigure}\n"
-   "#+END_LaTeX\n"))
+  (defun my/insert-wrapfigure ()
+    (interactive)
+    (insert
+     "#+BEGIN_LaTeX\n"
+     "\\begin{wrapfigure}{r}{0.4\\textwidth}\n"
+     "  \\includegraphics[width=0.4\\textwidth]{/home/puppy/Pictures/Wallpapers/guix_wp_02.png}\n"
+     "\\end{wrapfigure}\n"
+     "#+END_LaTeX\n"))
 #+END_SRC
 *** Insert Example Document
 #+BEGIN_SRC emacs-lisp
-(defun my/insert-example-document ()
-  (interactive)
-  (insert
-   "#+TITLE: Title\n"
-   "#+AUTHOR: Author\n"
-   "#+DESCRIPTION: Description\n"
-   "* Chapters\n"
-   "** Chapter 1\n"
-   "*** Subchapter 1\n"))
+  (defun my/insert-example-document ()
+    (interactive)
+    (insert
+     "#+TITLE: Title\n"
+     "#+AUTHOR: Author\n"
+     "#+DESCRIPTION: Description\n"
+     "* Chapters\n"
+     "** Chapter 1\n"
+     "*** Subchapter 1\n"))
 #+END_SRC
 *** Insert Figure Block
 #+BEGIN_SRC emacs-lisp
-(defun my/insert-figure-block ()
-  (interactive)
-  (insert "#+CAPTION: \n#+NAME: \n[[file:]]")
-  (backward-char 2))
+    (defun my/insert-figure-block ()
+      (interactive)
+      (insert "#+CAPTION: \n#+NAME: \n[[file:]]")
+      (backward-char 2))
 #+END_SRC
 *** Insert Code Block
 #+BEGIN_SRC emacs-lisp
-(defun my/insert-code-block ()
-  (interactive)
-  (insert "#+BEGIN_SRC language\n\n#+END_SRC\n")
-  (previous-line)
-  (previous-line))
+    (defun my/insert-code-block ()
+      (interactive)
+      (insert "#+BEGIN_SRC language\n\n#+END_SRC\n")
+      (previous-line)
+      (previous-line))
 #+END_SRC
 *** Insert Table Skeleton
 #+BEGIN_SRC emacs-lisp
-(defun my/insert-table-skeleton ()
-  (interactive)
-  (insert "\\begin{tabular}{|c|c|}\n\\hline\n & \\\\\n\\hline\n & \\\\\n\\hline\n\\end{tabular}"))
+  (defun my/insert-table-skeleton ()
+    (interactive)
+    (insert "\\begin{tabular}{|c|c|}\n\\hline\n & \\\\\n\\hline\n & \\\\\n\\hline\n\\end{tabular}"))
 #+END_SRC
 ** Tab Bar
 Here we set up the tab bar for using tabs inside emacs.
 #+BEGIN_SRC emacs-lisp
-(tab-bar-mode 1)
-(setq tab-bar-show 1)
-(setq tab-bar-new-tab-button-show nil)
-(setq tab-bar-close-button-show nil)
+  (tab-bar-mode 1)
+  (setq tab-bar-show 1)
+  (setq tab-bar-new-tab-button-show nil)
+  (setq tab-bar-close-button-show nil)
 
-;; Tab bar background (overall bar)
-(set-face-attribute 'tab-bar nil
-                    :height 0.5
-                    :box nil)
+  ;; Tab bar background (overall bar)
+  (set-face-attribute 'tab-bar nil
+                      :height 0.5
+                      :box nil)
 
-;; Active tab
-(set-face-attribute 'tab-bar-tab nil
-                    :box '(:line-width 1 :color "#282828")
-                    :weight 'normal)
+  ;; Active tab
+  (set-face-attribute 'tab-bar-tab nil
+                      :box '(:line-width 1 :color "#282828")
+                      :weight 'normal)
 
-;; Inactive tabs
-(set-face-attribute 'tab-bar-tab-inactive nil
-                    :box '(:line-width 1 :color "#1d1f21")
-                    :weight 'normal)
+  ;; Inactive tabs
+  (set-face-attribute 'tab-bar-tab-inactive nil
+                      :box '(:line-width 1 :color "#1d1f21")
+                      :weight 'normal)
 
-;; Optional: change height of tab bar
-(set-face-attribute 'tab-bar nil :height 1.0)
+  ;; Optional: change height of tab bar
+  (set-face-attribute 'tab-bar nil :height 1.0)
 
-(global-set-key (kbd "C-c t") #'tab-bar-new-tab)
-(global-set-key (kbd "C-c w") #'tab-bar-close-tab)
-(global-set-key (kbd "C-c <tab>") #'tab-bar-switch-to-next-tab)
-(global-set-key (kbd "C-c <backtab>") #'tab-bar-switch-to-prev-tab)
-(defun my/tab-bar-toggle ()
-"Toggle the visibility of the Emacs tab-bar."
-(interactive)
-(if (or (eq tab-bar-show 1) (eq tab-bar-show t))
-    (setq tab-bar-show 0)   ;; hide tab-bar
-  (setq tab-bar-show 1))    ;; show tab-bar
-;; Force redraw
-(tab-bar-mode 1))
-;; Bind it globally
-(global-set-key (kbd "C-c h") #'my/tab-bar-toggle)
+  (global-set-key (kbd "C-c t") #'tab-bar-new-tab)
+  (global-set-key (kbd "C-c w") #'tab-bar-close-tab)
+  (global-set-key (kbd "C-c <tab>") #'tab-bar-switch-to-next-tab)
+  (global-set-key (kbd "C-c <backtab>") #'tab-bar-switch-to-prev-tab)
+  (defun my/tab-bar-toggle ()
+  "Toggle the visibility of the Emacs tab-bar."
+  (interactive)
+  (if (or (eq tab-bar-show 1) (eq tab-bar-show t))
+      (setq tab-bar-show 0)   ;; hide tab-bar
+    (setq tab-bar-show 1))    ;; show tab-bar
+  ;; Force redraw
+  (tab-bar-mode 1))
+  ;; Bind it globally
+  (global-set-key (kbd "C-c h") #'my/tab-bar-toggle)
 
-(require 'vim-tab-bar)
-(vim-tab-bar-mode)
+  (require 'vim-tab-bar)
+  (vim-tab-bar-mode)
 #+END_SRC
 * Extra Programs
 ** ERC Configuration
 This configures the ERC IRC client, change these values such as erc-nick and erc-server as you please.
 #+BEGIN_SRC emacs-lisp
-(require 'erc)
-(setq erc-server "irc.libera.chat"
-      erc-nick "nixpup"
-      erc-user-full-name "nixpup"
-      erc-track-shorten-start 8
-      erc-autojoin-channels-alist '(("irc.libera.chat" "#guix"))
-      erc-kill-buffer-on-part t
-      erc-auto-query 'bury)
+  (require 'erc))
+  (setq erc-server "irc.libera.chat"
+        erc-nick "nixpup"
+        erc-user-full-name "nixpup"
+        erc-track-shorten-start 8
+        erc-autojoin-channels-alist '(("irc.libera.chat" "#guix"))
+        erc-kill-buffer-on-part t
+        erc-auto-query 'bury)
 
-(require 'erc-image)
-(add-to-list 'erc-modules 'image)
-(erc-update-modules)
+  (require 'erc-image)
+  (add-to-list 'erc-modules 'image)
+  (erc-update-modules)
 #+END_SRC
 ** Bongo Configuration
 #+BEGIN_SRC emacs-lisp
@@ -463,25 +451,22 @@ This configures the ERC IRC client, change these values such as erc-nick and erc
 ** EMMS Configuration
 Now we set up EMMS to listen to music inside of emacs.
 #+BEGIN_SRC emacs-lisp
-(require 'emms)
-(require 'emms-setup)
-(emms-all)
-(setq emms-player-list '(emms-player-mpv)
-      emms-info-functions '(emms-info-native
-			    emms-info-ogginfo))
-(let ((music-dir (expand-file-name "~/Music/")))
-  (when (and (file-directory-p music-dir)
-             (directory-files music-dir nil directory-files-no-dot-files-regexp))
-    (emms-add-directory-tree music-dir)))
-(global-set-key (kbd "C-c m") 'emms-browser)
-(dolist (binding '(("p" . emms-browser-add-tracks-and-play)
-		   ("RET" . emms-browser-add-tracks-and-play)
-		   ("P" . emms-pause)
-		   ("N" . emms-next)
-		   ("B" . emms-previous)))
-  (define-key emms-browser-mode-map (kbd (car binding)) (cdr binding)))
-(emms-mode-line 1)
-(setq emms-mode-line-format "♫ %s")
+  (require 'emms)
+  (require 'emms-setup)
+  (emms-all)
+  (setq emms-player-list '(emms-player-mpv)
+        emms-info-functions '(emms-info-native
+  			    emms-info-ogginfo))
+  (emms-add-directory-tree "~/Music/")
+  (global-set-key (kbd "C-c m") 'emms-browser)
+  (dolist (binding '(("p" . emms-browser-add-tracks-and-play)
+  		   ("RET" . emms-browser-add-tracks-and-play)
+  		   ("P" . emms-pause)
+  		   ("N" . emms-next)
+  		   ("B" . emms-previous)))
+    (define-key emms-browser-mode-map (kbd (car binding)) (cdr binding)))
+  (emms-mode-line 1)
+  (setq emms-mode-line-format "♫ %s")
 #+END_SRC
 ** Multiple Cursors
 Enable multiple cursors when pressing Ctrl+Shift+> and other keybinds to edit multiple lines at once.
@@ -512,10 +497,10 @@ Enable multiple cursors when pressing Ctrl+Shift+> and other keybinds to edit mu
 ** Image Dired
 This enables image perviews inside dired using image-dired when launched.
 #+BEGIN_SRC emacs-lisp
-(require 'image-dired)
-(setq insert-directory-program (concat "/etc/profiles/per-user/" (getenv "USER") "/bin/ls"))
-(global-set-key (kbd "C-x D") 'image-dired)
-(global-set-key (kbd "C-I") 'image-dired-dired-display-image)
+  (require 'image-dired)
+  (setq insert-directory-program (concat "/etc/profiles/per-user/" (getenv "USER") "/bin/ls"))
+  (global-set-key (kbd "C-x D") 'image-dired)
+  (global-set-key (kbd "C-I") 'image-dired-dired-display-image)
 #+END_SRC
 ** Interactive Buffer List
 #+BEGIN_SRC emacs-lisp
@@ -524,196 +509,196 @@ This enables image perviews inside dired using image-dired when launched.
 ** Splash and Application Screen
 Here is the setup for the splash screen every time you start up emacs, and the included application launcher.
 #+BEGIN_SRC emacs-lisp
-(setq inhibit-splash-screen t)
-(setq inhibit-startup-message t)
-(setq initial-scratch-message nil)
+  (setq inhibit-splash-screen t)
+  (setq inhibit-startup-message t)
+  (setq initial-scratch-message nil)
 
-(defvar apps-buffer nil "Application Menu")
-(defun application-buffer ()
-  (setq apps-buffer (get-buffer-create "*apps*"))
-  (with-current-buffer apps-buffer
-    (let ((inhibit-read-only t))
-      (erase-buffer)
-      (let* ((window-width (window-width))
-             (window-height (window-height))
-             (vertical-offset (/ window-height 6)))
-        (insert (make-string vertical-offset ?\n))
-        (when (display-graphic-p)
-          (let ((image (create-image (or (getenv "GUIXMACS_LOGO_PATH") "~/.guixmacs/files/guix_logo_small.png") nil nil :ascent 'center)))
-            (when image
-              (let* ((image-width (round (car (image-size image))))
-                     (padding (make-string (max 0 (/ (- window-width image-width) 2)) ?\ )))
-                (insert padding)
-                (insert-image image)
-                (insert "\n\n")))))
-        (let* ((text " Applications  \n")
-               (text-width (length text))
-               (padding (make-string (max 0 (/ (- window-width text-width) 2)) ?\ )))
-          (insert padding text "\n"))
-        (let* ((lists '(("m" "EMMS")
-                        ("i" "i3 configuration file")
-                        ("g" "guix configuration file")
-                        ("e" "emacs configuration file")
-                        ("x" "xmonad configuration file")
-                        ("p" "polybar configuration file")
-                        ("h" "guix-home configuration file")
-			  ("q" "quit emacs"))))
-	  (dolist (item lists)
-            (let* ((key (car item))
-                   (desc (cadr item))
-                   (line (format "%s => %s" key desc))
-                   (padding (make-string (max 0 (/ (- window-width (length line)) 2)) ?\ )))
-              (insert padding line "\n"))))
-        (insert "\n\n")
-        (let* ((instruction "Press b to go back...")
-               (instruction-width (length instruction))
-               (padding (make-string (max 0 (/ (- window-width instruction-width) 2)) ?\ )))
-          (insert padding instruction))))
-    (setq buffer-read-only t)
-    (goto-char (point-min))
-    ;; Setup keybindings inside the buffer context
-    (local-set-key (kbd "b") (lambda () (interactive)
-			       (kill-buffer "*apps*")
-			       (switch-to-buffer "*splash*")))
-    (local-set-key (kbd "m") (lambda () (interactive)
-			       (kill-buffer "*apps*")
-			       (call-interactively 'emms-browser)))
-    (local-set-key (kbd "n") (lambda () (interactive)
-             (kill-buffer "*apps*")
-             (find-file "~/.config/naitre/main.conf")))
-    (local-set-key (kbd "i") (lambda () (interactive)
-			       (kill-buffer "*apps*")
-			       (find-file "~/.config/i3/config")))
-    (local-set-key (kbd "x") (lambda () (interactive)
-			       (kill-buffer "*apps*")
-			       (find-file "~/.xmonad/xmonad.hs")))
-    (local-set-key (kbd "e") (lambda () (interactive)
-			       (kill-buffer "*apps*")
-			       (find-file "~/.guixmacs/config/e.org")))
-    (local-set-key (kbd "p") (lambda () (interactive)
-			       (kill-buffer "*apps*")
-			       (find-file "~/.config/polybar/config.ini")))
-    (local-set-key (kbd "g") (lambda () (interactive)
-			       (kill-buffer "*apps*")
-			       (interactive)
-			       (find-file "/sudo::/etc/guix/config.scm")))
-    (local-set-key (kbd "h") (lambda () (interactive)
-			       (kill-buffer "*apps*")
-			       (interactive)
-			       (find-file "/sudo::/etc/guix/home.scm")))
-    (local-set-key (kbd "q") (lambda () (interactive)
-			       (kill-buffer "*apps*")
-			       (call-interactively 'save-buffers-kill-terminal))))
-  ;; Switch to the apps-buffer
-  (switch-to-buffer apps-buffer))
-
-(defun my-custom-splash-screen ()
-  "Display custom splash screen with centered logo and text."
-  (let ((splash-buffer (get-buffer-create "*splash*")))
-    (with-current-buffer splash-buffer
-      (erase-buffer)
+  (defvar apps-buffer nil "Application Menu")
+  (defun application-buffer ()
+    (setq apps-buffer (get-buffer-create "*apps*"))
+    (with-current-buffer apps-buffer
       (let ((inhibit-read-only t))
-        ;; Calculate center position for window
+        (erase-buffer)
         (let* ((window-width (window-width))
                (window-height (window-height))
-               ;; Insert some vertical spacing to center content
                (vertical-offset (/ window-height 6)))
-          ;; Add vertical spacing
           (insert (make-string vertical-offset ?\n))
-          ;; Insert and center the image
           (when (display-graphic-p)
             (let ((image (create-image (or (getenv "GUIXMACS_LOGO_PATH") "~/.guixmacs/files/guix_logo_small.png") nil nil :ascent 'center)))
               (when image
-                (let* ((image-width (round (car (image-size image))))  ; Convert to integer
+                (let* ((image-width (round (car (image-size image))))
                        (padding (make-string (max 0 (/ (- window-width image-width) 2)) ?\ )))
                   (insert padding)
                   (insert-image image)
                   (insert "\n\n")))))
-          ;; Insert centered text
-	  (let* ((text "  Welcome to GuixMacs!  \n")
-		 (text-width (length text))
-		 (padding (make-string (max 0 (/ (- window-width text-width) 2)) ?\ )))
-	    (insert padding text "\n"))
-          (let* ((text "C-x C-f => Open or Create File")
+          (let* ((text " Applications  \n")
                  (text-width (length text))
                  (padding (make-string (max 0 (/ (- window-width text-width) 2)) ?\ )))
             (insert padding text "\n"))
-	  (let* ((text "C-x d => Navigate to Directory")
-		 (text-width (length text))
-		 (padding (make-string (max 0 (/ (- window-width text-width) 2)) ?\ )))
-	    (insert padding text "\n"))
-	  (let* ((text "a => Show Application Menu")
-		 (text-width (length text))
-		 (padding (make-string (max 0 (/ (- window-width text-width) 2)) ?\ )))
-	    (insert padding text "\n"))
-	  (let* ((text "q => Quit Emacs")
-		 (text-width (length text))
-		 (padding (make-string (max 0 (/ (- window-width text-width) 2)) ?\ )))
-	    (insert padding text "\n"))
-          ;; Add some more spacing
+          (let* ((lists '(("m" "EMMS")
+                          ("i" "i3 configuration file")
+                          ("g" "guix configuration file")
+                          ("e" "emacs configuration file")
+                          ("x" "xmonad configuration file")
+                          ("p" "polybar configuration file")
+                          ("h" "guix-home configuration file")
+  			  ("q" "quit emacs"))))
+  	  (dolist (item lists)
+              (let* ((key (car item))
+                     (desc (cadr item))
+                     (line (format "%s => %s" key desc))
+                     (padding (make-string (max 0 (/ (- window-width (length line)) 2)) ?\ )))
+                (insert padding line "\n"))))
           (insert "\n\n")
-          (let* ((instruction "Press key to continue...")
+          (let* ((instruction "Press b to go back...")
                  (instruction-width (length instruction))
                  (padding (make-string (max 0 (/ (- window-width instruction-width) 2)) ?\ )))
             (insert padding instruction))))
-      ;; Make buffer read-only
       (setq buffer-read-only t)
-      (goto-char (point-min)))
-    ;; Display the buffer
-    (switch-to-buffer splash-buffer)
-    ;; Set up key bindings
-    ;; Try multiple ways to bind the Enter/Return key
-    (local-set-key (kbd "RET") (lambda () (interactive)
-                                 (kill-buffer "*splash*")))
-    (local-set-key (kbd "<return>") (lambda () (interactive)
-                                      (kill-buffer "*splash*")))
-    (local-set-key [return] (lambda () (interactive)
-                              (kill-buffer "*splash*")))
-    (local-set-key [13] (lambda () (interactive)
-                          (kill-buffer "*splash*")))
-    (local-set-key (kbd "e") (lambda () (interactive)
-			       (kill-buffer "*splash*")
-		               (find-file "~/.guixmacs/config/e.org")))
-    (local-set-key (kbd "g") (lambda () (interactive)
-			       (kill-buffer "*splash*")
-             (interactive)
-			       (find-file "/sudo::/etc/guix/config.scm")))
-    (local-set-key (kbd "i") (lambda () (interactive)
-			       (kill-buffer "*splash*")
-			       (find-file "~/.config/i3/config")))
-    (local-set-key (kbd "x") (lambda () (interactive)
-			       (kill-buffer "*splash*")
-			       (find-file "~/.xmonad/xmonad.hs")))
-    (local-set-key (kbd "p") (lambda () (interactive)
-			       (kill-buffer "*splash*")
-			       (find-file "~/.config/polybar/config.ini")))
-    (local-set-key (kbd "m") (lambda () (interactive)
-			       (kill-buffer "*splash*")
-			       (call-interactively 'emms-browser)))
-    (local-set-key (kbd "a") (lambda () (interactive)
-			       (application-buffer)
-			       (switch-to-buffer "*apps*")))
-			       ;;(switch-to-buffer apps-buffer)))
-    (local-set-key (kbd "n") (lambda () (interactive)
-             (kill-buffer "*apps*")
-             (find-file "~/.config/naitre/main.conf")))
-    (local-set-key (kbd "h") (lambda () (interactive)
-			       (application-buffer)
-			       (interactive)
-			       (find-file "/sudo::/etc/guix/home.scm")))
-    (local-set-key (kbd "t") (lambda () (interactive)
-			       (kill-buffer "*splash*")
-			       (find-file "~/Documents/temp.org")))
-    (local-set-key (kbd "q") (lambda () (interactive)
-			       (kill-buffer "*splash*")
-			       (call-interactively 'save-buffers-kill-terminal)))))
-    ;; Any other key just dismisses splash screen
-    ;(local-set-key [t] (lambda () (interactive) (kill-buffer "*splash*")))))
-;; Show custom splash screen on startup (only in graphical mode)
-(add-hook 'emacs-startup-hook
-          (lambda ()
+      (goto-char (point-min))
+      ;; Setup keybindings inside the buffer context
+      (local-set-key (kbd "b") (lambda () (interactive)
+  			       (kill-buffer "*apps*")
+  			       (switch-to-buffer "*splash*")))
+      (local-set-key (kbd "m") (lambda () (interactive)
+  			       (kill-buffer "*apps*")
+  			       (call-interactively 'emms-browser)))
+      (local-set-key (kbd "n") (lambda () (interactive)
+               (kill-buffer "*apps*")
+               (find-file "~/.config/naitre/main.conf")))
+      (local-set-key (kbd "i") (lambda () (interactive)
+  			       (kill-buffer "*apps*")
+  			       (find-file "~/.config/i3/config")))
+      (local-set-key (kbd "x") (lambda () (interactive)
+  			       (kill-buffer "*apps*")
+  			       (find-file "~/.xmonad/xmonad.hs")))
+      (local-set-key (kbd "e") (lambda () (interactive)
+  			       (kill-buffer "*apps*")
+  			       (find-file "~/.guixmacs/config/e.org")))
+      (local-set-key (kbd "p") (lambda () (interactive)
+  			       (kill-buffer "*apps*")
+  			       (find-file "~/.config/polybar/config.ini")))
+      (local-set-key (kbd "g") (lambda () (interactive)
+  			       (kill-buffer "*apps*")
+  			       (interactive)
+  			       (find-file "/sudo::/etc/guix/config.scm")))
+      (local-set-key (kbd "h") (lambda () (interactive)
+  			       (kill-buffer "*apps*")
+  			       (interactive)
+  			       (find-file "/sudo::/etc/guix/home.scm")))
+      (local-set-key (kbd "q") (lambda () (interactive)
+  			       (kill-buffer "*apps*")
+  			       (call-interactively 'save-buffers-kill-terminal))))
+    ;; Switch to the apps-buffer
+    (switch-to-buffer apps-buffer))
+
+  (defun my-custom-splash-screen ()
+    "Display custom splash screen with centered logo and text."
+    (let ((splash-buffer (get-buffer-create "*splash*")))
+      (with-current-buffer splash-buffer
+        (erase-buffer)
+        (let ((inhibit-read-only t))
+          ;; Calculate center position for window
+          (let* ((window-width (window-width))
+                 (window-height (window-height))
+                 ;; Insert some vertical spacing to center content
+                 (vertical-offset (/ window-height 6)))
+            ;; Add vertical spacing
+            (insert (make-string vertical-offset ?\n))
+            ;; Insert and center the image
             (when (display-graphic-p)
-              (my-custom-splash-screen))))
+              (let ((image (create-image (or (getenv "GUIXMACS_LOGO_PATH") "~/.guixmacs/files/guix_logo_small.png") nil nil :ascent 'center)))
+                (when image
+                  (let* ((image-width (round (car (image-size image))))  ; Convert to integer
+                         (padding (make-string (max 0 (/ (- window-width image-width) 2)) ?\ )))
+                    (insert padding)
+                    (insert-image image)
+                    (insert "\n\n")))))
+            ;; Insert centered text
+  	  (let* ((text "  Welcome to GuixMacs!  \n")
+  		 (text-width (length text))
+  		 (padding (make-string (max 0 (/ (- window-width text-width) 2)) ?\ )))
+  	    (insert padding text "\n"))
+            (let* ((text "C-x C-f => Open or Create File")
+                   (text-width (length text))
+                   (padding (make-string (max 0 (/ (- window-width text-width) 2)) ?\ )))
+              (insert padding text "\n"))
+  	  (let* ((text "C-x d => Navigate to Directory")
+  		 (text-width (length text))
+  		 (padding (make-string (max 0 (/ (- window-width text-width) 2)) ?\ )))
+  	    (insert padding text "\n"))
+  	  (let* ((text "a => Show Application Menu")
+  		 (text-width (length text))
+  		 (padding (make-string (max 0 (/ (- window-width text-width) 2)) ?\ )))
+  	    (insert padding text "\n"))
+  	  (let* ((text "q => Quit Emacs")
+  		 (text-width (length text))
+  		 (padding (make-string (max 0 (/ (- window-width text-width) 2)) ?\ )))
+  	    (insert padding text "\n"))
+            ;; Add some more spacing
+            (insert "\n\n")
+            (let* ((instruction "Press key to continue...")
+                   (instruction-width (length instruction))
+                   (padding (make-string (max 0 (/ (- window-width instruction-width) 2)) ?\ )))
+              (insert padding instruction))))
+        ;; Make buffer read-only
+        (setq buffer-read-only t)
+        (goto-char (point-min)))
+      ;; Display the buffer
+      (switch-to-buffer splash-buffer)
+      ;; Set up key bindings
+      ;; Try multiple ways to bind the Enter/Return key
+      (local-set-key (kbd "RET") (lambda () (interactive)
+                                   (kill-buffer "*splash*")))
+      (local-set-key (kbd "<return>") (lambda () (interactive)
+                                        (kill-buffer "*splash*")))
+      (local-set-key [return] (lambda () (interactive)
+                                (kill-buffer "*splash*")))
+      (local-set-key [13] (lambda () (interactive)
+                            (kill-buffer "*splash*")))
+      (local-set-key (kbd "e") (lambda () (interactive)
+  			       (kill-buffer "*splash*")
+  		               (find-file "~/.guixmacs/config/e.org")))
+      (local-set-key (kbd "g") (lambda () (interactive)
+  			       (kill-buffer "*splash*")
+               (interactive)
+  			       (find-file "/sudo::/etc/guix/config.scm")))
+      (local-set-key (kbd "i") (lambda () (interactive)
+  			       (kill-buffer "*splash*")
+  			       (find-file "~/.config/i3/config")))
+      (local-set-key (kbd "x") (lambda () (interactive)
+  			       (kill-buffer "*splash*")
+  			       (find-file "~/.xmonad/xmonad.hs")))
+      (local-set-key (kbd "p") (lambda () (interactive)
+  			       (kill-buffer "*splash*")
+  			       (find-file "~/.config/polybar/config.ini")))
+      (local-set-key (kbd "m") (lambda () (interactive)
+  			       (kill-buffer "*splash*")
+  			       (call-interactively 'emms-browser)))
+      (local-set-key (kbd "a") (lambda () (interactive)
+  			       (application-buffer)
+  			       (switch-to-buffer "*apps*")))
+  			       ;;(switch-to-buffer apps-buffer)))
+      (local-set-key (kbd "n") (lambda () (interactive)
+               (kill-buffer "*apps*")
+               (find-file "~/.config/naitre/main.conf")))
+      (local-set-key (kbd "h") (lambda () (interactive)
+  			       (application-buffer)
+  			       (interactive)
+  			       (find-file "/sudo::/etc/guix/home.scm")))
+      (local-set-key (kbd "t") (lambda () (interactive)
+  			       (kill-buffer "*splash*")
+  			       (find-file "~/Documents/temp.org")))
+      (local-set-key (kbd "q") (lambda () (interactive)
+  			       (kill-buffer "*splash*")
+  			       (call-interactively 'save-buffers-kill-terminal)))))
+      ;; Any other key just dismisses splash screen
+      ;(local-set-key [t] (lambda () (interactive) (kill-buffer "*splash*")))))
+  ;; Show custom splash screen on startup (only in graphical mode)
+  (add-hook 'emacs-startup-hook
+            (lambda ()
+              (when (display-graphic-p)
+                (my-custom-splash-screen))))
 #+END_SRC
 ** Panic-Quit Emacs
 This is a sort of nuclear option for force-quitting emacs when you're stuck anywhere, or are using multiple nested emacs instances within one another using the M-x term command.
@@ -785,24 +770,24 @@ Bind `C-x C-S-Minus` and `C-x C-S-=` to decrease and increase the font height.
 ** Org Insert Helper
 The org insert helper is what we use to show the available options defined previously to insert org and LaTeX snippets for convenience.
 #+BEGIN_SRC emacs-lisp
-(require 'hydra)
+    (require 'hydra)
 
-(defhydra my/org-insert-hydra (:color blue :hint nil)
-  "
-Insert:
-  _t_: Table Skeleton    _c_: Code Block
-  _f_: Figure Block      _e_: Example Doc
-  _w_: Wrapfigure
-"
-  ("t" my/insert-table-skeleton)
-  ("c" my/insert-code-block)
-  ("f" my/insert-figure-block)
-  ("e" my/insert-example-document)
-  ("w" my/insert-wrapfigure)
-  ("q" nil "quit"))
+    (defhydra my/org-insert-hydra (:color blue :hint nil)
+      "
+    Insert:
+      _t_: Table Skeleton    _c_: Code Block
+      _f_: Figure Block      _e_: Example Doc
+      _w_: Wrapfigure
+    "
+      ("t" my/insert-table-skeleton)
+      ("c" my/insert-code-block)
+      ("f" my/insert-figure-block)
+      ("e" my/insert-example-document)
+      ("w" my/insert-wrapfigure)
+      ("q" nil "quit"))
 
-(with-eval-after-load 'org
-  (define-key org-mode-map (kbd "C-S-i") #'my/org-insert-hydra/body))
+    (with-eval-after-load 'org
+      (define-key org-mode-map (kbd "C-S-i") #'my/org-insert-hydra/body))
 #+END_SRC
 * The End
 ** Thank you!

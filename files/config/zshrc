@@ -1,3 +1,25 @@
+# General
+autoload -Uz compinit
+compinit -d "${XDG_CACHE_HOME:-$HOME/.cache}/zsh/.zcompdump"
+
+# Completion Menu
+zstyle ':completion:*' menu select
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={a-zA-Z}' 'r:|[._-]=**' 'l:|=* r:|=*'
+
+# Bind Ctrl+Left/Right Jump Between Words
+bindkey -e
+bindkey '^I' expand-or-complete
+bindkey '^[[1;5D' backward-word
+bindkey '^[[1;5C' forward-word
+bindkey '^[[3~' delete-char
+
+# Contextual History Backtrace
+autoload -U history-search-end
+zle -N history-beginning-search-backward-end history-search-end
+zle -N history-beginning-search-forward-end history-search-end
+bindkey '^[[A' history-beginning-search-backward-end
+bindkey '^[[B' history-beginning-search-forward-end
+
 # Aliases
 alias l="eza --icons $@"
 alias la="eza --icons -l -r -A -T -L=1 $@"
@@ -9,14 +31,21 @@ alias lsfind="find . -name '$@'"
 alias md="mkdir -p $@"
 alias mp3="yt-dlp -x --audio-format mp3 -o '%(uploader)s - %(title)s' $@"
 alias ns="guix shell $@"
-alias of="onefetch --nerd-fonts $@"
+alias gs="guix shell $@"
 alias ol="sh -c 'ls $@'"
 alias ola="sh -c 'ls -r -A $@'"
 alias oldgrep="grep $@"
+alias ogrep="grep $@"
+alias rgrep="rg $@"
+alias ripgrep="rg $@"
 alias ocat="sh -c 'cat $@'"
 alias oldcat="sh -c 'cat $@'"
 alias ols="sh -c 'ls $@'"
-alias pef="pfetch $@"
+alias of="onefetch --nerd-fonts $@"
+alias pf="pfetch $@"
+alias uf="ufetch $@"
+alias nf="neofetch $@"
+alias ff="fastfetch $@"
 alias q="exit"
 alias rebuild="sudo guix system reconfigure /etc/guix/config.scm $@"
 alias rebuildsub="sudo guix system reconfigure /etc/guix/config.scm --substitute-urls='https://ci.guix.gnu.org https://berlin.guix.gnu.org https://bordeaux.guix.gnu.org https://substitutes.nonguix.org https://hydra-guix-129.guix.gnu.org' $@"
@@ -456,13 +485,8 @@ clean() {
 }
 
 # Guix Profile
-GUIX_PROFILE="$GUIX_PROFILE:$HOME/.config/guix/current"
-. "$GUIX_PROFILE:$GUIX_PROFILE/etc/profile"
-GUIX_PROFILE="$GUIX_PROFILE:$HOME/.guix-profile"
-. "$GUIX_PROFILE:$GUIX_PROFILE/etc/profile"
-GUIX_PROFILE="$GUIX_PROFILE:/var/guix/profiles/per-user/puppy/guix-profile"
-. "$GUIX_PROFILE:$GUIX_PROFILE/etc/profile"
-source "$GUIX_PROFILE/etc/profile"
+GUIX_PROFILE="$HOME/.guix-home/profile"
+source $GUIX_PROFILE
 
 # Zoxide
 eval "$(zoxide init zsh)"
@@ -497,4 +521,13 @@ if [ -d "$HOME/.scripts/shell" ]; then
   for script in "$HOME/.scripts/shell"/*; do
     [ -f "$script" ] && source "$script"
   done
+fi
+
+# Perplexity Fix
+if [[ -f $HOME/.guix-home/profile/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh ]]; then
+  source $HOME/.guix-home/profile/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
+fi
+
+if [[ -f $HOME/.guix-home/profile/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]]; then
+  source $HOME/.guix-home/profile/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 fi
