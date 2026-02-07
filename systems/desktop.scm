@@ -134,9 +134,14 @@
                    "steam-nvidia" ; From Nonguix Channel, .-nvidia Variant
                    "discord" ; From PantherX Channel
                    "naitre" ; From Jonabron Channel
-                   "font-bundle-synapsian-karamarea" ; From Jonabron Channel
+                   "font-jonafonts" ; From Jonabron Channel
                    "vicinae" ; From Jonabron Channel
                    "osu-lazer-bin" ; From Jonabron Channel
+                   ; Install Emacs system-wide, but rename
+                   ; the binary to "sysmacs":
+                   (package
+                    (inherit emacs)
+                    (name "sysmacs"))
                    ))
             ))
 

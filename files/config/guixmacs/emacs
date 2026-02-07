@@ -1,10 +1,33 @@
 (let ((orgfile (expand-file-name "~/.guixmacs/config/e.org"))
-      (elfile  (expand-file-name "~/.guixmacs/config/e.el")))
+      (elfile  (expand-file-name "~/.guixmacs/config/e.el"))
+      (userorgfile (expand-file-name "~/.guixmacs/config/user.org"))
+      (userelfile  (expand-file-name "~/.guixmacs/config/user.el")))
+
+  ;; Tangle e.org to e.el when needed
   (when (or (not (file-exists-p elfile))
             (file-newer-than-file-p orgfile elfile))
     (require 'org)
     ;; Force tangling to the specific elfile path
     (org-babel-tangle-file orgfile elfile))
+
+  ;; If user.org exists, tangle it and append to e.el
+  (when (file-exists-p userorgfile)
+    ;; Check if we need to re-tangle user.org
+    (when (or (not (file-exists-p userelfile))
+              (file-newer-than-file-p userorgfile userelfile)
+              (file-newer-than-file-p userorgfile elfile))
+      (require 'org)
+      ;; Tangle user.org to user.el
+      (org-babel-tangle-file userorgfile userelfile)
+
+      ;; Append user.el contents to e.el
+      (when (file-exists-p userelfile)
+        (with-temp-buffer
+          (insert-file-contents userelfile)
+          (goto-char (point-max))
+          (insert "\n")  ;; Add newline separator
+          (append-to-file (point-min) (point-max) elfile))
+        (message "Appended %s to %s" userelfile elfile))))
 
   ;; Safety check: only load if the file actually exists now
   (if (file-exists-p elfile)

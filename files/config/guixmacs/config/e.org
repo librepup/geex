@@ -1,6 +1,6 @@
 #+TITLE: Emacs Configuration
-#+AUTHOR: nixpup
-#+DATE: 2025-10-27
+#+AUTHOR: librepup
+#+DATE: 2026-02-07
 #+OPTIONS: num:nil
 #+LATEX_COMPILER: xelatex
 #+LATEX_HEADER: \usepackage{fontspec}
@@ -17,29 +17,60 @@
 #+LATEX_HEADER: \colorlet{normalcolor}{fgcolor}
 * Introduction
 This .e.org File is a complete Emacs configuration setup with auto-completion and suggestion, org-mode defaults, snippets, sane keybinds, and a nice theme. In order to use this configuration file you need two things:
- 1. This .e.org file inside your $HOME (/home/<USERNAME>) directory.
+ 1. This .e.org file inside your $HOME/.guixmacs/config (/home/<USERNAME>/.guixmacs/config/e.org) directory.
  2. A .emacs file with the following contents inside your $HOME (/home/<USERNAME>) directory:
-    #+BEGIN_EXAMPLE
-    (let ((orgfile "~/.e.org")
-          (elfile "~/.e.el"))
-      (when (or (not (file-exists-p elfile))
-            (require 'org)
-            (org-babel-tangle-file orgfile elfile))
-          (load-file elfile))
-    #+END_EXAMPLE
+  #+BEGIN_EXAMPLE
+(let ((orgfile (expand-file-name "~/.guixmacs/config/e.org"))
+      (elfile  (expand-file-name "~/.guixmacs/config/e.el"))
+      (userorgfile (expand-file-name "~/.guixmacs/config/user.org"))
+      (userelfile  (expand-file-name "~/.guixmacs/config/user.el")))
+
+  ;; Tangle e.org to e.el when needed
+  (when (or (not (file-exists-p elfile))
+            (file-newer-than-file-p orgfile elfile))
+    (require 'org)
+    ;; Force tangling to the specific elfile path
+    (org-babel-tangle-file orgfile elfile))
+
+  ;; If user.org exists, tangle it and append to e.el
+  (when (file-exists-p userorgfile)
+    ;; Check if we need to re-tangle user.org
+    (when (or (not (file-exists-p userelfile))
+              (file-newer-than-file-p userorgfile userelfile)
+              (file-newer-than-file-p userorgfile elfile))
+      (require 'org)
+      ;; Tangle user.org to user.el
+      (org-babel-tangle-file userorgfile userelfile)
+
+      ;; Append user.el contents to e.el
+      (when (file-exists-p userelfile)
+        (with-temp-buffer
+          (insert-file-contents userelfile)
+          (goto-char (point-max))
+          (insert "\n")  ;; Add newline separator
+          (append-to-file (point-min) (point-max) elfile))
+        (message "Appended %s to %s" userelfile elfile))))
+
+  ;; Safety check: only load if the file actually exists now
+  (if (file-exists-p elfile)
+      (load-file elfile)
+    (message "Warning: %s could not be generated!" elfile)))
+#+END_EXAMPLE
 ...if you provided these two files, your fresh new Emacs should be ready to go and begin by automatically installing all the packages you need. After this process is done, you may need to restart Emacs once.
 * Packages and Related
 ** Include Themes and set Font Size
 Setup the colorscheme and the font size.
 #+BEGIN_SRC emacs-lisp
-  (custom-set-faces
-         ;; Add custom faces here.
-   )
-  (add-to-list 'custom-theme-load-path  "~/.guixmacs/themes/")
-  (set-face-attribute 'default nil :height 125)
+(custom-set-faces
+       ;; Add custom faces here.
+ )
+(add-to-list 'custom-theme-load-path  "~/.guixmacs/themes/")
+(set-face-attribute 'default nil :height 125)
 #+END_SRC
 ** Theme/Colorscheme
-For all available themes, check the guixmacs themes directory (/home/<USERNAME>/.guixmacs/themes).
+#+BEGIN_COMMENT
+Set in "~/.guixmacs/config/user.org".
+#+END_COMMENT
 #+BEGIN_SRC emacs-lisp
 (load-theme 'guix t)
 #+END_SRC
@@ -55,6 +86,7 @@ For all available themes, check the guixmacs themes directory (/home/<USERNAME>/
 (add-hook 'before-save-hook #'delete-trailing-whitespace)
 (setq-default cursor-type 'bar)
 (blink-cursor-mode 0)
+(global-visual-line-mode 1)
 #+END_SRC
 ** Beacon
 Enable the Beacon Line-Highlighter Globally.
@@ -86,22 +118,9 @@ Enable and automatically load doom-modeline-mode.
   :ensure t)
 #+END_SRC
 ** Auto-Completion Popup Menu
-Enable a simple for of auto-completion preview using fancy dabbrev.
-#+BEGIN_SRC emacs-lisp
-(require 'fancy-dabbrev)
-(global-fancy-dabbrev-mode)
-(global-set-key (kbd "TAB") 'fancy-dabbrev-expand)
-(global-set-key (kbd "<backtab>") 'fancy-dabbrev-backward)
-;; Pabbrev
-;(require 'pabbrev)
-;(global-pabbrev-mode)
-;; Corfu
-;(require 'corfu)
-;(global-corfu-mode)
-;(unless (display-graphic-p)
-;  (corfu-terminal-mode +1))
-;;;(global-set-key (kbd "TAB") 'corfu-expand) ;- or 'corfu-complete
-#+END_SRC
+#+BEGIN_COMMENT
+Set in "~/.guixmacs/config/user.org".
+#+END_COMMENT
 ** Sudo-Edit
 #+BEGIN_SRC emacs-lisp
 (global-set-key (kbd "C-x e") #'sudo-edit)
@@ -317,7 +336,7 @@ Here are a few basic useful org and LaTeX snippets that you can insert inside an
     (insert
      "#+BEGIN_LaTeX\n"
      "\\begin{wrapfigure}{r}{0.4\\textwidth}\n"
-     "  \\includegraphics[width=0.4\\textwidth]{/home/puppy/Pictures/nix_emacs_logo_small.png}\n"
+     "  \\includegraphics[width=0.4\\textwidth]{/home/puppy/Pictures/Wallpapers/guix_wp_02.png}\n"
      "\\end{wrapfigure}\n"
      "#+END_LaTeX\n"))
 #+END_SRC
@@ -499,7 +518,7 @@ Here is the setup for the splash screen every time you start up emacs, and the i
                (vertical-offset (/ window-height 6)))
           (insert (make-string vertical-offset ?\n))
           (when (display-graphic-p)
-            (let ((image (create-image (or (getenv "NIXMACS_LOGO_PATH") "~/.guixmacs/files/nix_emacs_logo_small.png") nil nil :ascent 'center)))
+            (let ((image (create-image (or (getenv "GUIXMACS_LOGO_PATH") "~/.guixmacs/files/guix_logo_small.png") nil nil :ascent 'center)))
               (when image
                 (let* ((image-width (round (car (image-size image))))
                        (padding (make-string (max 0 (/ (- window-width image-width) 2)) ?\ )))
@@ -582,7 +601,7 @@ Here is the setup for the splash screen every time you start up emacs, and the i
             (insert (make-string vertical-offset ?\n))
             ;; Insert and center the image
             (when (display-graphic-p)
-              (let ((image (create-image (or (getenv "NIXMACS_LOGO_PATH") "~/.guixmacs/files/nix_emacs_logo_small.png") nil nil :ascent 'center)))
+              (let ((image (create-image (or (getenv "GUIXMACS_LOGO_PATH") "~/.guixmacs/files/guix_logo_small.png") nil nil :ascent 'center)))
                 (when image
                   (let* ((image-width (round (car (image-size image))))  ; Convert to integer
                          (padding (make-string (max 0 (/ (- window-width image-width) 2)) ?\ )))
@@ -590,7 +609,7 @@ Here is the setup for the splash screen every time you start up emacs, and the i
                     (insert-image image)
                     (insert "\n\n")))))
             ;; Insert centered text
-  	  (let* ((text " Welcome to NixMacs!  \n")
+  	  (let* ((text "  Welcome to GuixMacs!  \n")
   		 (text-width (length text))
   		 (padding (make-string (max 0 (/ (- window-width text-width) 2)) ?\ )))
   	    (insert padding text "\n"))
