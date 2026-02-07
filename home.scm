@@ -64,6 +64,7 @@
                   "emacs-rustic"
                   "emacs-wttrin"
                   "emacs-hydra"
+                  "emacs-major-mode-hydra"
                   "emacs-all-the-icons"
                   "emacs-all-the-icons-dired"
                   "emacs-haskell-mode"

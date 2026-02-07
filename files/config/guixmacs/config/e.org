@@ -413,23 +413,26 @@ Here we set up the tab bar for using tabs inside emacs.
   (tab-bar-mode 1))
   ;; Bind it globally
   (global-set-key (kbd "C-c h") #'my/tab-bar-toggle)
+
+  (require 'vim-tab-bar)
   (vim-tab-bar-mode)
 #+END_SRC
 * Extra Programs
 ** ERC Configuration
 This configures the ERC IRC client, change these values such as erc-nick and erc-server as you please.
 #+BEGIN_SRC emacs-lisp
-(setq erc-server "irc.libera.chat"
-      erc-nick "nixpup"
-      erc-user-full-name "nixpup"
-      erc-track-shorten-start 8
-      erc-autojoin-channels-alist '(("irc.libera.chat" "#guix"))
-      erc-kill-buffer-on-part t
-      erc-auto-query 'bury)
+  (require 'erc))
+  (setq erc-server "irc.libera.chat"
+        erc-nick "nixpup"
+        erc-user-full-name "nixpup"
+        erc-track-shorten-start 8
+        erc-autojoin-channels-alist '(("irc.libera.chat" "#guix"))
+        erc-kill-buffer-on-part t
+        erc-auto-query 'bury)
 
-(require 'erc-image)
-(add-to-list 'erc-modules 'image)
-(erc-update-modules)
+  (require 'erc-image)
+  (add-to-list 'erc-modules 'image)
+  (erc-update-modules)
 #+END_SRC
 ** Bongo Configuration
 #+BEGIN_SRC emacs-lisp
@@ -448,20 +451,21 @@ This configures the ERC IRC client, change these values such as erc-nick and erc
 ** EMMS Configuration
 Now we set up EMMS to listen to music inside of emacs.
 #+BEGIN_SRC emacs-lisp
-(emms-all)
-(setq emms-player-list '(emms-player-mpv)
-      emms-info-functions '(emms-info-native
-			    emms-info-ogginfo))
-(emms-add-directory-tree "~/Music/")
-(global-set-key (kbd "C-c m") 'emms-browser)
-(dolist (binding '(("p" . emms-browser-add-tracks-and-play)
-		   ("RET" . emms-browser-add-tracks-and-play)
-		   ("P" . emms-pause)
-		   ("N" . emms-next)
-		   ("B" . emms-previous)))
-  (define-key emms-browser-mode-map (kbd (car binding)) (cdr binding)))
-(emms-mode-line 1)
-(setq emms-mode-line-format "♫ %s")
+  (require 'emms)
+  (emms-all)
+  (setq emms-player-list '(emms-player-mpv)
+        emms-info-functions '(emms-info-native
+  			    emms-info-ogginfo))
+  (emms-add-directory-tree "~/Music/")
+  (global-set-key (kbd "C-c m") 'emms-browser)
+  (dolist (binding '(("p" . emms-browser-add-tracks-and-play)
+  		   ("RET" . emms-browser-add-tracks-and-play)
+  		   ("P" . emms-pause)
+  		   ("N" . emms-next)
+  		   ("B" . emms-previous)))
+    (define-key emms-browser-mode-map (kbd (car binding)) (cdr binding)))
+  (emms-mode-line 1)
+  (setq emms-mode-line-format "♫ %s")
 #+END_SRC
 ** Multiple Cursors
 Enable multiple cursors when pressing Ctrl+Shift+> and other keybinds to edit multiple lines at once.
@@ -492,9 +496,10 @@ Enable multiple cursors when pressing Ctrl+Shift+> and other keybinds to edit mu
 ** Image Dired
 This enables image perviews inside dired using image-dired when launched.
 #+BEGIN_SRC emacs-lisp
-(setq insert-directory-program (concat "/etc/profiles/per-user/" (getenv "USER") "/bin/ls"))
-(global-set-key (kbd "C-x D") 'image-dired)
-(global-set-key (kbd "C-I") 'image-dired-dired-display-image)
+  (require 'image-dired)
+  (setq insert-directory-program (concat "/etc/profiles/per-user/" (getenv "USER") "/bin/ls"))
+  (global-set-key (kbd "C-x D") 'image-dired)
+  (global-set-key (kbd "C-I") 'image-dired-dired-display-image)
 #+END_SRC
 ** Interactive Buffer List
 #+BEGIN_SRC emacs-lisp
