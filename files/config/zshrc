@@ -24,6 +24,8 @@ alias rb="sudo guix system reconfigure /etc/guix/config.scm $@"
 alias rebuildhome="guix home reconfigure /etc/guix/home.scm $@"
 alias rbh="guix home reconfigure /etc/guix/home.scm $@"
 alias rebuildhomesub="guix home reconfigure /etc/guix/home.scm --substitute-urls='https://ci.guix.gnu.org https://berlin.guix.gnu.org https://bordeaux.guix.gnu.org https://substitutes.nonguix.org https://hydra-guix-129.guix.gnu.org' $@"
+alias rbhc="guix home container $@"
+alias rebuildhomecontainer="guix home container $@"
 alias garbage="guix gc && sudo guix system delete-generations 1d && guix package --delete-generations $@"
 alias shreddy="shred -z -u -v --iterations=1 $@"
 alias size="du -sh $@"
@@ -33,8 +35,10 @@ alias tarZip="echo 'Arg1: Archive.tar.gz, Arg2: Full Path of the Folder';tar -cz
 alias weather="curl wttr.in/Berlin $@"
 alias wetter="curl wttr.in/Berlin $@"
 alias xwp="feh --bg-fill $@"
+alias fehwp="feh --bg-fill $@"
 alias wp="swaybg -m fill -i $@"
 alias zipCreate="echo 'Arg1: Archive.zip, Arg2: Folder/';zip -r $@"
+alias e="emacs -nw $@"
 
 # Functions
 random() {
