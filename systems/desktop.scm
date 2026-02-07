@@ -93,7 +93,7 @@
                (comment "Puppy")
                (group "users")
                (home-directory "/home/puppy")
-               (supplementary-groups '("wheel" "netdev" "audio" "video" "input" "tty" "nix-users"))
+               (supplementary-groups '("wheel" "netdev" "audio" "video" "input" "tty" "nixbld"))
                (shell (file-append zsh "/bin/zsh")))
               %base-user-accounts))
 
@@ -120,9 +120,6 @@
   (append
    (list
     (service gnome-desktop-service-type)
-    (service gdm-service-type
-             (gdm-configuration
-             (wayland? #t)))
     ;;;(service nvidia-driver-service-type)
     ;;;(service kernel-module-loader-service-type
     ;;;         '("ipmi_devintf"
@@ -131,16 +128,12 @@
     ;;;           "nvidia_uvm"))
     (service nix-service-type)
     ;;;(service pipewire-service-type)
-    (service alsa-service-type)
-             ;;;(alsa-configuration
-             ;;; (jack? #t)))
     (service dhcpcd-service-type)
     (simple-service 'doas-config etc-service-type
                     (list
                      `("doas.conf" ,(plain-file "doas.conf"
 "permit nopass keepenv root
 permit persist keepenv setenv :wheel"))))
-    (service network-manager-service-type)
     (set-xorg-configuration
      (xorg-configuration
       (keyboard-layout keyboard-layout)
@@ -148,6 +141,11 @@ permit persist keepenv setenv :wheel"))))
       (drivers '("nvidia")))))
 
    (modify-services %desktop-services
+                    (gdm-service-type config =>
+                                      (gdm-configuration
+                                       (inherit config)
+                                       (wayland? #t)))
+
                     (delete pulseaudio-service-type)
                     (guix-service-type config =>
                                        (guix-configuration
