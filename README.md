@@ -7,11 +7,11 @@ This Guix configuration has *not* been tested yet, so take whatever you see here
 
 ## Channels
 This GNU Guix Configuration pre-configures a few useful channels to make certain Packages available that are otherwise missing in the official GNU Guix repository, these include:
-- jack-faller, this channel provides a Discord package.
 - nonguix, this channel provides nvidia drivers, firmware, and a full Linux kernel.
-- jonabron, this channel provides games, emacs packages, and window managers.
+- jonabron, this channel provides games, emacs packages, window managers, discord, and more.
 - emacs, this channel provides melpa emacs packages.
 - guix, this is the default and official guix channel.
+- pantherx, this channel provides various packages. [Currently Disabled]
 
 # Usage
 Clone this repository via `git clone https://github.com/nixpup/geex`, then move the files to their respective destinations:
