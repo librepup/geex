@@ -81,12 +81,6 @@
                   "emacs-beacon"
                   "emacs-doom-modeline"
                   "emacs-org-texlive-collection"
-                                        ; Test
-                  "eza"
-                  "zoxide"
-                  "bash"
-                  "kitty"
-                  "font-jonafonts"
                   )))
 
  (services (list
@@ -95,14 +89,12 @@
                      (home-zsh-configuration
                       (environment-variables '(("PS1" . "  %~ ")
                                                ("PROMPT" . "  %~ ")
-                                               ("HISTFILE" . "$XDG_STATE_HOME/zsh/history")
-                                               ("HISTSIZE" . "10000")
-                                               ("SAVEHIST" . "10000")
+                                               ("TERM" . "xterm")
                                                ("EDITOR" . "emacs")))
                       (zshrc
                        (list
-                        (local-file "files/config/zshrc")
-                        (file-append zsh-autosuggestions "/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh")))
+                        (local-file "files/config/zshrc")))
+                        ;(file-append zsh-autosuggestions "/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh")))
                             ))
 
                  ;;; Environment Variables
@@ -183,43 +175,5 @@
                  (simple-service 'naitre-config
                                  home-files-service-type
                                  `((".config/naitre" ,(local-file "files/config/naitre" #:recursive? #t))))
-                 ; Emacs Wrappers and Renames
-                 (simple-service 'emacs-wrappers-and-renames
-                                 home-activation-service-type
-                                 #~(begin
-                                     (use-modules (ice-9 ftw)
-                                                  (ice-9 rdelim)
-                                                  (guix build utils))
-                                     (let* ((home (getenv "HOME"))
-                                            (profile-bin (string-append home "/.guix-profile/bin"))
-                                            (emacs-bin (string-append profile-bin "/emacs"))
-                                            (emacs-pgtk-bin (string-append profile-bin "/emacs-pgtk"))
-                                            (names '("emacs" "guixmacs")))
-                                       (mkdir-p profile-bin)
-                                       ; Create wrappers for emacs
-                                       (if (file-exists? emacs-bin)
-                                           (for-each
-                                             (lambda (name)
-                                               (let ((wrapper (string-append profile-bin "/" name)))
-                                                 (call-with-output-file wrapper
-                                                   (lambda (port)
-                                                     (display "#!/bin/sh\n" port)
-                                                     (display (string-append "exec " emacs-bin " \"$@\"\n") port))
-                                                   #:exists 'replace)
-                                                 (chmod wrapper #o755)))
-                                             names)
-                                           (display "Warning: Emacs binary not found; skipping wrapper creation for emacs.\n"))
-                                       ; Create wrapper for emacs-pgtk
-                                       (if (file-exists? emacs-pgtk-bin)
-                                           (let ((wrapper (string-append profile-bin "/guixmacs-wayland")))
-                                             (call-with-output-file wrapper
-                                               (lambda (port)
-                                                 (display "#!/bin/sh\n" port)
-                                                 (display (string-append "exec " emacs-pgtk-bin " \"$@\"\n") port))
-                                               #:exists 'replace)
-                                             (chmod wrapper #o755))
-                                           (display "Warning: emacs-pgtk binary not found; skipping wrapper creation for guixmacs-wayland.\n"))
-                                       )
-                                     ))
                  ))
  )

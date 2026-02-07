@@ -1,7 +1,7 @@
 (let ((orgfile (expand-file-name "~/.guixmacs/config/e.org"))
-      (elfile  (expand-file-name "~/.guixmacs/config/e.el"))
-      (userorgfile (expand-file-name "~/.guixmacs/config/user.org"))
-      (userelfile  (expand-file-name "~/.guixmacs/config/user.el")))
+      (elfile  (expand-file-name "~/.e.el"))
+      (userorgfile (expand-file-name "~/.user.org"))
+      (userelfile  (expand-file-name "~/.user.el")))
 
   ;; Tangle e.org to e.el when needed
   (when (or (not (file-exists-p elfile))
