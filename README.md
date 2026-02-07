@@ -14,6 +14,7 @@ This GNU Guix Configuration pre-configures a few useful channels to make certain
 - pantherx, this channel provides various packages. [Currently Disabled]
 
 # Usage
+## Setup
 Clone this repository via `git clone https://github.com/nixpup/geex`, then move the files to their respective destinations:
  - `cp channels.scm ~/.config/guix/channels.scm`
  - `cp channels.scm /etc/guix/channels.scm`
@@ -22,12 +23,14 @@ Clone this repository via `git clone https://github.com/nixpup/geex`, then move 
  - `cp home.scm /etc/guix/home.scm`
  - `cp config.scm /etc/guix/config.scm`
 
-    Don't forget to import the [Nonguix](https://gitlab.com/nonguix/nonguix) Key via `sudo guix archive --authorize < /etc/guix/files/channels/nonguix.pub`, as well as the panther key via `sudo guix archive --authorize < /etc/guix/files/channels/panther.pub`.
+## Importing Keys
+Don't forget to import the [Nonguix](https://gitlab.com/nonguix/nonguix) Key via `sudo guix archive --authorize < /etc/guix/files/channels/nonguix.pub`, as well as the panther key via `sudo guix archive --authorize < /etc/guix/files/channels/panther.pub`.
 
 Then you can update Guix and its Channels by invoking `guix pull`, and afterwards check whether all Channels were correctly set up with `guix describe`. Make sure that "~/.config/guix/channels.scm" is the **first** item in your "$PATH".
 
 Update Bash's Guix binary and configuration with `hash guix` after `guix pull` is done.
 
+## System Configuration
 Afterwards, you need to pick your systems configuration. For that, edit the `/etc/guix/config.scm` file and change the "%systemchoice" variable, for example like this:
 ```scm
 (define %systemchoice "desktop") ; Available options: "desktop", "laptop".
@@ -38,3 +41,6 @@ Afterwards, you need to pick your systems configuration. For that, edit the `/et
 This will then pick either the `/etc/guix/systems/desktop.scm` or `/etc/guix/systems/laptop.scm` system configuration file depending on your needs. The main difference is that the Laptop configuration does not come with Nvidia Drivers, unlike the Desktop Configuration.
 
 To apply the system configuration, run `sudo guix system reconfigure /etc/guix/config.scm`. Similarly, to reconfigure or apply the Guix Home configuration, run `guix home reconfigure /etc/guix/home.scm`.
+
+## Testing Guix Home
+If you copied all the files of this repository to their respective target directories, you can test the Guix Home environment this configuration sets up for you inside a container via `guix home containre /etc/guix/home.scm`. This gives you a minimal environment with only the packages, configuration files, variables, and settings provided by the `home.scm` file.
