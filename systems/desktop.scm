@@ -28,6 +28,7 @@
              (jonabron packages wm)
              (jonabron packages fonts)
              (jonabron packages games)
+             (jonabron packages communication)
              ; Shared Packages
              (systems shared))
 
@@ -139,6 +140,7 @@
                    "osu-lazer-bin" ; From Jonabron Channel
                    ; Install Emacs system-wide, but rename
                    ; the binary to "sysmacs":
+                   "discord" ; From Jonabron Channel
                    (package
                     (inherit emacs)
                     (name "sysmacs"))

@@ -24,6 +24,7 @@
              ; Jonabron
              (jonabron packages wm)
              (jonabron packages fonts)
+             (jonabron packages communication)
              (jonabron packages games))
 
 (use-service-modules desktop networking ssh xorg dbus)
@@ -65,12 +66,13 @@
             (map specification->package+output %shared-packages)
             (map specification->package+output
                  '("naitre" ; From Jonabron Channel
-                   "font-bundle-synapsian-karamarea" ; From Jonabron Channel
+                   "font-jonafonts" ; From Jonabron Channel
                    "steam" ; From Nonguix Channel
                    "discord" ; From PantherX Channel
                    "mpv"
                    "vicinae" ; From Jonabron Channel
                    "osu-lazer-bin" ; From Jonabron Channel
+                   "discord" ; From Jonabron Channel
                    ))
             ))
 
