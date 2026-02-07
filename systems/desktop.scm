@@ -14,7 +14,6 @@
              (gnu services sound)
              (gnu services audio)
              (gnu services networking)
-             ;;;(gnu utils)
              (guix)
              ; Nongnu & Nonguix
              (nongnu packages linux)
@@ -30,25 +29,17 @@
              ; Shared Packages
              (systems shared))
 
-; Info:
-; - Three Semicolons ';;;' refer to latest changes and removes.
-
-(use-service-modules desktop networking ssh xorg dbus)
-(use-package-modules wm bootloaders certs shells version-control xorg) ;;; editors pipewire)
+(use-service-modules desktop sound audio networking ssh xorg dbus)
+(use-package-modules wm bootloaders certs shells version-control xorg)
 
 (define %guix-os (operating-system
  (kernel linux)
  (initrd microcode-initrd)
  (firmware (list intel-microcode linux-firmware %base-firmware))
- ;; Nvidia
- ;(kernel-arguments (append
- ;                   '("modprobe.blacklist=nouveau")
- ;                   %default-kernel-arguments))
- ;(kernel-loadable-modules (list nvidia-driver))
  (host-name "guix")
  (timezone "Europe/Berlin")
  (locale "en_US.utf8")
- (keyboard-layout (keyboard-layout "us" "colemak")) ;;; (keyboard-layout (keyboard-layout "us" "colemak"))
+ (keyboard-layout (keyboard-layout "us" "colemak"))
 
  ;; Bootloader
  ;- (U)EFI
@@ -99,7 +90,7 @@
 
  ;; Packages
  (packages (append
-            (map specification->package ;;; ->package+output
+            (map specification->package
                 '("eza"
                   "bat"
                   "zoxide"
@@ -120,15 +111,7 @@
   (append
    (list
     (service gnome-desktop-service-type)
-    ;;;(service nvidia-driver-service-type)
-    ;;;(service kernel-module-loader-service-type
-    ;;;         '("ipmi_devintf"
-    ;;;           "nvidia"
-    ;;;           "nvidia_modeset"
-    ;;;           "nvidia_uvm"))
     (service nix-service-type)
-    ;;;(service pipewire-service-type)
-    (service dhcpcd-service-type)
     (simple-service 'doas-config etc-service-type
                     (list
                      `("doas.conf" ,(plain-file "doas.conf"
@@ -160,7 +143,7 @@ permit persist keepenv setenv :wheel"))))
                                                  %default-substitute-urls))
                                         ; Authorize via 'sudo guix archive --authorize < /etc/guix/channels/nonguix.pub'
                                         (authorized-keys
-                                         (append (list (local-file "/etc/guix/channels/nonguix.pub"))
+                                         (append (list (local-file "/etc/guix/files/channels/nonguix.pub"))
                                                  %default-authorized-guix-keys))
                                         ))
                     (mingetty-service-type config =>

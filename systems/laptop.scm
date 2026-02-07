@@ -14,7 +14,6 @@
              (gnu services sound)
              (gnu services audio)
              (gnu services networking)
-             ;;;(gnu utils)
              (guix)
              ; Nongnu & Nonguix
              (nongnu packages linux)
@@ -27,7 +26,7 @@
              (systems shared))
 
 (use-service-modules desktop networking ssh xorg dbus)
-(use-package-modules wm bootloaders certs shells version-control xorg) ;;; editors pipewire)
+(use-package-modules wm bootloaders certs shells version-control xorg)
 
 (define %guix-os (operating-system
  (kernel linux)
@@ -57,13 +56,13 @@
                (comment "Puppy")
                (group "users")
                (home-directory "/home/puppy")
-               (supplementary-groups '("wheel" "netdev" "audio" "video" "input" "tty" "nix-users"))
+               (supplementary-groups '("wheel" "netdev" "audio" "video" "input" "tty" "nixbld"))
                (shell (file-append zsh "/bin/zsh")))
               %base-user-accounts))
 
   ;; Packages
  (packages (append
-            (map specification->package ;;; ->package+output
+            (map specification->package
                 '("eza"
                   "bat"
                   "zoxide"
@@ -88,11 +87,6 @@
              (gdm-configuration
              (wayland? #t)))
     (service nix-service-type)
-    ;;;(service pipewire-service-type)
-    (service alsa-service-type)
-             ;;;(alsa-configuration
-             ;;; (jack? #t)))
-    (service dhcpcd-service-type)
     (service tlp-service-type
              (tlp-configuration
               (cpu-scaling-governor-on-ac '("performace"))
@@ -110,6 +104,10 @@ permit persist keepenv setenv :wheel"))))
       )))
 
    (modify-services %desktop-services
+                    (gdm-service-type config =>
+                                      (gdm-configuration
+                                       (inherit config)
+                                       (wayland? #t)))
                     (delete pulseaudio-service-type)
                     (guix-service-type config =>
                                        (guix-configuration
@@ -124,7 +122,7 @@ permit persist keepenv setenv :wheel"))))
                                                  %default-substitute-urls))
                                         ; Authorize via 'sudo guix archive --authorize < /etc/guix/channels/nonguix.pub'
                                         (authorized-keys
-                                         (append (list (local-file "/etc/guix/channels/nonguix.pub"))
+                                         (append (list (local-file "/etc/guix/files/channels/nonguix.pub"))
                                                  %default-authorized-guix-keys))
                                         ))
                     (mingetty-service-type config =>
