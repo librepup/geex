@@ -32,7 +32,7 @@
 (define %guix-os (operating-system
  (kernel linux)
  (initrd microcode-initrd)
- (firmware (list intel-microcode linux-firmware %base-firmware))
+ (firmware (append (list intel-microcode linux-firmware) %base-firmware))
  (host-name "guixtop")
  (timezone "Europe/Berlin")
  (locale "en_US.utf8")
