@@ -2,10 +2,6 @@
   #:export (%shared-packages))
 
 (define %shared-packages
- '("zsh"
-   "nix"
-   "nixfmt"
-   "opendoas"
    "xmonad"
    "ghc-xmonad-contrib"
    "gammastep"

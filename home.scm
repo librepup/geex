@@ -2,11 +2,18 @@
              (gnu home)
              (gnu home services)
              (gnu home services shells)
+             (gnu services)
              (gnu packages)
              (gnu packages shellutils)
              (gnu packages emacs)
              (gnu packages emacs-xyz)
-             (gnu services)
+             (gnu packages xorg)
+             (gnu packages certs)
+             (gnu packages shells)
+             (gnu packages admin)
+             (gnu packages base)
+             (guix)
+             (guix utils)
              (guix packages)
              (guix gexp)
              (guix git-download)
@@ -21,8 +28,7 @@
              (jonabron packages wm)
              (nongnu packages video)
              (nongnu packages game-client)
-             (emacs packages melpa)
-             (systems shared))
+             (emacs packages melpa))
 
 ;---
 ; To specify the channel a package should be pulled from, define the name like so:
@@ -40,10 +46,8 @@
 (define zsh-autosuggestions (specification->package "zsh-autosuggestions"))
 
 (home-environment
- (packages (append
-            (map specification->packages %shared-packages)
-            (map specifications->packages
-                '("git"
+ (packages (specifications->packages
+           (list "git"
                   ; Desktop Applications
                   "discord"
                   "osu-lazer-bin"
@@ -109,8 +113,92 @@
                   "coreutils"
                   "glibc-locales"
                   "ncurses"
+                  "nix"
+                  "nixfmt"
+                  "opendoas"
+                  "xmonad"
+                  "ghc-xmonad-contrib"
+                  "gammastep"
+                  "pipewire"
+                  "wireplumber"
+                  "flatpak"
+                  "polybar"
+                  "btop"
+                  "wpa-supplicant"
+                  "curl"
+                  "nss-certs"
+                  "firefox"
+                  "icecat"
+                  "icedove"
+                  "guix-backgrounds"
+                  "icedove-wayland"
+                  "dunst"
+                  "feh"
+                  "zathura"
+                  "texlive-scheme-full"
+                  "rsync"
+                  "bottom"
+                  "redshift"
+                  "flameshot"
+                  "mpvpaper"
+                  "sway-audio-idle-inhibit"
+                  "imv"
+                  "cmus"
+                  "alsa-utils"
+                  "pavucontrol"
+                  "pulseaudio"
+                  "pulsemixer"
+                  "krita"
+                  "pciutils"
+                  "fd"
+                  "imagemagick"
+                  "yt-dlp"
+                  "wl-clipboard"
+                  "dank-material-shell"
+                  "grim"
+                  "grimblast"
+                  "unrar-free"
+                  "unzip"
+                  "7zip"
+                  "openssl"
+                  "thunar"
+                  "tumbler"
+                  "dbus"
+                  "ntfs-3g"
+                  "cryptsetup"
+                  "testdisk"
+                  "encfs"
+                  "usbutils"
+                  "pamixer"
+                  "node"
+                  "librewolf"
+                  "torbrowser"
+                  "rust"
+                  "rust-analyzer"
+                  "gcc-toolchain"
+                  "wf-recorder"
+                  "swaybg"
+                  "waybar"
+                  "swayidle"
+                  "hyprlock"
+                  "wlsunset"
+                  "wofi"
+                  "wtype"
+                  "mako"
+                  "xwayland-satellite"
+                  "xwayland-run"
+                  "slurp"
+                  "grimshot"
+                  "hyprpicker"
+                  "cliphist"
+                  "fuzzel"
+                  "xdg-desktop-portal"
+                  "xdg-desktop-portal-wlr"
+                  "progress"
                   ; Fonts
                   "font-jonafonts"
+                  "font-dejavu"
+                  "font-google-noto-emoji"
                   ; Terminal
                   "kitty"
                   ; Fetchers
@@ -119,11 +207,11 @@
                   "fastfetch"
                   "pfetch"
                   "ufetch"
-                  ))))
+                  )))
 
  (services (list
             ;;; PipeWire
-            (service home-pipewire-service-type)
+            ;(service home-pipewire-service-type)
             ;;; ZSH Configuration
             (service home-zsh-service-type
                      (home-zsh-configuration

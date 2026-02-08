@@ -23,8 +23,7 @@
              (jonabron packages wm)
              (jonabron packages fonts)
              (jonabron packages communication)
-             (jonabron packages games)
-             (systems shared))
+             (jonabron packages games))
 
 (use-service-modules desktop sound audio networking ssh xorg dbus)
 (use-package-modules wm bootloaders certs shells version-control xorg)

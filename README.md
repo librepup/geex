@@ -2,8 +2,22 @@
 ![Guix Banner](https://raw.githubusercontent.com/nixpup/geex/refs/heads/main/guixBanner.jpg)
 
 # Information
-## Preface
-This Guix configuration has *not* been tested yet, so take whatever you see here with a grain of salt. The configuration/setup included all necessary packages, sets up the **nonguix** channel, symlinks configuration files via **Guix Home**, installs Nvidia Drivers, and compiles the [NaitreHUD](https://github.com/nixpup/NaitreHUD) Wayland Window Manager and Compositor.
+## Testing
+The system configuration for `%systemchoice "desktop"` ( ... set in `config.scm`) has been tested via `guix system build`:
+```
+successfully built /gnu/store/33whk4r85fdnnqxajcd5ajf1a3sp6z6h-profile.drv
+building /gnu/store/yrnxy79agdxnggy3apkdrzwr4c1615dj-activate-service.scm.drv...
+successfully built /gnu/store/yrnxy79agdxnggy3apkdrzwr4c1615dj-activate-service.scm.drv
+building /gnu/store/fi1bjspmj0w8d7d95v4rs01qpp71w279-activate.scm.drv...
+successfully built /gnu/store/fi1bjspmj0w8d7d95v4rs01qpp71w279-activate.scm.drv
+building /gnu/store/f72wivwc82r0f2s02xppbyb32ffahzil-boot.drv...
+successfully built /gnu/store/f72wivwc82r0f2s02xppbyb32ffahzil-boot.drv
+building /gnu/store/5fy6ckc0rsj1240ylvvf65cal1ps02h5-system.drv...
+successfully built /gnu/store/5fy6ckc0rsj1240ylvvf65cal1ps02h5-system.drv
+/gnu/store/x72dc187zwnyzsm758pbyf1x2gm1qjgf-system
+```
+and successfully builds every package, module, and service - including Nvidia Drivers.
+
 
 ## Channels
 This GNU Guix Configuration pre-configures a few useful channels to make certain Packages available that are otherwise missing in the official GNU Guix repository, these include:
@@ -24,7 +38,7 @@ Clone this repository via `git clone https://github.com/nixpup/geex`, then move 
  - `cp config.scm /etc/guix/config.scm`
 
 ## Importing Keys
-Don't forget to import the [Nonguix](https://gitlab.com/nonguix/nonguix) Key via `sudo guix archive --authorize < /etc/guix/files/channels/nonguix.pub`, as well as the panther key via `sudo guix archive --authorize < /etc/guix/files/channels/panther.pub`.
+Don't forget to import the [Nonguix](https://gitlab.com/nonguix/nonguix) Key via `sudo guix archive --authorize < /etc/guix/files/keys/nonguix.pub`, as well as the panther key via `sudo guix archive --authorize < /etc/guix/files/keys/panther.pub`.
 
 Then you can update Guix and its Channels by invoking `guix pull`, and afterwards check whether all Channels were correctly set up with `guix describe`. Make sure that "~/.config/guix/channels.scm" is the **first** item in your "$PATH".
 
