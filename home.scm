@@ -107,6 +107,7 @@
                   "emacs-doom-modeline"
                   "emacs-org-texlive-collection"
                   ; Tools
+                  "keepassxc"
                   "eza"
                   "bat"
                   "zoxide"
