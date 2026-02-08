@@ -2,6 +2,9 @@
              (gnu home)
              (gnu home services)
              (gnu home services shells)
+             (gnu home services sound)
+             (gnu home services admin)
+             (gnu home services desktop)
              (gnu services)
              (gnu packages)
              (gnu packages shellutils)
@@ -211,7 +214,10 @@
 
  (services (list
             ;;; PipeWire
-            ;(service home-pipewire-service-type)
+            (service home-dbus-service-type)
+            (service home-pipewire-service-type
+                     (home-pipewire-configuration
+                      (enable-pulseaudio? #t)))
             ;;; ZSH Configuration
             (service home-zsh-service-type
                      (home-zsh-configuration
