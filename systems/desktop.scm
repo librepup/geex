@@ -34,7 +34,22 @@
 (use-package-modules wm bootloaders certs shells version-control xorg)
 
 (define %guix-os (operating-system
- (kernel linux)
+                  (kernel linux)
+                  #| ; Use this to pin nonguix & guix channel to linux kernel 6.18.7 commit, so not every rebuild, rebuilds the kernel.
+                  (kernel (let*
+                              ((channels
+                                (list (channel
+                                       (name 'nonguix)
+                                       (url "https://gitlab.com/nonguix/nonguix")
+                                       (commit "6c0ea215e0bd089bf3b2097e5c59dd726fbbe3045"))
+                                      (channel
+                                       (name 'guix)
+                                       (url "https://git.guix.gnu.org/guix.git")
+                                       (commit "9e6705676ffb7568d03b2b6c9fa3944afa2341e7"))))
+                               (inferior
+                                (inferior-for-channels channels)))
+                              (first (lookup-inferior-packages inferior "linux" "6.18.7"))))
+                  |#
  (initrd microcode-initrd)
  (firmware (list intel-microcode linux-firmware %base-firmware))
  (host-name "guix")
