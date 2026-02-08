@@ -172,25 +172,6 @@ Set up a basic version of company.
 (setq company-idle-delay 0.1
       company-minimum-prefix-length 1)
 #+END_SRC
-*** Rust LSP Mode
-Configure auto-suggestions for the Rust programming language.
-#+BEGIN_SRC emacs-lisp
-(require 'lsp-mode)
-(setq lsp-completion-provider :capf)
-(add-hook 'rust-mode-hook #'lsp)
-(add-hook 'rust-mode-hook
-	  (lambda ()
-	    (setq-local company-backends '(company-capf))))
-(add-hook 'rustic-mode-hook #'lsp)
-(add-hook 'rustic-mode-hook
-          (lambda ()
-            (setq-local company-backends '(company-capf))))
-(require 'lsp-ui)
-(add-hook 'lsp-mode-hook 'lsp-ui-mode)
-;;(setq lsp-rust-analyzer-server-command '("rust-analyzer"))
-(require 'rustic)
-(setq rustic-lsp-client 'lsp-mode)
-#+END_SRC
 *** Hoon-Mode
 Set up Hoon syntax highlighting with hoon-mode and the included rune dictionary.
 #+BEGIN_SRC emacs-lisp
@@ -265,6 +246,7 @@ Recognize and highlight Nix/NixOS files.
 *** Arduino Recognition
 Recognize and highlight Arduino Code.
 #+BEGIN_SRC emacs-lisp
+(require 'flycheck)
 (global-flycheck-mode +1)
 (add-to-list 'auto-mode-alist '("\\.ino\\'" . arduino-mode))
 #+END_SRC
