@@ -16,21 +16,21 @@ Also make sure that "~/.config/guix/channels.scm" or "/etc/guix/channels.scm" is
 3. `wpa_supplicant -c wifi.conf -i interface1s0 -B`
 4. `dhclient -v interface1s0`
 **** wifi.conf
-```
+#+BEGIN_SRC sh
 network={
   ssid="ssid-name"
   key_mgmt=WPA-PSK
   psk="password"
 }
-```
+#+END_SRC
 Or for an open network:
-```
+#+BEGIN_SRC sh
 network={
   ssid="ssid-name"
   key_mgmt=NONE
   priority=1
 }
-```
+#+END_SRC
 *** Useful Commands
 1. List System Generations
    + `guix system list-generations`
