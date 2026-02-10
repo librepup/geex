@@ -68,12 +68,12 @@ Update Bash's Guix binary and configuration with `hash guix` after `guix pull` i
 ## System Configuration
 Afterwards, you need to pick your systems configuration. For that, edit the `/etc/guix/config.scm` file and change the "%systemchoice" variable, for example like this:
 ```scm
-(define %systemchoice "desktop") ; Available options: "desktop", "laptop".
+(define %systemchoice "desktop") ; Available options: "desktop", "laptop", "minimal".
 
 ; ... rest of the File.
 ```
 
-This will then pick either the `/etc/guix/systems/desktop.scm` or `/etc/guix/systems/laptop.scm` system configuration file depending on your needs. The main difference is that the Laptop configuration does not come with Nvidia Drivers, unlike the Desktop Configuration.
+This will then pick either the `/etc/guix/systems/desktop.scm`, `/etc/guix/systems/laptop.scm`, or the `/etc/guix/systems/minimal.scm` system configuration file depending on your needs. The main difference is that the Laptop configuration does not come with Nvidia Drivers, unlike the Desktop Configuration. The minimal configuration has as little packages, services, and options set as possible, while still maintaining a proper working system.
 
 To apply the system configuration, run `sudo guix system reconfigure /etc/guix/config.scm`. Similarly, to reconfigure or apply the Guix Home configuration, run `guix home reconfigure /etc/guix/home.scm`.
 

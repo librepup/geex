@@ -1,4 +1,4 @@
-(define %systemchoice "desktop") ; Available options: "desktop", "laptop".
+(define %systemchoice "desktop") ; Available options: "desktop", "laptop", "minimal".
 
 (add-to-load-path (dirname (current-filename)))
 

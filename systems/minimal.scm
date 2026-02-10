@@ -1,0 +1,106 @@
+(use-modules (gnu)
+             (gnu system)
+             (gnu system nss)
+             (gnu packages)
+             (gnu packages xorg)
+             (gnu packages certs)
+             (gnu packages shells)
+             (gnu packages admin)
+             (gnu packages base)
+             (gnu services)
+             (gnu services xorg)
+             (gnu services desktop)
+             (gnu services nix)
+             (gnu services sound)
+             (gnu services audio)
+             (gnu services networking)
+             (guix)
+             (guix utils)
+             ;; Nongnu & Nonguix
+             (nongnu packages linux)
+             (nongnu system linux-initrd))
+
+(use-service-modules desktop
+                     sound
+                     audio
+                     networking
+                     ssh
+                     xorg
+                     dbus)
+(use-package-modules wm bootloaders certs shells version-control)
+
+(define %guix-os
+  (operating-system
+    (kernel linux)
+    (initrd microcode-initrd)
+    (firmware (append (list intel-microcode linux-firmware) %base-firmware))
+    (host-name "miniguix")
+    (timezone "Europe/Berlin")
+    (locale "en_US.utf8")
+    (keyboard-layout (keyboard-layout "us"))
+
+    ;; Bootloader
+    (bootloader (bootloader-configuration
+                  (bootloader grub-bootloader)
+                  (keyboard-layout keyboard-layout)
+                  (targets '("/dev/sdb1"))))
+
+    ;; File Systems
+    (file-systems (cons* (file-system
+                           (mount-point "/")
+                           (device (file-system-label "guix-root"))
+                           (type "ext4")) %base-file-systems))
+
+    ;; Users
+    (users (cons (user-account
+                   (name "puppy")
+                   (comment "Puppy")
+                   (group "users")
+                   (home-directory "/home/puppy")
+                   (supplementary-groups '("wheel" "netdev"
+                                           "audio"
+                                           "video"
+                                           "input"
+                                           "tty"))
+                   (shell (file-append zsh "/bin/zsh"))) %base-user-accounts))
+
+    ;; Packages
+    (packages (append (map specification->package
+                           '("grep" "coreutils"
+                             "glibc-locales"
+                             "ncurses"
+                             "zsh"
+                             "git-minimal"
+                             "emacs-no-x"
+                             "usbutils"
+                             "pciutils"
+                             "wpa-supplicant"
+                             "dhcpcd"))))
+
+    ;; Services
+    (services
+     (append (list (simple-service 'doas-config etc-service-type
+                                   (list `("doas.conf" ,(plain-file
+                                                         "doas.conf"
+                                                         "permit nopass keepenv root
+permit persist keepenv setenv :wheel"))))
+
+             (modify-services %desktop-services
+               (guix-service-type config =>
+                                  (guix-configuration (inherit config)
+                                                      (substitute-urls (append
+                                                                        (list
+                                                                         "https://ci.guix.gnu.org"
+                                                                         "https://berlin.guix.gnu.org"
+                                                                         "https://bordeaux.guix.gnu.org"
+                                                                         "https://substitutes.nonguix.org"
+                                                                         "https://hydra-guix-129.guix.gnu.org"
+                                                                         "https://substitutes.guix.gofranz.com")
+                                                                        %default-substitute-urls))
+                                                      ;; Authorize via 'sudo guix archive --authorize < /etc/guix/channels/nonguix.pub'
+                                                      (authorized-keys (append
+                                                                        (list (local-file
+                                                                               "/etc/guix/files/channels/nonguix.pub"))
+                                                                        %default-authorized-guix-keys)))))))))
+
+%guix-os

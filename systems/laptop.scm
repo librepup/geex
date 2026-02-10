@@ -98,7 +98,6 @@
                      `("doas.conf" ,(plain-file "doas.conf"
 "permit nopass keepenv root
 permit persist keepenv setenv :wheel"))))
-    (service network-manager-service-type)
     (set-xorg-configuration
      (xorg-configuration
       (keyboard-layout keyboard-layout)
