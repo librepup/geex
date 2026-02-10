@@ -59,14 +59,14 @@
                  "naitre"
                  ;"mpv"
                  "mpv-nvidia"
-                 ;"steam-nvidia"
+                 "steam-nvidia"
                  ; ZSH
                  "zsh"
                  "zsh-autosuggestions"
                  "zsh-syntax-highlighting"
                  ; Emacs
-                 "emacs"
-                 "emacs-pgtk"
+                 ;"emacs" ; X11 Emacs
+                 "emacs-pgtk" ; Wayland Emacs
                  "emacs-fancy-dabbrev" ; From Jonabron Channel
                  "emacs-hoon-mode" ; From Jonabron Channel
                  "emacs-emms"
