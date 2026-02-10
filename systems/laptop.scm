@@ -83,9 +83,6 @@
   (append
    (list
     (service gnome-desktop-service-type)
-    (service gdm-service-type
-             (gdm-configuration
-             (wayland? #t)))
     (service nix-service-type)
     (service tlp-service-type
              (tlp-configuration
