@@ -74,6 +74,10 @@
                   "zsh"
                   "git-minimal"
                   "emacs-no-x"
+                  "usbutils"
+                  "pciutils"
+                  "wpa-supplicant"
+                  "dhcpcd"
                   )
                 )
             ))
