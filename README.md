@@ -37,7 +37,8 @@ building XDG MIME database...
 building profile with 149 packages...
 building /gnu/store/zp9sz0ycg7rqxalchm1lpv2z1ylk7v80-home.drv...
 ```
-the only issue is that I had to comment out `steam-nvidia`, as there are seemingly no Rust substitutes, and building multiple Rust versions from source fails and crashes the entire build.
+
+Update **[10.2.26@17:04]**: Pinned the commits of the Guix and Nonguix channel, so now we have valid substitutes available and can build packages like `steam-nvidia` and the full `linux` kernel.
 
 ## Channels
 This GNU Guix Configuration pre-configures a few useful channels to make certain Packages available that are otherwise missing in the official GNU Guix repository, these include:
