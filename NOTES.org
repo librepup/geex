@@ -19,8 +19,16 @@ Also make sure that "~/.config/guix/channels.scm" or "/etc/guix/channels.scm" is
 ```
 network={
   ssid="ssid-name"
-  ket_mgmt=WPA-PSK
+  key_mgmt=WPA-PSK
   psk="password"
+}
+```
+Or for an open network:
+```
+network={
+  ssid="ssid-name"
+  key_mgmt=NONE
+  priority=1
 }
 ```
 *** Useful Commands
