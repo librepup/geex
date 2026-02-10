@@ -46,7 +46,7 @@ This GNU Guix Configuration pre-configures a few useful channels to make certain
 - jonabron, this channel provides games, emacs packages, window managers, discord, and more.
 - emacs, this channel provides melpa emacs packages.
 - guix, this is the default and official guix channel.
-- pantherx, this channel provides various packages. [Currently Disabled]
+- pantherx, this channel provides various packages. **[Currently Disabled]**
 
 # Usage
 ## Setup
@@ -61,7 +61,7 @@ Clone this repository via `git clone https://github.com/nixpup/geex`, then move 
 ## Importing Keys
 Don't forget to import the [Nonguix](https://gitlab.com/nonguix/nonguix) Key via `sudo guix archive --authorize < /etc/guix/files/keys/nonguix.pub`, as well as the panther key via `sudo guix archive --authorize < /etc/guix/files/keys/panther.pub`.
 
-Then you can update Guix and its Channels by invoking `guix pull`, and afterwards check whether all Channels were correctly set up with `guix describe`. Make sure that "~/.config/guix/channels.scm" is the **first** item in your "$PATH".
+Then you can update Guix and its Channels by invoking `guix pull`, and afterwards check whether all Channels were correctly set up with `guix describe`. Make sure that `~/.config/guix/channels.scm` is the **first** item in your "$PATH".
 
 Update Bash's Guix binary and configuration with `hash guix` after `guix pull` is done.
 
@@ -79,3 +79,6 @@ To apply the system configuration, run `sudo guix system reconfigure /etc/guix/c
 
 ## Testing Guix Home
 If you copied all the files of this repository to their respective target directories, you can test the Guix Home environment this configuration sets up for you inside a container via `guix home container /etc/guix/home.scm`. This gives you a minimal environment with only the packages, configuration files, variables, and settings provided by the `home.scm` file.
+
+## Testing Guix System
+You can run a dry-build of the entire Guix System via `guix system build /etc/guix/config.scm`. This will build the entire system configuration, but not install it anywhere. You get a resulting `/gnu/store` path for your built system. This is useful to check whether the system configuration you wrote actually works/builds correctly, before running into issues when you're trying to install on real hardware/bare metal.
