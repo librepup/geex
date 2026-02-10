@@ -78,6 +78,7 @@ This will then pick one of the following systems files:
 - "laptop" -> `/etc/guix/systems/laptop.scm`
 - "minimal" -> `/etc/guix/systems/minimal.scm`
 - "libre" -> `/etc/guix/systems/libre.scm`
+
 The main difference between these systems configurations, is that the Laptop configuration does not come with Nvidia Drivers, unlike the Desktop Configuration. The minimal configuration has as little packages, services, and options set as possible, while still maintaining a proper working system. While the libre configuration does not come with `nonguix`, and ships the default GNU Guix **linux-libre** kernel.
 
 To apply the system configuration, run `sudo guix system reconfigure /etc/guix/config.scm`. Similarly, to reconfigure or apply the Guix Home configuration, run `guix home reconfigure /etc/guix/home.scm`.
