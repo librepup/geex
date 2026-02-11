@@ -321,7 +321,10 @@
                                  `((".scripts" ,(local-file "files/scripts" #:recursive? #t))))
                  (simple-service 'wallpapers-config
                                  home-files-service-type
-                                 `(("Pictures/Wallpapers" ,(local-file "files/pictures" #:recursive? #t))))
+                                 `(("Pictures/Wallpapers" ,(local-file "files/pictures/Wallpapers" #:recursive? #t))))
+		 (simple-service 'icons-config
+				 home-files-service-type
+				 `(("Pictures/Icons" ,(local-file "files/pictures/Icons" #:recursive? #t))))
                  (simple-service 'naitre-config
                                  home-files-service-type
                                  `((".config/naitre" ,(local-file "files/config/naitre" #:recursive? #t))))
