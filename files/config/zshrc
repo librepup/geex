@@ -40,6 +40,8 @@ alias rgrep="rg $@"
 alias ripgrep="rg $@"
 alias ocat="sh -c 'cat $@'"
 alias oldcat="sh -c 'cat $@'"
+alias shcat="sh -c 'cat $@'"
+alias scat="sh -c 'cat $@'"
 alias ols="sh -c 'ls $@'"
 alias of="onefetch --nerd-fonts $@"
 alias pf="pfetch $@"
@@ -68,8 +70,11 @@ alias fehwp="feh --bg-fill $@"
 alias wp="swaybg -m fill -i $@"
 alias zipCreate="echo 'Arg1: Archive.zip, Arg2: Folder/';zip -r $@"
 alias e="emacs -nw $@"
+alias ee="emacs -nw -Q $@"
 alias gwng="guix weather $@ --substitute-urls='https://substitutes.nonguix.org'"
 alias gw="guix weather $@"
+alias mvv="rsync -r -P $@"
+alias mvr="rsync -r -P $@"
 
 # Functions
 random() {
@@ -81,22 +86,6 @@ random() {
   fi
   head /dev/urandom | tr -dc A-Za-z0-9 | head -c "$len"
   echo
-}
-password() {
-  local len
-  local file="/mnt/Files/Temp/RandomPasswords.DD"
-  if [ -z "$1" ]; then
-    len=24
-    local pass=$(openssl rand -base64 24)
-  else
-    len="$1"
-    local pass=$(openssl rand -base64 "$len")
-  fi
-  if ! [ -e "$file" ]; then
-    touch "$file"
-  fi
-  echo "$pass" >> /mnt/Files/Temp/RandomPasswords.DD
-  echo -e "Printed Password to /mnt/Files/Temp/RandomPasswords.DD.\nPassword: $pass"
 }
 cryptmount() {
   if [[ -z "$1" ]]; then
@@ -116,14 +105,6 @@ cryptmount() {
 cryptunmount() {
   doas umount /mounted
   doas cryptsetup close encrypted
-}
-extramount() {
-  doas cryptsetup open /dev/sda2 extradisk
-  doas mount /dev/mapper/extradisk /extra
-}
-extraunmount() {
-  doas umount /extra
-  doas cryptsetup close extradisk
 }
 extract() {
   for archive in "$@"; do
@@ -152,6 +133,9 @@ disks() {
       ;;
     fdisk)
       doas watch -n 1 fdisk -l
+      ;;
+    "-f")
+      watch -n 1 lsblk -f
       ;;
     *)
       watch -n 1 lsblk
@@ -218,7 +202,7 @@ gm() {
             echo "[ Deleted Old Generations ]"
             ;;
         rebuild|rb)
-            sudo guix system reconfigure /etc/config.scm
+            sudo guix system reconfigure /etc/guix/config.scm
             echo "[ Rebuilt System ]"
             ;;
         g|garbage|gc)
@@ -232,7 +216,7 @@ gm() {
             echo "[ Optimized /gnu/store ]"
             ;;
         home|hm)
-            guix home reconfigure /etc/home.scm
+            guix home reconfigure /etc/guix/home.scm
             echo "[ Rebuilt Home ]"
             ;;
         lsc|listchannel|listchannels)
@@ -453,7 +437,6 @@ function c() {
 echoout() {
   echo "$(<"$1")"
 }
-
 ports() {
   doas ss -tulnp | awk '
     NR==1 {print; next}
@@ -525,7 +508,7 @@ if [ -d "$HOME/.scripts/shell" ]; then
   done
 fi
 
-# Perplexity Fix
+# ZSH Plugins
 if [[ -f $HOME/.guix-home/profile/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh ]]; then
   source $HOME/.guix-home/profile/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
 fi
