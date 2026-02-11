@@ -298,6 +298,9 @@
                  (simple-service 'discord-config
                                  home-files-service-type
                                  `((".config/vesktop" ,(local-file "files/config/discord" #:recursive? #t))))
+		 (simple-service 'dunst-config
+				 home-files-service-type
+				 `((".config/dunst" ,(local-file "files/config/dunst" #:recursive? #t))))
                  (simple-service 'fastfetch-config
                                  home-files-service-type
                                  `((".config/fastfetch" ,(local-file "files/config/fastfetch" #:recursive? #t))))
@@ -316,6 +319,9 @@
                  (simple-service 'btop-config
                                  home-files-service-type
                                  `((".config/btop" ,(local-file "files/config/btop" #:recursive? #t))))
+		 (simple-service 'polybar-config
+				 home-files-service-type
+				 `((".config/polybar" ,(local-file "files/config/polybar" #:recursive? #t))))
                  (simple-service 'scripts-config
                                  home-files-service-type
                                  `((".scripts" ,(local-file "files/scripts" #:recursive? #t))))

@@ -1,6 +1,6 @@
 (let ((orgfile (expand-file-name "~/.guixmacs/config/e.org"))
       (elfile  (expand-file-name "~/.e.el"))
-      (userorgfile (expand-file-name "~/.user.org"))
+      (userorgfile (expand-file-name "~/.guixmacs/mutable/user.org"))
       (userelfile  (expand-file-name "~/.user.el")))
 
   ;; Tangle e.org to e.el when needed
