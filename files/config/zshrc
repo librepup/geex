@@ -476,8 +476,21 @@ clean() {
 }
 
 # Guix Profile
-GUIX_PROFILE="$HOME/.guix-home/profile"
-source $GUIX_PROFILE
+if [ -d "$HOME/.config/guix/current/etc/profile" ] || [ -f "$HOME/.config/guix/current/etc/profile" ]; then
+  source "$HOME/.config/guix/current/etc/profile"
+fi
+if [ -d "$HOME/.guix-profile/etc/profile" ] || [ -f "$HOME/.guix-profile/etc/profile" ]; then
+  source "$HOME/.guix-profile/etc/profile"
+fi
+if [ -d "/var/guix/profiles/per-user/puppy/guix-profile/etc/profile" ] || [ -f "/var/guix/profiles/per-user/puppy/guix-profile/etc/profile" ]; then
+  source "/var/guix/profiles/per-user/puppy/guix-profile/etc/profile"
+fi
+if [ -d "$HOME/.guix-home/profile" ] || [ -f "$HOME/.guix-home/profile" ]; then
+  source "$HOME/.guix-home/profile"
+fi
+
+#GUIX_PROFILE="$HOME/.guix-home/profile"
+#source $GUIX_PROFILE
 
 # Zoxide
 eval "$(zoxide init zsh)"
