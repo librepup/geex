@@ -12,6 +12,16 @@ Copy files to Hurd via `scp -P 2222 <file> root@localhost:~/`, and similarly, fr
 *** SSH Setup
 Generate SSH Key via `ssh-keygen -t ed25519`, spam enter to not set a passphrase and use the default settings, then copy the `~/.ssh/id_XXXXXXX.pub` key into `/etc/guix/hurd-secrets` before rebuilding the system.
 
+*** Shepherd Service Commands
+**** Hurd Status
+`herd status hurd-vm`
+
+**** Stop Hurd
+`herd stop hurd-vm`
+
+**** Start Hurd
+`herd start hurd-vm`
+
 *** Optional Fixes
 **** X11 Forwarding
 In case X11/Xorg forwarding via SSH does not work, it may be advised to set an option such as `xhost +local:root`.
