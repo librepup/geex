@@ -11,3 +11,4 @@
 ## Notification Icons
 ![Yes Icon](https://raw.githubusercontent.com/librepup/geex/refs/heads/main/files/pictures/Icons/yes.png)
 ![No Icon](https://raw.githubusercontent.com/librepup/geex/refs/heads/main/files/pictures/Icons/no.png)
+![Error Icon](https://raw.githubusercontent.com/librepup/geex/refs/heads/main/files/pictures/Icons/error.png)

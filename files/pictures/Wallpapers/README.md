@@ -11,6 +11,7 @@
 ![Mococo Guix 01 Wallpaper](https://raw.githubusercontent.com/librepup/geex/refs/heads/main/files/pictures/Wallpapers/mococo_guix_wp_01.png)
 ![NixOS Anime Wallpaper](https://raw.githubusercontent.com/librepup/geex/refs/heads/main/files/pictures/Wallpapers/nixosAnime.png)
 ![Stallman Wallpaper](https://raw.githubusercontent.com/librepup/geex/refs/heads/main/files/pictures/Wallpapers/stallman.jpg)
+![Fedora Rei Wallpaper](https://raw.githubusercontent.com/librepup/geex/refs/heads/main/files/pictures/Wallpapers/fedora_wp_01.png)
 
 ## Gruvbox
 ![Lain Gruvbox Wallpaper](https://raw.githubusercontent.com/librepup/geex/refs/heads/main/files/pictures/Wallpapers/lainGruvbox.jpg)
