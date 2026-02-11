@@ -119,6 +119,8 @@
                  "emacs-org-texlive-collection"
                  ; Tools
                  "xinput"
+                 "jami"
+                 "gsettings-desktop-schemas"
                  "setxkbmap"
                  "dmenu"
                  "keepassxc"
