@@ -91,6 +91,8 @@
                   "pciutils"
                   "wpa-supplicant"
                   "dhcpcd"
+		  "xmonad"
+		  "ghc-xmonad-contrib"
                   )
                 )
             ))

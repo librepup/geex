@@ -78,6 +78,9 @@
                   "pciutils"
                   "wpa-supplicant"
                   "dhcpcd"
+		  "naitre"
+		  "xmonad"
+		  "ghc-xmonad-contrib"
                   )
                 )
             ))
