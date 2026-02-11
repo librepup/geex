@@ -7,6 +7,9 @@
 ![GNU Meditate Icon](https://raw.githubusercontent.com/librepup/geex/refs/heads/main/files/pictures/Icons/gnu_meditate.png)
 ![Guix PNG Icon](https://raw.githubusercontent.com/librepup/geex/refs/heads/main/files/pictures/Icons/guix_logo.png)
 ![Guix SVG Icon](https://raw.githubusercontent.com/librepup/geex/refs/heads/main/files/pictures/Icons/guix_logo.svg)
+![Taler SVG Icon](https://raw.githubusercontent.com/librepup/geex/refs/heads/main/files/pictures/Icons/gnu_taler.svg)
+![Guile SVG Icon](https://raw.githubusercontent.com/librepup/geex/refs/heads/main/files/pictures/Icons/gnu_guile.svg)
+![Emacs Icon](https://raw.githubusercontent.com/librepup/geex/refs/heads/main/files/pictures/Icons/emacs_logo.png)
 
 ## Notification Icons
 ![Yes Icon](https://raw.githubusercontent.com/librepup/geex/refs/heads/main/files/pictures/Icons/yes.png)
