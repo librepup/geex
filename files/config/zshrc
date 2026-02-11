@@ -284,6 +284,10 @@ g() {
   local cmd="$1"
   local arg="$2"
   case "$cmd" in
+    credential|store|helper|passstore)
+      git config --global credential.helper store
+      echo "[ Initialized Git Credential Store ]"
+      ;;
     e|execute)
       if [ -z "$arg" ]; then
         echo "Usage: g execute <recipe>"
@@ -416,6 +420,7 @@ Usage:
   g aa                   Add all files
   g co|cm|commit         Commit with specified Message
   g s|status             Show various status reports/infos
+  g store                Enable Git Credential Helper Store
   g h|help               Show this help
 EOF
       ;;
