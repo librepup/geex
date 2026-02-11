@@ -8,7 +8,7 @@
 ![Guix PNG Icon](https://raw.githubusercontent.com/librepup/geex/refs/heads/main/files/pictures/Icons/guix_logo.png)
 ![Guix SVG Icon](https://raw.githubusercontent.com/librepup/geex/refs/heads/main/files/pictures/Icons/guix_logo.svg)
 ![Taler SVG Icon](https://raw.githubusercontent.com/librepup/geex/refs/heads/main/files/pictures/Icons/gnu_taler.svg)
-![Guile SVG Icon](https://raw.githubusercontent.com/librepup/geex/refs/heads/main/files/pictures/Icons/gnu_guile.svg)
+![Guile SVG Icon](https://raw.githubusercontent.com/librepup/geex/refs/heads/main/files/pictures/Icons/guile_scheme.svg)
 ![Emacs Icon](https://raw.githubusercontent.com/librepup/geex/refs/heads/main/files/pictures/Icons/emacs_logo.png)
 
 ## Notification Icons
