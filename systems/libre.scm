@@ -15,7 +15,8 @@
              (gnu services audio)
              (gnu services networking)
              (guix)
-             (guix utils))
+             (guix utils)
+             (jonabron packages wm))
 
 (use-service-modules desktop sound audio networking ssh xorg dbus)
 (use-package-modules wm bootloaders certs shells version-control xorg)
@@ -91,8 +92,9 @@
                   "pciutils"
                   "wpa-supplicant"
                   "dhcpcd"
-		  "xmonad"
-		  "ghc-xmonad-contrib"
+                  "xmonad"
+                  "ghc-xmonad-contrib"
+                  "naitre"
                   )
                 )
             ))

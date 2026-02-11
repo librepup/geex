@@ -120,9 +120,9 @@
                   "pciutils"
                   "wpa-supplicant"
                   "dhcpcd"
-		  "naitre"
-		  "xmonad"
-		  "ghc-xmonad-contrib"
+                  "naitre"
+                  "xmonad"
+                  "ghc-xmonad-contrib"
                   )
                 )
             ))
