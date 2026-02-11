@@ -133,11 +133,6 @@
   (append
    (list
     ; Experimental GNU Hurd VM Service, disable if it causes issues.
-    ; Enter Hurd via 'ssh -p 2222 root@localhost'. ('-X' for X11 passthrough)
-    ; Copy files to Hurd via 'scp -P 2222 <file> root@localhost:~/'.
-    ; Generate SSH Key via 'ssh-keygen -t ed25519', then copy the
-    ; "~/.ssh/id_XXXXXXX.pub" key into "/etc/guix/hurd-secrets" before
-    ; rebuilding the system.
     (service hurd-vm-service-type
 	     (hurd-vm-configuration
 	      (memory-size 2048)

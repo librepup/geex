@@ -2,6 +2,20 @@
 #+AUTHOR: librepup/nixpup
 #+DESCRIPTION: Notes, Tips, and useful Information about GNU Guix
 * Chapters
+** GNU Hurd
+*** Entering
+Enter Hurd via `ssh -p 2222 root@localhost`. (+`-X` for X11 passthrough)
+
+*** File Transfer
+Copy files to Hurd via `scp -P 2222 <file> root@localhost:~/`, and similarly, from Hurd, via `scp -P 2222 root@localhost:/hurd/path/to/file ./`.
+
+*** SSH Setup
+Generate SSH Key via `ssh-keygen -t ed25519`, spam enter to not set a passphrase and use the default settings, then copy the `~/.ssh/id_XXXXXXX.pub` key into `/etc/guix/hurd-secrets` before rebuilding the system.
+
+*** Optional Fixes
+**** X11 Forwarding
+In case X11/Xorg forwarding via SSH does not work, it may be advised to set an option such as `xhost +local:root`.
+
 ** Commands
 *** After Fist Install
 To update the Guix Channels and pull the latest Guix and Channel Versions, run `guix pull`.
