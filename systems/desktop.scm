@@ -14,7 +14,7 @@
              (gnu services sound)
              (gnu services audio)
              (gnu services networking)
-	     (gnu services virtualization)
+             (gnu services virtualization)
              (guix)
              (guix utils)
              ; Nongnu & Nonguix
@@ -169,7 +169,7 @@ permit persist keepenv setenv :wheel"))))
                                                  %default-substitute-urls))
                                         ; Authorize via 'sudo guix archive --authorize < /etc/guix/channels/nonguix.pub'
                                         (authorized-keys
-                                         (append (list (local-file "/etc/guix/files/channels/nonguix.pub"))
+                                         (append (list (local-file "/etc/guix/files/keys/nonguix.pub"))
                                                  %default-authorized-guix-keys))
                                         ))
                     (mingetty-service-type config =>

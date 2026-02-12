@@ -100,7 +100,7 @@ permit persist keepenv setenv :wheel"))))
                                                       ;; Authorize via 'sudo guix archive --authorize < /etc/guix/channels/nonguix.pub'
                                                       (authorized-keys (append
                                                                         (list (local-file
-                                                                               "/etc/guix/files/channels/nonguix.pub"))
+                                                                               "/etc/guix/files/keys/nonguix.pub"))
                                                                         %default-authorized-guix-keys)))))))))
 
 %guix-os
