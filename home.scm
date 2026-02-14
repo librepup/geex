@@ -70,6 +70,7 @@
                   ;"mpv"
                  "mpv-nvidia"
                  "steam-nvidia"
+                 "protonup"
                  ; ZSH
                  "zsh"
                  "zsh-autosuggestions"
