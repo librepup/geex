@@ -1,4 +1,4 @@
-#!/usr/bin/env -S guix shell dialog -- sh
+#!/usr/bin/env -S guix shell dialog git-minimal -- sh
 
 cat > /tmp/notes.jonageex.org <<'EOF'
 #+TITLE: Guix Notes
