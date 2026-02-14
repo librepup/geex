@@ -199,7 +199,7 @@ manualMode() {
     echo -e "- Pull Channels: guix pull (--channels=FILE)\n- Start Cow-Store: herd start cow-store /mnt\n- Inist System: guix system init /path/to/config.scm /mnt\n- WiFi Setup:\n + rfkill unblock all\n + ifconfig -a\n + wpa_supplicant -c wifi.conf -i INTERFACE -B\n + dhclient -v INTERFACE\n + nmcli device wifi list\n + nmcli device wifi connect \"SSID\" password \"PASSWORD\"\n---"
     echo -e "Entering Guix Shell...\n   (with: grep, dialog, wpa-supplicant, git-minimal, emacs-no-x, guix, guile)\n---"
     echo -e "\n\n---\nWrote /tmp/notes.jonageex.org!\n---\n\n"
-    guix shell grep dialog wpa-supplicant git-minimal emacs-no-x guix guile
+    guix shell grep dialog wpa-supplicant git-minimal emacs-no-x guix guile &>/dev/null
     echo -e "---\nYou have Exited the Guix Shell\n---"
 }
 
