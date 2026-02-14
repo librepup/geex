@@ -25,7 +25,7 @@
              (jonabron packages communication)
              (jonabron packages games))
 
-(use-service-modules desktop sound audio networking ssh xorg dbus)
+(use-service-modules desktop sound audio networking ssh xorg dbus pm)
 (use-package-modules wm bootloaders certs shells version-control xorg)
 
 (define %guix-os (operating-system
