@@ -1,5 +1,190 @@
 #!/usr/bin/env -S guix shell dialog -- sh
 
+cat > /tmp/notes.jonageex.org <<'EOF'
+#+TITLE: Guix Notes
+#+AUTHOR: librepup/nixpup
+#+DESCRIPTION: Notes, Tips, and useful Information about GNU Guix
+* Chapters
+** GNU Hurd
+*** Entering
+Enter Hurd via `ssh -p 2222 root@localhost`. (+`-X` for X11 passthrough)
+
+*** File Transfer
+Copy files to Hurd via `scp -P 2222 <file> root@localhost:~/`, and similarly, from Hurd, via `scp -P 2222 root@localhost:/hurd/path/to/file ./`.
+
+*** SSH Setup
+Generate SSH Key via `ssh-keygen -t ed25519`, spam enter to not set a passphrase and use the default settings, then copy the `~/.ssh/id_XXXXXXX.pub` key into `/etc/guix/hurd-secrets` before rebuilding the system.
+
+*** Shepherd Service Commands
+**** Hurd Status
+`herd status hurd-vm`
+
+**** Stop Hurd
+`herd stop hurd-vm`
+
+**** Start Hurd
+`herd start hurd-vm`
+
+*** Optional Fixes
+**** X11 Forwarding
+In case X11/Xorg forwarding via SSH does not work, it may be advised to set an option such as `xhost +local:root`.
+
+** Commands
+*** After Fist Install
+To update the Guix Channels and pull the latest Guix and Channel Versions, run `guix pull`.
+Then, to rebuild your system, run `sudo guix system reconfigure /path/to/config.scm`.
+After running `guix pull`, remember to run `hash guix` to update bash's cache and clear it of the old guix binary location.
+Also make sure that "~/.config/guix/channels.scm" or "/etc/guix/channels.scm" is the *first* item in your $PATH.
+
+*** Installation Process
+**** Channel Setup
+1. `guix shell git-minimal`
+2. `git clone https://github.com/librepup/geex.git`
+3. `mkdir -p /mnt/geex`
+4. `mkdir -p ~/.config/guix`
+5. `cp ./geex/channels.scm ~/.config/guix/channels.scm`
+6. `guix archive --authorize < ./geex/files/keys/nonguix.pub`
+7. `guix pull`
+
+**** Partitioning and System Init
+***** General
+1. `mount /dev/sda1 /mnt`
+2. `mkdir -p /mnt/boot/efi`
+3. `mount /dev/sda2 /mnt/boot/efi`
+4. `herd start cow-store /mnt`
+5. `guix system init /path/to/config.scm /mnt`
+6. `mkdir -o /mnt/etc/guix`
+7. `mv /path/to/geex/* /mnt/etc/guix/`
+
+***** (U)EFI
+Basic (U)EFI Partition Layout and Creation Process:
+
+#+BEGIN_SRC markdown
+# Partition
+parted /dev/sda
+  mklabel gpt
+  mkpart ESP fate32 1MiB 2048MiB
+  set 1 esp on
+  mkpart primary ext4 2048MiB 100%
+  quit
+
+mkfs.fat -F32 /dev/sda1
+mkfs.ext4 /dev/sda2
+
+# Mount
+mount /dev/sda2 /mnt
+mkdir -p /mnt/boot/efi
+mount /dev/sda1 /mnt/boot/efi
+#+END_SRC
+
+`config.scm` Bootloader and Filesystem Configuration for (U)EFI Setup:
+
+#+BEGIN_SRC guile
+(bootloader (bootloader-configuration
+  (bootloader grub-efi-bootloader)
+  (targets '("/boot/efi"))
+  (keyboard-layout keyboard-layout)))
+
+(file-systems (cons* (file-system
+                      (device (uuid "root-part-uuid"))
+                      (mount-point "/")
+                      (type "ext4"))
+                     (file-system
+                      (device (uuid "efi-part-uuid"))
+                      (mount-point "/boot/efi")
+                      (type "vfat"))
+                     %base-file-systems))
+#+END_SRC
+
+*** Wifi Configuration
+**** Commands
+1. `rfkill unblock all`
+2. `ifconfig -a`
+   + Find WiFi Device/Cards Name
+3. `wpa_supplicant -c wifi.conf -i interface1s0 -B`
+4. `dhclient -v interface1s0`
+5. `nmcli device wifi list`
+6. `nmcli device wifi connect "SSID" password "PASSWORD"`
+
+**** wifi.conf
+#+BEGIN_SRC sh
+network={
+  ssid="ssid-name"
+  key_mgmt=WPA-PSK
+  psk="password"
+}
+#+END_SRC
+
+Or for an open network:
+
+#+BEGIN_SRC sh
+network={
+  ssid="ssid-name"
+  key_mgmt=NONE
+  priority=1
+}
+#+END_SRC
+
+*** Useful Commands
+1. List System Generations
+   + `guix system list-generations`
+2. Describe System Generation
+   + `guix system describe`
+3. Delete Generations older than 1 Month
+   + `sudo guix system delete-generations 1m`
+4. Roll Back to Older Generation
+   + `sudo guix system roll-back`
+5. Guix Garbage Collector
+   + `guix gc -d 1m -F 10G`
+   - Delete Generations older than 1 Month, and try to free up at least 10GiB.
+6. Deduplicate/Optimize Guix Store
+   + `guix gc --optimize`
+7. Reconfigure Guix Home
+   + `guix home reconfigure /path/to/home.scm`
+8. Describe/List Channels
+   + `guix describe`
+9. Upgrade Packages
+   + `guix upgrade`
+10. Reformat/Style Scheme File
+    + `guix style -f config.scm`
+    - This can help to find syntax errors, such as misplaced brackets, easier.
+11. List Installed Packages
+    + `guix package --list-installed`
+12. Install Package
+    + `guix install`
+13. Remove Package
+    + `guix remove`
+14. Delete Old Package Generations
+    + `guix package --delete-generations`
+
+*** Shepherd Commands
+1. Start Service
+   + `sudo herd start name`
+2. Stop Service
+   + `sudo herd stop name`
+3. Restart Service
+   + `sudo herd restart name`
+4. Service Status
+   + `sudo herd status name`
+5. List Services
+   + `sudo herd status`
+
+*** Combinations
+**** Guix Garbage Collecting
+1. `guix gc`
+2. `sudo guix system delete-generations 1d`
+3. `guix package --delete-generations`
+
+**** Guix Pull and Daemon Restart
+1. `guix pull`
+2. `sudo systemctl restart guix-daemon.service` or `sudo herd restart guix-daemon`
+
+*** Post-Installation Setup
+**** Passwords
+1. `passwd -R /mnt root`
+2. `passwd -R /mnt puppy`
+EOF
+
 manualMode() {
     echo "---"
     echo -e "WARNING: You have entered Manual Mode!\nBy providing *any* argument to the Jonageex Installer, you enter 'Manual Mode'. This mode throws you into a 'guix shell' where you can manually install GNU Guix.\n---\nCurrent Disks:"
@@ -13,6 +198,7 @@ manualMode() {
     echo -e "---\nGeex Repository:\nhttps://github.com/librepup/geex.git\n---\nUseful Commands:"
     echo -e "- Pull Channels: guix pull (--channels=FILE)\n- Start Cow-Store: herd start cow-store /mnt\n- Inist System: guix system init /path/to/config.scm /mnt\n- WiFi Setup:\n + rfkill unblock all\n + ifconfig -a\n + wpa_supplicant -c wifi.conf -i INTERFACE -B\n + dhclient -v INTERFACE\n + nmcli device wifi list\n + nmcli device wifi connect \"SSID\" password \"PASSWORD\"\n---"
     echo -e "Entering Guix Shell...\n   (with: grep, dialog, wpa-supplicant, git-minimal, emacs-no-x, guix, guile)\n---"
+    echo -e "\n\n---\nWrote /tmp/notes.jonageex.org!\n---\n\n"
     guix shell grep dialog wpa-supplicant git-minimal emacs-no-x guix guile
     echo -e "---\nYou have Exited the Guix Shell\n---"
 }
