@@ -24,6 +24,6 @@
   (file-systems %base-file-systems)
 
   (services
-   (append (list (service dbus-root-service-type)
-                 (service gamemode-service-type))
+   (append (list
+            (service dbus-root-service-type))
            %base-services)))
