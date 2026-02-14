@@ -87,6 +87,7 @@
                   "nss-certs"
                   "bash"
                   "sed"
+                  "kitty"
                   )
                 )
             ))
