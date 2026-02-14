@@ -155,7 +155,7 @@ permit persist keepenv setenv :wheel"))))
                                       (gdm-configuration
                                        (inherit config)
                                        (wayland? #t)))
-                    (delete pulseaudio-service-type)
+                    ;(delete pulseaudio-service-type)
                     (guix-service-type config =>
                                        (guix-configuration
                                         (inherit config)
