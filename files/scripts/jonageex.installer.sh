@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env -S guix shell dialog -- sh
 
 dialog --clear
 
@@ -552,7 +552,7 @@ export DIALOGRC=/tmp/dialogrc.jonageex.installer
 welcome=$(dialog --backtitle "Jonageex Installer" --title "Welcome" --menu "\nThis installer is in a state of pre-alpha, meaning it *can* cause issues. If you encounter any problems, please continue with a manual installation of Jonageex.\n\nA guide for manual installation of the Jonageex Configuration Suite and Distribution is provided to you at '/etc/jonageex.manual.org'.\n\nDo you accept?" 30 60 20 \
                  yes "Yes, I accept." \
                  no "No, I don't accept." \
-                 3>&1 1>&2 2>&3)
+                 3>&1 1>&2 2>&3) || exit 1
 
 if [ "$welcome" == "no" ]; then
     echo "Aborting Installation..."
@@ -560,24 +560,24 @@ if [ "$welcome" == "no" ]; then
 fi
 
 username=$(dialog --backtitle "Jonageex Installer" --title "Username" --inputbox "What is your Username?" 8 40 \
-              3>&1 1>&2 2>&3)
+              3>&1 1>&2 2>&3) || exit 1
 
 hostname=$(dialog --backtitle "Jonageex Installer" --title "Hostname" --inputbox "What Name should your Machine have?" 8 40 \
-        3>&1 1>&2 2>&3)
+        3>&1 1>&2 2>&3) || exit 1
 
 nvidia=$(dialog --backtitle "Jonageex Installer" --title "Nvidia" --menu "Do you need Nvidia Drivers?" 12 40 5 \
                 yes "Yes" \
                 no "No" \
-             3>&1 1>&2 2>&3)
+             3>&1 1>&2 2>&3) || exit 1
 
 keyboardlayout=$(dialog --backtitle "Jonageex Installer" --title "Keyboard Layout" --menu "Select Keyboard Layout:" 12 40 5 \
                         us "English (US)" \
                         colemak "Colemak" \
                         de "German (DE)" \
-                        3>&1 1>&2 2>&3)
+                        3>&1 1>&2 2>&3) || exit 1
 
 disk=$(dialog --backtitle "Jonageex Installer" --title "Disks" --inputbox "Please enter your Disks Name (e.g. /dev/sda, /dev/sdc, /dev/nvme0n1):" 8 40 \
-              3>&1 1>&2 2>&3)
+              3>&1 1>&2 2>&3) || exit 1
 
 if [[ "$disk" == /dev/nvme* ]]; then
     diskPrefixed="${disk}p"
@@ -591,27 +591,27 @@ if [[ -d /sys/firmware/efi ]]; then
     bios=$(dialog --backtitle "Jonageex Installer" --title "BIOS Boot Type" --menu "Do you use (U)EFI or Legacy Bios?\n\nINFO: Our BIOS Auto-Detection Script detected that you ARE using (U)EFI, you may want to select '(U)EFI' in this menu." 22 40 5 \
                   uefi "(U)EFI" \
                   legacy "Legacy" \
-        3>&1 1>&2 2>&3)
+        3>&1 1>&2 2>&3) || exit 1
 else
     IS_UEFI=false
     export IS_UEFI
     bios=$(dialog --backtitle "Jonageex Installer" --title "BIOS Boot Type" --menu "Do you use (U)EFI or Legacy Bios?\n\nINFO: Our BIOS Auto-Detection Script detected that you are using LEGACY, you may want to select 'Legacy' in this menu." 22 40 5 \
                   uefi "(U)EFI" \
                   legacy "Legacy" \
-        3>&1 1>&2 2>&3)
+        3>&1 1>&2 2>&3) || exit 1
 fi
 
 warning=$(dialog --backtitle "Jonageex Installer" --title "Verification" --menu "Please verify that all the entered values are CORRECT! Once the installation procedure begins, YOU CANNOT REVERSE THIS PROCESS ANYMORE!" 12 40 5 \
        continue "Continue" \
        abort "Abort" \
-       3>&1 1>&2 2>&3)
+       3>&1 1>&2 2>&3) || exit 1
 
 optionalServices=$(dialog --checklist "Optional Services" 15 50 5 \
                           hurd "GNU Hurd" off \
                           doas "doas" on \
                           wayland "Wayland" on \
                           nix "Nix" off \
-                          3>&1 1>&2 2>&3)
+                          3>&1 1>&2 2>&3) || exit 1
 
 read -r -a optionalServicesArray <<< "$optionalServices"
 optionalServicesCount="${#optionalServicesArray[@]}"
@@ -792,7 +792,7 @@ BOOTLOADER_LEGACY_BLOCK=" (bootloader (bootloader-configuration\n              (
 
 finalConfirmation() {
   userHasConfirmed=$(dialog --backtitle "Jonageex Installer" --title "Begin Installation?" --inputbox "Type 'yes, i confirm' to begin installation." 8 40 \
-                            3>&1 1>&2 2>&3)
+                            3>&1 1>&2 2>&3) || exit 1
   if [[ "$userHasConfirmed" == "yes, i confirm" ]]; then
       beginInstallation
   else
