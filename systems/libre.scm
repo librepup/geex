@@ -96,6 +96,11 @@
                   "ghc-xmonad-contrib"
                   "naitre"
                   "procps"
+                  "wget"
+                  "curl"
+                  "nss-certs"
+                  "bash"
+                  "sed"
                   )
                 )
             ))

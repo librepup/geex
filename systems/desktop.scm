@@ -125,6 +125,11 @@
                   "xmonad"
                   "ghc-xmonad-contrib"
                   "procps"
+                  "wget"
+                  "curl"
+                  "nss-certs"
+                  "bash"
+                  "sed"
                   )
                 )
             ))

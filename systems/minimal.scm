@@ -66,7 +66,8 @@
 
     ;; Packages
     (packages (append (map specification->package
-                           '("grep" "coreutils"
+                           '("grep"
+                             "coreutils"
                              "glibc-locales"
                              "ncurses"
                              "zsh"
@@ -76,7 +77,13 @@
                              "pciutils"
                              "wpa-supplicant"
                              "procps"
-                             "dhcpcd"))))
+                             "wget"
+                             "curl"
+                             "nss-certs"
+                             "bash"
+                             "sed"
+                             "dhcpcd"))
+                      ))
 
     ;; Services
     (services

@@ -98,6 +98,13 @@ Set in "~/.guixmacs/config/user.org".
 (blink-cursor-mode 0)
 (global-visual-line-mode 1)
 #+END_SRC
+** User Information
+#+BEGIN_SRC emacs-lisp
+(setq user-full-name "Libre Puppy")
+(setq user-login-name "puppy")
+(setq user-nickname "librepup")
+(setq user-mail-address "librepup@member.fsf.org")
+#+END_SRC
 ** Beacon
 Enable the Beacon Line-Highlighter Globally.
 #+BEGIN_SRC emacs-lisp
