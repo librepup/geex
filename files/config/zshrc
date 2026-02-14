@@ -76,6 +76,7 @@ alias gwng="guix weather $@ --substitute-urls='https://substitutes.nonguix.org'"
 alias gw="guix weather $@"
 alias mvv="rsync -r -P $@"
 alias mvr="rsync -r -P $@"
+alias guixcontainer="printf 'Make sure your <filename.scm> is in an isolated folder with nothing else in it!\nUsage:\n  guixcontainer <filename.scm>\n';guix system container -L . $@"
 
 # Functions
 random() {
