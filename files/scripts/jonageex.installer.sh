@@ -208,14 +208,7 @@ if [ "$#" -gt 0 ]; then
     exit 0
 fi
 
-set -euo pipefail
-
 dialog --clear
-
-cleanup() {
-    clear
-}
-trap cleanup EXIT
 
 if [ -f "/tmp/dialogrc.jonageex.installer" ]; then
     rm /tmp/dialogrc.jonageex.installer
