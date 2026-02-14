@@ -1,6 +1,13 @@
 #!/usr/bin/env -S guix shell dialog -- sh
 
+set -euo pipefail
+
 dialog --clear
+
+cleanup() {
+    clear
+}
+trap cleanup EXIT
 
 if [ -f "/tmp/dialogrc.jonageex.installer" ]; then
     rm /tmp/dialogrc.jonageex.installer
