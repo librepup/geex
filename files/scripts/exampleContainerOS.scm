@@ -1,4 +1,5 @@
 (use-modules (gnu)
+             (gnu packages)
              (gnu services dbus)
              (jonabron packages games))
 
@@ -10,6 +11,15 @@
   (bootloader (bootloader-configuration
                 (bootloader grub-bootloader)
                 (targets '("/dev/null"))))
+
+  (packages (append
+             (map specification->package
+                  '("emacs-no-x"
+                    "coreutils"
+                    "grep"
+                    "bash"
+                    "procps"))
+             ))
 
   (file-systems %base-file-systems)
 

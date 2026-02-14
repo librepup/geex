@@ -124,6 +124,7 @@
                   "naitre"
                   "xmonad"
                   "ghc-xmonad-contrib"
+                  "procps"
                   )
                 )
             ))

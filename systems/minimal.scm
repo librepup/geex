@@ -75,6 +75,7 @@
                              "usbutils"
                              "pciutils"
                              "wpa-supplicant"
+                             "procps"
                              "dhcpcd"))))
 
     ;; Services
