@@ -5,6 +5,7 @@
 (require 'exwm-systemtray)
 (require 'exwm-randr)
 (require 'doom-modeline)
+(require 'exwm-x)
 
 ;; randr mode
 (exwm-randr-mode 1)
