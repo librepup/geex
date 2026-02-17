@@ -373,6 +373,9 @@
                     `(("Pictures/Stallman" ,(local-file
                                              "files/pictures/Stallman"
                                              #:recursive? #t))))
+    (simple-service 'pdf-guides home-files-service-type
+                    `(("Documents/PDFs/Guides" ,(local-file "files/pdfs"
+                                                            #:recursive? #t))))
     (simple-service 'naitre-config home-files-service-type
                     `((".config/naitre" ,(local-file "files/config/naitre"
                                                      #:recursive? #t)))))))
