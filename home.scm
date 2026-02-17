@@ -85,6 +85,7 @@
                  "emacs-vim-tab-bar" ; From Emacs Channel
                  "emacs-erc"
                  "emacs-erc-image"
+                 "emacs-windower"
                  "emacs-company"
                  "emacs-corfu-terminal"
                  "emacs-guix"
@@ -119,8 +120,23 @@
                  "emacs-beacon"
                  "emacs-doom-modeline"
                  "emacs-org-texlive-collection"
+                 ; EXWM
+                 "emacs-exwm"
+                 "emacs-exwm-x"
+                 "emacs-helm-exwm"
+                 "emacs-helm"
+                 "emacs-browse-url-dwim"
+                 "emacs-exwm-surf"
+                 "emacs-exwm-ss"
+                 "emacs-exwm-modeline"
+                 "emacs-exwm-float"
+                 "emacs-exwm-firefox"
+                 "emacs-exwm-edit"
+                 "emacs-exwm-mff"
+                 "emacs-dmenu"
                  ; Tools
                  "xinput"
+                 "xmodmap"
                  "jami"
                  "gsettings-desktop-schemas"
                  "setxkbmap"
@@ -291,19 +307,22 @@
                                  `((".emacs" ,(local-file "files/config/guixmacs/emacs"))))
                  (simple-service 'guixmacs-themes-config
                                  home-files-service-type
-                                 `((".guixmacs/themes" ,(local-file "files/config/guixmacs/themes" #:recursive? #t))))
+                                 `((".guixmacs/themes" ,(local-file "files/config/guixmacs/files/themes" #:recursive? #t))))
                  (simple-service 'guixmacs-logo-config
                                  home-files-service-type
-                                 `((".guixmacs/files" ,(local-file "files/config/guixmacs/files" #:recursive? #t))))
+                                 `((".guixmacs/files" ,(local-file "files/config/guixmacs/files/images" #:recursive? #t))))
                  (simple-service 'guixmacs-config
                                  home-files-service-type
                                  `((".guixmacs/config" ,(local-file "files/config/guixmacs/config" #:recursive? #t))))
+                 (simple-service 'guixmacs-exwm-config
+                                 home-files-service-type
+                                 `((".guixmacs/exwm" ,(local-file "files/config/guixmacs/files/exwm" #:recursive? #t))))
                  (simple-service 'discord-config
                                  home-files-service-type
                                  `((".config/vesktop" ,(local-file "files/config/discord" #:recursive? #t))))
-		 (simple-service 'dunst-config
-				 home-files-service-type
-				 `((".config/dunst" ,(local-file "files/config/dunst" #:recursive? #t))))
+                 (simple-service 'dunst-config
+                                 home-files-service-type
+                                 `((".config/dunst" ,(local-file "files/config/dunst" #:recursive? #t))))
                  (simple-service 'fastfetch-config
                                  home-files-service-type
                                  `((".config/fastfetch" ,(local-file "files/config/fastfetch" #:recursive? #t))))
@@ -322,9 +341,9 @@
                  (simple-service 'btop-config
                                  home-files-service-type
                                  `((".config/btop" ,(local-file "files/config/btop" #:recursive? #t))))
-		 (simple-service 'polybar-config
-				 home-files-service-type
-				 `((".config/polybar" ,(local-file "files/config/polybar" #:recursive? #t))))
+                 (simple-service 'polybar-config
+                                 home-files-service-type
+                                 `((".config/polybar" ,(local-file "files/config/polybar" #:recursive? #t))))
                  (simple-service 'scripts-config
                                  home-files-service-type
                                  `((".scripts" ,(local-file "files/scripts" #:recursive? #t))))

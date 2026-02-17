@@ -98,6 +98,45 @@ Set in "~/.guixmacs/config/user.org".
 (blink-cursor-mode 0)
 (global-visual-line-mode 1)
 #+END_SRC
+** Better Defaults
+Set a few sane defaults (copied from https://github.com/johanwiden/exwm-setup).
+#+BEGIN_SRC emacs-lisp
+  (set-charset-priority 'unicode)
+  (set-default-coding-systems 'utf-8)
+  (set-terminal-coding-system 'utf-8)
+  (set-keyboard-coding-system 'utf-8)
+  (set-selection-coding-system 'utf-8)
+  (set-language-environment "UTF-8")
+  (prefer-coding-system 'utf-8)
+  (setq default-process-coding-system '(utf-8-unix . utf-8-unix))
+  ;; Treat clipboard input as UTF-8 string first; compound text next, etc.
+  (setq x-select-request-type '(UTF8_STRING COMPOUND_TEXT TEXT STRING))
+  ;; Do not ask for confirmation about killing processes.
+  (setq confirm-kill-processes nil)
+  ;; Focus new help windows when opened.
+  (setq help-window-select t)
+  (setq indent-tabs-mode nil)
+  (setq history-delete-duplicates t)
+  ;; When Window System:
+  (when window-system
+    (blink-cursor-mode 0)
+    (scroll-bar-mode 0)
+    (tool-bar-mode 0)
+  )
+#+END_SRC
+** Start Server
+Automatically start an Emacs Server that can be connected to via 'emacsclient -c'.
+#+BEGIN_SRC emacs-lisp
+(server-start)
+#+END_SRC
+** Autosaves
+Send autosaved files to a specific directory so they don't pollute every working directory you ever exit a file in without saving.
+#+BEGIN_SRC emacs-lisp
+(make-directory "~/.guixmacs/autosaves" t)
+(setq auto-save-file-name-transforms
+      `((".*" "~/.guixmacs/autosaves/" t)))
+(setq delete-auto-save-files t)
+#+END_SRC
 ** User Information
 #+BEGIN_SRC emacs-lisp
 (setq user-full-name "Libre Puppy")
