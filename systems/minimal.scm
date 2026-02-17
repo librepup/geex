@@ -57,17 +57,13 @@
                    (comment "Puppy")
                    (group "users")
                    (home-directory "/home/puppy")
-                   (supplementary-groups '("wheel" "netdev"
-                                           "audio"
-                                           "video"
-                                           "input"
-                                           "tty"))
+                   (supplementary-groups '("wheel" "netdev" "audio" "video"
+                                           "input" "tty"))
                    (shell (file-append zsh "/bin/zsh"))) %base-user-accounts))
 
     ;; Packages
     (packages (append (map specification->package
-                           '("grep"
-                             "coreutils"
+                           '("grep" "coreutils"
                              "glibc-locales"
                              "ncurses"
                              "zsh"
@@ -82,8 +78,7 @@
                              "nss-certs"
                              "bash"
                              "sed"
-                             "dhcpcd"))
-                      ))
+                             "dhcpcd"))))
 
     ;; Services
     (services
@@ -93,22 +88,23 @@
                                                          "permit nopass keepenv root
 permit persist keepenv setenv :wheel"))))
 
-             (modify-services %desktop-services
-               (guix-service-type config =>
-                                  (guix-configuration (inherit config)
-                                                      (substitute-urls (append
-                                                                        (list
-                                                                         "https://ci.guix.gnu.org"
-                                                                         "https://berlin.guix.gnu.org"
-                                                                         "https://bordeaux.guix.gnu.org"
-                                                                         "https://substitutes.nonguix.org"
-                                                                         "https://hydra-guix-129.guix.gnu.org"
-                                                                         "https://substitutes.guix.gofranz.com")
-                                                                        %default-substitute-urls))
-                                                      ;; Authorize via 'sudo guix archive --authorize < /etc/guix/channels/nonguix.pub'
-                                                      (authorized-keys (append
-                                                                        (list (local-file
-                                                                               "/etc/guix/files/keys/nonguix.pub"))
-                                                                        %default-authorized-guix-keys)))))))))
+                   (modify-services %desktop-services
+                     (guix-service-type config =>
+                                        (guix-configuration (inherit config)
+                                                            (substitute-urls (append
+                                                                              (list
+                                                                               "https://ci.guix.gnu.org"
+                                                                               "https://berlin.guix.gnu.org"
+                                                                               "https://bordeaux.guix.gnu.org"
+                                                                               "https://substitutes.nonguix.org"
+                                                                               "https://hydra-guix-129.guix.gnu.org"
+                                                                               "https://substitutes.guix.gofranz.com")
+                                                                              %default-substitute-urls))
+                                                            ;; Authorize via 'sudo guix archive --authorize < /etc/guix/channels/nonguix.pub'
+                                                            (authorized-keys (append
+                                                                              (list
+                                                                               (local-file
+                                                                                "/etc/guix/files/keys/nonguix.pub"))
+                                                                              %default-authorized-guix-keys))))))))))
 
 %guix-os
