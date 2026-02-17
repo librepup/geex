@@ -5,15 +5,6 @@
 (require 'exwm-systemtray)
 (require 'exwm-randr)
 (require 'doom-modeline)
-(use-package helm-exwm
-  :ensure t
-  :config
-  (setq helm-exwm-emacs-buffers-source (helm-exwm-build-emacs-buffers-source))
-  (setq helm-exwm-source (helm-exwm-build-source))
-  (setq helm-mini-default-sources `(helm-exwm-emacs-buffers-source
-                                    helm-exwm-source
-                                    helm-source-recentf)))
-(require 'helm-exwm)
 
 ;; randr mode
 (exwm-randr-mode 1)
@@ -83,8 +74,6 @@
                 (,(kbd "M-b") . #'windmove-left)
                 (,(kbd "M-n") . #'windmove-down)
                 (,(kbd "M-p") . #'windmove-up)
-                ;; alt-tab workspace controls
-                (,(kbd "M-<tab>") . #'exwm-workspace-switch-last)
                 ;; warp mouse to selected
                 (,(kbd "M-S-w") . #'exwm-mff-warp-to-selected)
                 ;; windower
