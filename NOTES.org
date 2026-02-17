@@ -2,60 +2,8 @@
 #+AUTHOR: librepup/nixpup
 #+DESCRIPTION: Notes, Tips, and useful Information about GNU Guix
 * Chapters
-** GNU Hurd
-*** System Service Setup
-#+BEGIN_SRC emacs-lisp
-(services
- (append
-  (list
-   (service hurd-vm-service-type
-            (hurd-vm-configuration
-             (memory-size 2048)
-             (secret-directory "/etc/guix/hurd-secrets")))
-  )
- )
-)
-#+END_SRC
-*** Entering
-Enter Hurd via `ssh -p 2222 root@localhost`. (+`-X` for X11 passthrough)
-
-*** File Transfer
-Copy files to Hurd via `scp -P 2222 <file> root@localhost:~/`, and similarly, from Hurd, via `scp -P 2222 root@localhost:/hurd/path/to/file ./`.
-
-*** SSH Setup
-Generate SSH Key via `ssh-keygen -t ed25519`, spam enter to not set a passphrase and use the default settings, then copy the `~/.ssh/id_XXXXXXX.pub` key into `/etc/guix/hurd-secrets` before rebuilding the system.
-
-*** Shepherd Service Commands
-**** Hurd Status
-`herd status hurd-vm`
-
-**** Stop Hurd
-`herd stop hurd-vm`
-
-**** Start Hurd
-`herd start hurd-vm`
-
-*** Optional Fixes
-**** X11 Forwarding
-In case X11/Xorg forwarding via SSH does not work, it may be advised to set an option such as `xhost +local:root`.
-
-** Commands
-*** After Fist Install
-To update the Guix Channels and pull the latest Guix and Channel Versions, run `guix pull`.
-Then, to rebuild your system, run `sudo guix system reconfigure /path/to/config.scm`.
-After running `guix pull`, remember to run `hash guix` to update bash's cache and clear it of the old guix binary location.
-Also make sure that "~/.config/guix/channels.scm" or "/etc/guix/channels.scm" is the *first* item in your $PATH.
-
+** Installation
 *** Installation Process
-**** Channel Setup
-1. `guix shell git-minimal`
-2. `git clone https://github.com/librepup/geex.git`
-3. `mkdir -p /mnt/geex`
-4. `mkdir -p ~/.config/guix`
-5. `cp ./geex/channels.scm ~/.config/guix/channels.scm`
-6. `guix archive --authorize < ./geex/files/keys/nonguix.pub`
-7. `guix pull`
-
 **** Partitioning and System Init
 ***** General
 1. `mount /dev/sda1 /mnt`
@@ -66,29 +14,68 @@ Also make sure that "~/.config/guix/channels.scm" or "/etc/guix/channels.scm" is
 6. `mkdir -o /mnt/etc/guix`
 7. `mv /path/to/geex/* /mnt/etc/guix/`
 
+***** Legacy/BIOS
+Basic Legacy/BIOS Partition Layout anc Creation Process:
+****** Partition
+#+BEGIN_SRC sh
+sudo parted /dev/sda --script \
+  mklabel msdos \
+  mkpart primary ext4 1MiB 100% \
+  set 1 boot on
+
+sudo mkfs.ext4 /dev/sda1
+****** Mount
+#+BEGIN_SRC sh
+sudo mount /dev/sda1 /mnt
+#+END_SRC
+****** Cow-Store and System Init
+#+BEGIN_SRC sh
+mkdir -o /mnt/etc/guix
+mv /path/to/geex/* /mnt/etc/guix/
+herd start cow-store /mnt
+guix system init /path/to/config.scm /mnt
+#+END_SRC
+****** Bootloader and Filesystem Configuration for Legacy/BIOS Setup
+#+BEGIN_SRC guile
+(bootloader (bootloader-configuration
+              (bootloader grub-bootloader)
+              (keyboard-layout keyboard-layout)
+              (targets '("/dev/sdb1"))))
+
+(file-systems (cons* (file-system
+                       (mount-point "/")
+                       (device (file-system-label "guix-root"))
+                       (type "ext4")) %base-file-systems))
+#+END_SRC
 ***** (U)EFI
 Basic (U)EFI Partition Layout and Creation Process:
-
-#+BEGIN_SRC markdown
-# Partition
-parted /dev/sda
-  mklabel gpt
-  mkpart ESP fate32 1MiB 2048MiB
-  set 1 esp on
+****** Partition
+#+BEGIN_SRC sh
+sudo parted /dev/sda --script \
+  mklabel gpt \
+  mkpart ESP fat32 1MiB 2048MiB \
+  set 1 esp on \
   mkpart primary ext4 2048MiB 100%
-  quit
 
 mkfs.fat -F32 /dev/sda1
 mkfs.ext4 /dev/sda2
+#+END_SRC
 
-# Mount
+****** Mount
+#+BEGIN_SRC sh
 mount /dev/sda2 /mnt
 mkdir -p /mnt/boot/efi
 mount /dev/sda1 /mnt/boot/efi
 #+END_SRC
 
-`config.scm` Bootloader and Filesystem Configuration for (U)EFI Setup:
-
+****** Cow-Store and System Init
+#+BEGIN_SRC sh
+mkdir -o /mnt/etc/guix
+mv /path/to/geex/* /mnt/etc/guix/
+herd start cow-store /mnt
+guix system init /path/to/config.scm /mnt
+#+END_SRC
+****** Bootloader and Filesystem Configuration for (U)EFI Setup
 #+BEGIN_SRC guile
 (bootloader (bootloader-configuration
   (bootloader grub-efi-bootloader)
@@ -106,15 +93,35 @@ mount /dev/sda1 /mnt/boot/efi
                      %base-file-systems))
 #+END_SRC
 
+***** Passwords
+Set passwords for users inside the "/mnt"-mounted GNU+Linux install.
+#+BEGIN_SRC sh
+passwd -R /mnt root
+passwd -R /mnt puppy
+#+END_SRC
+
+**** Channel Setup
+Authorize channel keys via 'sudo guix archive --authorize < /etc/guix/files/keys/nonguix.pub'.
+#+BEGIN_SRC sh
+guix shell git-minimal
+git clone https://github.com/librepup/geex.git
+mkdir -p /mnt/geex
+mkdir -p ~/.config/guix
+cp ./geex/channels.scm ~/.config/guix/channels.scm
+guix archive --authorize < ./geex/files/keys/nonguix.pub
+guix pull
+#+END_SRC
+
 *** Wifi Configuration
 **** Commands
-1. `rfkill unblock all`
-2. `ifconfig -a`
-   + Find WiFi Device/Cards Name
-3. `wpa_supplicant -c wifi.conf -i interface1s0 -B`
-4. `dhclient -v interface1s0`
-5. `nmcli device wifi list`
-6. `nmcli device wifi connect "SSID" password "PASSWORD"`
+Find WiFi Device/Cards Name via 'ifconfig -a'.
+#+BEGIN_SRC sh
+rfkill unblock all
+wpa_supplicant -c wifi.conf -i interface1s0 -B
+dhclient -v interface1s0
+nmcli device wifi list
+nmcli device wifi connect "SSID" password "PASSWORD"
+#+END_SRC
 
 **** wifi.conf
 #+BEGIN_SRC sh
@@ -135,7 +142,13 @@ network={
 }
 #+END_SRC
 
-*** Useful Commands
+*** After Fist Install
+To update the Guix Channels and pull the latest Guix and Channel Versions, run `guix pull`.
+Then, to rebuild your system, run `sudo guix system reconfigure /path/to/config.scm`.
+After running `guix pull`, remember to run `hash guix` to update bash's cache and clear it of the old guix binary location.
+Also make sure that "~/.config/guix/channels.scm" or "/etc/guix/channels.scm" is the *first* item in your $PATH.
+
+** Useful Commands
 **** List System Generations
 #+BEGIN_SRC sh
 guix system list-generations
@@ -226,13 +239,6 @@ sudo herd status
 1. `guix pull`
 2. `sudo systemctl restart guix-daemon.service` or `sudo herd restart guix-daemon`
 
-** Post-Installation Setup
-*** Passwords
-Set passwords for users inside the "/mnt"-mounted GNU+Linux install.
-#+BEGIN_SRC sh
-passwd -R /mnt root
-passwd -R /mnt puppy
-#+END_SRC
 ** Snippets
 *** Pin Kernel Version
 Use this to pin nonguix & guix channel to linux kernel 6.18.7 commit, so that not every rebuild, rebuilds the entire kernel.
@@ -357,3 +363,39 @@ And then add the renamed package to the packages list:
  ))
 )
 #+END_SRC
+** GNU Hurd
+*** System Service Setup
+#+BEGIN_SRC emacs-lisp
+(services
+ (append
+  (list
+   (service hurd-vm-service-type
+            (hurd-vm-configuration
+             (memory-size 2048)
+             (secret-directory "/etc/guix/hurd-secrets")))
+  )
+ )
+)
+#+END_SRC
+*** Entering
+Enter Hurd via `ssh -p 2222 root@localhost`. (+`-X` for X11 passthrough)
+
+*** File Transfer
+Copy files to Hurd via `scp -P 2222 <file> root@localhost:~/`, and similarly, from Hurd, via `scp -P 2222 root@localhost:/hurd/path/to/file ./`.
+
+*** SSH Setup
+Generate SSH Key via `ssh-keygen -t ed25519`, spam enter to not set a passphrase and use the default settings, then copy the `~/.ssh/id_XXXXXXX.pub` key into `/etc/guix/hurd-secrets` before rebuilding the system.
+
+*** Shepherd Service Commands
+**** Hurd Status
+`herd status hurd-vm`
+
+**** Stop Hurd
+`herd stop hurd-vm`
+
+**** Start Hurd
+`herd start hurd-vm`
+
+*** Optional Fixes
+**** X11 Forwarding
+In case X11/Xorg forwarding via SSH does not work, it may be advised to set an option such as `xhost +local:root`.

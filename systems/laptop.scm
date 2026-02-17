@@ -107,6 +107,7 @@
     (services
      (append (list (service gnome-desktop-service-type)
                    (service nix-service-type)
+                   (service alsa-service-type)
                    (service tlp-service-type
                             (tlp-configuration (cpu-scaling-governor-on-ac '("performace"))
                                                (cpu-scaling-governor-on-bat '("powersave"))
