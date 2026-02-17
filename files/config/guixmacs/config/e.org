@@ -521,6 +521,15 @@ Now we set up EMMS to listen to music inside of emacs.
 (emms-mode-line 1)
 (setq emms-mode-line-format "♫ %s")
 #+END_SRC
+** EXWM
+#+BEGIN_SRC emacs-lisp
+(require 'exwm))
+(add-hook 'exwm-init-hook
+          (lambda ()
+            (let ((exwm-config (expand-file-name "~/.guixmacs/exwm/colemak.el")))
+              (when (file-exists-p exwm-config)
+                  (load exwm-config)))))
+#+END_SRC
 ** Multiple Cursors
 Enable multiple cursors when pressing Ctrl+Shift+> and other keybinds to edit multiple lines at once.
 #+BEGIN_SRC emacs-lisp
