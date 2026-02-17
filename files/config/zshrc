@@ -70,6 +70,7 @@ alias fehwp="feh --bg-fill $@"
 alias wp="swaybg -m fill -i $@"
 alias zipCreate="echo 'Arg1: Archive.zip, Arg2: Folder/';zip -r $@"
 alias e="emacs -nw $@"
+alias ec="emacsclient -c -nw $@"
 alias ee="emacs -nw -Q --eval '(load-file \"~/.guixmacs/themes/guix-theme.el\")' --eval \"(load-theme 'guix t)\" $@"
 alias ed="emacs -nw -Q $@"
 alias gwng="guix weather $@ --substitute-urls='https://substitutes.nonguix.org'"
@@ -80,6 +81,13 @@ alias guixcontainer="printf 'Make sure your <filename.scm> is in an isolated fol
 alias guixcontainerenter="printf 'Usage:\n  guixcontainerenter <pid>\n';doas guix container exec $@ /run/current-system/profile/bin/bash --login"
 
 # Functions
+gs() {
+  if [[ -z "$1" ]]; then
+    echo "guix style -f <file.scm>"
+    return 1
+  fi
+  guix style -f "$@"
+}
 random() {
   local len
   if [ -z "$1" ]; then
