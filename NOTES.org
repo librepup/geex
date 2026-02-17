@@ -342,3 +342,18 @@ See Nonguix Documentation (https://gitlab.com/nonguix/nonguix), Section: NVIDIA 
  )
 )
 #+END_SRC
+*** Specify Package's Source Channel
+To specify the channel a package should be pulled from, define the name like so:
+#+BEGIN_SRC emacs-lisp
+(use-modules (jonabron packages emacs) #:rename (emacs-fancy-dabbrev jonabron-emacs-fancy-dabbrev))
+(use-modules (emacs packages melpa) #:rename (emacs-fancy-dabbrev melpa-emacs-fancy-dabbrev))
+#+END_SRC
+
+And then add the renamed package to the packages list:
+#+BEGIN_SRC emacs-lisp
+(home-environment
+ (packages (specifications->packages
+            (list "jonabron-emacs-fancy-dabbrev") ; or: "melpa-emacs-fancy-dabbrev"
+ ))
+)
+#+END_SRC

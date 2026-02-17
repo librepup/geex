@@ -129,6 +129,13 @@ Automatically start an Emacs Server that can be connected to via 'emacsclient -c
 #+BEGIN_SRC emacs-lisp
 (server-start)
 #+END_SRC
+** Pipewire
+#+BEGIN_SRC emacs-lisp
+(require 'pipewire)
+(global-set-key (kbd "<XF86AudioMute>") 'pipewire-toggle-muted)
+(global-set-key (kbd "<XF86AudioLowerVolume>") 'pipewire-decrease-volume)
+(global-set-key (kbd "<XF86AudioRaiseVolume>") 'pipewire-increase-volume)
+#+END_SRC
 ** Autosaves
 Send autosaved files to a specific directory so they don't pollute every working directory you ever exit a file in without saving.
 #+BEGIN_SRC emacs-lisp

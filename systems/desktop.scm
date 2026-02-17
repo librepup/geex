@@ -110,6 +110,7 @@
 	     (hurd-vm-configuration
 	      (memory-size 2048)
 	      (secret-directory "/etc/guix/hurd-secrets")))
+    (service alsa-service-type)
     (service gnome-desktop-service-type)
     (service nix-service-type)
     (simple-service 'doas-config etc-service-type

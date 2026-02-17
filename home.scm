@@ -33,18 +33,6 @@
              (nongnu packages game-client)
              (emacs packages melpa))
 
-;---
-; To specify the channel a package should be pulled from, define the name like so:
-; + (use-modules (jonabron packages emacs) #:rename (emacs-fancy-dabbrev jonabron-emacs-fancy-dabbrev))
-; + (use-modules (emacs packages melpa) #:rename (emacs-fancy-dabbrev melpa-emacs-fancy-dabbrev))
-; And then add the renamed package to the packages list:
-; + (home-environment
-; +  (packages (specifications->packages
-; +             (list "jonabron-emacs-fancy-dabbrev") ; or: "melpa-emacs-fancy-dabbrev"
-; +  ))
-; + )
-;---
-
 (define zsh (specification->package "zsh"))
 (define zsh-autosuggestions (specification->package "zsh-autosuggestions"))
 
@@ -120,6 +108,7 @@
                  "emacs-beacon"
                  "emacs-doom-modeline"
                  "emacs-org-texlive-collection"
+                 "emacs-pipewire"
                  ; EXWM
                  "emacs-exwm"
                  "emacs-exwm-x"
@@ -244,30 +233,57 @@
                  )))
 
  (services (list
-            ;;; PipeWire
+            ;;; mute-audio services
+            (simple-service 'null-audio
+                            boot-service-type
+                            (list
+                             (shepherd-service
+                              (documentation "Null Out Audio")
+                              (provision '(audio-null-out))
+                              (requirement '(alsa))
+                              (start #~(make-forkexec-constructor
+                                        (list #+(file-append alsa-utils "/bin/amixer") "set" "Master" "0%")))
+                              (stop #~(make-kill-destructor)))))
+            (simple-service 'mute-audio
+                            boot-service-type
+                            (list
+                             (shepherd-service
+                              (documentation "Mute Audio")
+                              (provision '(audio-mute))
+                              (requirement '(alsa))
+                              (start #~(make-forkexec-constructor
+                                        (list #+(file-append alsa-utils "/bin/amixer") "set" "Master" "mute")))
+                              (stop #~(make-kill-destructor)))))
+            ;;; services
+            ;; dbus
             (service home-dbus-service-type)
+            ;; pipewire
             (service home-pipewire-service-type
                      (home-pipewire-configuration
+                      (wireplumber wireplumber)
+                      (pipewire pipewire)
                       (enable-pulseaudio? #t)))
-            ;;; ZSH Configuration
+            ;; zsh
             (service home-zsh-service-type
                      (home-zsh-configuration
-                      (environment-variables '(("PS1" . "  %~ ")
-                                               ("PROMPT" . "  %~ ")
-                                               ("TERMINFO_DIRS" . "$HOME/.guix-home/profile/share/terminfo")
-                                               ("TERM" . "kitty")
-                                               ;("TERM" . "xterm-256color")
-                                               ("LANG" . "en_US.UTF-8")
-                                               ("LC_CTYPE" . "en_US.UTF-8")
-                                               ("LC_ALL" . "en_US.UTF-8")
-                                               ("GUIX_LOCPATH" . "$HOME/.guix-home/profile/lib/locale:$HOME/.guix-profile/lib/locale:/guix/current/lib/locale")
-                                               ("EDITOR" . "emacs")))
-                      (zshrc
-                       (list
-                        (local-file "files/config/zshrc")
-                      ))))
+                      (environment-variables '(
+                       ("PS1" . "  %~ ")
+                       ("PROMPT" . "  %~ ")
+                       ("TERMINFO_DIRS" . "$HOME/.guix-home/profile/share/terminfo")
+                       ("TERM" . "kitty")
+                       ("LANG" . "en_US.UTF-8")
+                       ("LC_CTYPE" . "en_US.UTF-8")
+                       ("LC_ALL" . "en_US.UTF-8")
+                       ("GUIX_LOCPATH" . "$HOME/.guix-home/profile/lib/locale:$HOME/.guix-profile/lib/locale:/guix/current/lib/locale")
+                       ("EDITOR" . "emacs")
+                     ))
+                     (zshrc
+                      (list
+                       (local-file "files/config/zshrc")
+                     ))
+            ))
 
-                 ;;; Environment Variables
+                 ;;; evironment variables
                  (simple-service 'environment-variables-config
                                  home-environment-variables-service-type
                                  `(("PAGER" . "LESS")
@@ -295,14 +311,8 @@
                                    ("GSK_RENDERER" . "gl")
                                    ("SHELL" . ,(file-append zsh "/bin/zsh"))
                                    ("LESSHISTFILE" . "$XDG_CACHE_HOME/.lesshst")))
-
-                 ;;; Dotfile Guix Home Setup, Symlinked as well as Mutable (~/.config/naitre/main.conf)
-                 ; Before:
-                 ;  `((".config/directory" ,(local-file (string-append (current-source-directory) "/files/config/directory" #:recursive? #t))))
-                 ; ... but (current-source-directory) was removed, as it is unnecessary (according to ChatGPT), and could cause breakage.
-                 (simple-service 'mpv-config
-                                 home-files-service-type
-                                 `((".config/mpv" ,(local-file "files/config/mpv" #:recursive? #t))))
+                 ;; dotfiles
+                 ; emacs
                  (simple-service 'dot-emacs-config
                                  home-files-service-type
                                  `((".emacs" ,(local-file "files/config/guixmacs/emacs"))))
@@ -318,6 +328,10 @@
                  (simple-service 'guixmacs-exwm-config
                                  home-files-service-type
                                  `((".guixmacs/exwm" ,(local-file "files/config/guixmacs/files/exwm" #:recursive? #t))))
+                 ; others
+                 (simple-service 'mpv-config
+                                 home-files-service-type
+                                 `((".config/mpv" ,(local-file "files/config/mpv" #:recursive? #t))))
                  (simple-service 'discord-config
                                  home-files-service-type
                                  `((".config/vesktop" ,(local-file "files/config/discord" #:recursive? #t))))
