@@ -88,6 +88,23 @@ gs() {
   fi
   guix style -f "$@"
 }
+gss() {
+  echo "[ Status ]"
+  git status
+  echo "[ Remote Sources ]"
+  git remote -v
+  echo "[ Branches ]"
+  echo "$(git branch --list)"
+}
+gp() {
+  if [[ $(echo $(git branch | sed 's/* //g')) == "main" ]]; then
+    git push -u origin main
+  else
+    printf "Branch (e.g. master): "
+    read -r pushBranch
+    git push -u origin "$pushBranch"
+  fi
+}
 random() {
   local len
   if [ -z "$1" ]; then
