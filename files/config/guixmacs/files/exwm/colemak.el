@@ -100,6 +100,7 @@
                                     (start-process "wofi" nil "wofi" "--show" "run")))
                 ; emacs-dmenu
                 (,(kbd "M-C-S-t") . dmenu)
+                (,(kbd "M-&") . dmenu)
                 ;; screenshots
                 ; flameshot
                 (,(kbd "M-a") . (lambda () (interactive)
