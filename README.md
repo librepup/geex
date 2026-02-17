@@ -88,3 +88,7 @@ If you copied all the files of this repository to their respective target direct
 
 ## Testing Guix System
 You can run a dry-build of the entire Guix System via `guix system build /etc/guix/config.scm`. This will build the entire system configuration, but not install it anywhere. You get a resulting `/gnu/store` path for your built system. This is useful to check whether the system configuration you wrote actually works/builds correctly, before running into issues when you're trying to install on real hardware/bare metal.
+
+# Notes
+You can view all of my Notes on GNU Guix, which include various code snippets, useful commands to remember, command combinations that you can turn into shell functions, and other information:
+## [Here](https://github.com/librepup/geex/blob/main/NOTES.org)
