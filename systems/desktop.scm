@@ -33,22 +33,7 @@
 (use-package-modules wm bootloaders certs shells version-control xorg)
 
 (define %guix-os (operating-system
-                  (kernel linux)
-                  #| ; Use this to pin nonguix & guix channel to linux kernel 6.18.7 commit, so not every rebuild, rebuilds the kernel.
-                  (kernel (let*
-                              ((channels
-                                (list (channel
-                                       (name 'nonguix)
-                                       (url "https://gitlab.com/nonguix/nonguix")
-                                       (commit "6c0ea215e0bd089bf3b2097e5c59dd726fbbe3045"))
-                                      (channel
-                                       (name 'guix)
-                                       (url "https://git.guix.gnu.org/guix.git")
-                                       (commit "9e6705676ffb7568d03b2b6c9fa3944afa2341e7"))))
-                               (inferior
-                                (inferior-for-channels channels)))
-                              (first (lookup-inferior-packages inferior "linux" "6.18.7"))))
-                  |#
+ (kernel linux)
  (initrd microcode-initrd)
  (firmware (append (list intel-microcode linux-firmware) %base-firmware))
  (host-name "guix")
@@ -62,14 +47,8 @@
               (keyboard-layout keyboard-layout)
               (bootloader grub-efi-bootloader)
               (targets '("/boot/efi"))))
- ;- Legacy/BIOS
- ;(bootloader (bootloader-configuration
- ;             (keyboard-layout keyboard-layout)
- ;             (bootloader grub-bootloader)
- ;             (targets '("/dev/sda1"))))
 
  ;; File Systems
- ;- Regular
  (file-systems (cons* (file-system
                        (mount-point "/")
                        (device (file-system-label "guix-root"))
@@ -80,18 +59,6 @@
                        ;; or: (device (uuid "PARTITION_UUID" 'fat32))
                        (type "vfat"))
                       %base-file-systems))
- ;- Encrypted
- ;(file-systems (append
- ;               (list (file-system
- ;                      (device "/dev/mapper/cryptroot")
- ;                      (mount-point "/")
- ;                      (type "ext4")
- ;                      (dependencies mapped-devices))
- ;                     (file-system
- ;                      (device (uuid "PARTITION_1_UUID" 'fat32))
- ;                      (mount-point "/boot/efi")
- ;                      (type "vfat")))
- ;               %base-file-systems))
 
  ;; Users
  (users (cons (user-account
@@ -139,7 +106,6 @@
  (services
   (append
    (list
-    ; Experimental GNU Hurd VM Service, disable if it causes issues.
     (service hurd-vm-service-type
 	     (hurd-vm-configuration
 	      (memory-size 2048)
@@ -162,7 +128,6 @@ permit persist keepenv setenv :wheel"))))
                                       (gdm-configuration
                                        (inherit config)
                                        (wayland? #t)))
-                    ;(delete pulseaudio-service-type)
                     (guix-service-type config =>
                                        (guix-configuration
                                         (inherit config)
@@ -174,7 +139,7 @@ permit persist keepenv setenv :wheel"))))
                                                "https://hydra-guix-129.guix.gnu.org"
                                                "https://substitutes.guix.gofranz.com")
                                                  %default-substitute-urls))
-                                        ; Authorize via 'sudo guix archive --authorize < /etc/guix/channels/nonguix.pub'
+                                        ; Authorize via 'sudo guix archive --authorize < /etc/guix/files/keys/nonguix.pub'
                                         (authorized-keys
                                          (append (list (local-file "/etc/guix/files/keys/nonguix.pub"))
                                                  %default-authorized-guix-keys))
@@ -188,11 +153,5 @@ permit persist keepenv setenv :wheel"))))
  )
 )
 
-; Wayland Nvidia OS Transformation, as described by Nonguix Docs.
-; https://gitlab.com/nonguix/nonguix - Section: NVIDIA graphics card -> System setup.
 ((compose (nonguix-transformation-nvidia))
  %guix-os)
-
-; For Xorg, use the following code block:
-; + ((nonguix-transformation-nvidia #:configure-xorg? #t)
-; + %guix-os)

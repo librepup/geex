@@ -118,7 +118,6 @@ permit persist keepenv setenv :wheel"))))
                                       (gdm-configuration
                                        (inherit config)
                                        (wayland? #t)))
-                    (delete pulseaudio-service-type)
                     (guix-service-type config =>
                                        (guix-configuration
                                         (inherit config)
@@ -130,7 +129,7 @@ permit persist keepenv setenv :wheel"))))
                                                "https://hydra-guix-129.guix.gnu.org"
                                                "https://substitutes.guix.gofranz.com")
                                                  %default-substitute-urls))
-                                        ; Authorize via 'sudo guix archive --authorize < /etc/guix/channels/nonguix.pub'
+                                        ; Authorize via 'sudo guix archive --authorize < /etc/guix/files/keys/nonguix.pub'
                                         (authorized-keys
                                          (append (list (local-file "/etc/guix/files/keys/nonguix.pub"))
                                                  %default-authorized-guix-keys))
