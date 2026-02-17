@@ -234,6 +234,26 @@
 
   (services
    (list
+    ;; emacs daemon
+    (simple-service 'emacs-daemon shepherd-root-service-type
+                    (list (shepherd-service (documentation "Emacs Daemon")
+                                            (provision '(emacs-daemon))
+                                            (requirement '(user-processes))
+                                            (start #~(make-forkexec-constructor
+                                                      (list #+(file-append
+                                                               emacs-pgtk
+                                                               "/bin/emacs")
+                                                            "--fg-daemon")
+                                                      #:user "puppy"
+                                                      #:group "users"
+                                                      #:log-file
+                                                      "/var/log/emacs-daemon.log"
+                                                      #:environment-variables (list
+                                                                               (string-append
+                                                                                "HOME=/home/puppy")
+                                                                               "TERM=kitty")))
+                                            (stop #~(make-kill-destructor))
+                                            (respawn? #t))))
     ;; mute-audio services
     (simple-service 'null-audio boot-service-type
                     (list (shepherd-service (documentation "Null Out Audio")
