@@ -809,11 +809,6 @@ else
         3>&1 1>&2 2>&3) || exit 1
 fi
 
-warning=$(dialog --backtitle "Jonageex Installer" --title "Verification" --menu "Please verify that all the entered values are CORRECT! Once the installation procedure begins, YOU CANNOT REVERSE THIS PROCESS ANYMORE!" 12 40 5 \
-       continue "Continue" \
-       abort "Abort" \
-       3>&1 1>&2 2>&3) || exit 1
-
 optionalServices=$(dialog --checklist "Optional Services" 15 50 5 \
                           hurd "GNU Hurd" off \
                           doas "doas" on \
@@ -928,6 +923,17 @@ configNix() {
     fi
 }
 
+lastEditNotice() {
+    lastEditNoticeFunc=$(dialog --backtitle "Jonageex Installer" --title "LAST NOTICE" --menu "!!! WARNING !!! This is the LAST notice the installer will give you, if you have not yet edited your appropriate '/tmp/jonageex.tmp.storage/geex/systems/<system>.scm' or '/mnt/etc/guix/system/<system>.scm' file (if the <system>.scm file exists inside '/mnt/etc/guix/systems/', edit THAT one!), DO SO NOW! You need to confirm whether the bootloader and filesystem sections point to the CORRECT DISKS and partitions with the appropriate PARTITION LABELS or PARTITION UUID's! If you do not do this, you could brick your install/system! !!! WARNING !!!" 32 50 10 \
+                                understood "Understood" \
+                                abort "Abort" \
+                                3>&1 1>&2 2>&3) || exit 1
+    if [ "$lastEditNoticeFunc" == "abort" ]; then
+        echo "Aborting..."
+        exit 1
+    fi
+}
+
 beginConfiguration() {
     configUsername
     if [[ "$nvidia" == "yes" ]]; then
@@ -967,16 +973,38 @@ passwordSetup() {
     echo "sudo passwd -R /mnt $username"
 }
 
+farewellHook() {
+    farewell=$(dialog --backtitle "Jonageex Installer" --title "Farewell" --menu "The installation is now complete, the installer ran every setup option it was supposed to run, and set up a functioning system using your specified Geex system configuration under '/mnt', with config files in '/mnt/etc/guix/'." 32 50 10 \
+                      farewell "Farewell" \
+                      3>&1 1>&2 2>&3) || exit 1
+    echo -e "System at: '/mnt'\nConfigs at: '/mnt/etc/guix/'\nYour Disks:"
+    lsblk -r -f
+    echo -e "After Setup Tips:\n  After reboot and login, run 'guix home reconfigure /etc/guix/home.scm' to set up your home environment.\n  To rebuid your system, run 'guix system reconfigure /etc/guix/config.scm'.\n\nMore information at https://github.com/librepup/geex"
+    exit 1
+}
+
 setupGuixHome() {
-    echo "mkdir -p /tmp/jonageexWorker"
-    echo "cd /tmp/jonageexWorker"
-    echo "git clone https://github.com/librepup/geex.git"
+    if [ "$geexUser" != "yes" ]; then
+      echo "mkdir -p /tmp/jonageexWorker"
+      echo "cd /tmp/jonageexWorker"
+      echo "git clone https://github.com/librepup/geex.git"
+      echo "mkdir -p /mnt/etc/guix"
+      echo "cp -r /tmp/jonageexWorker/geex/* /mnt/etc/guix/"
+      echo "mv /mnt/etc/guix/config.scm /mnt/etc/guix/geex.config.scm"
+      echo "cp /tmp/config.jonageex.scm /mnt/etc/guix/config.scm"
+      echo "Successfully copied librepup's Geex Configuration Files while preserving the 'config.scm' you just created."
+      echo "After finishing the installation process and booting into your new Guix machine, make sure to run 'guix home /etc/guix/home.scm'."
+    else
+        echo "As a pre-made Geex Configuration user, this step is merely cosmetic, all files were already copied into their respective directories."
+        echo "After finishing the installation process and booting into your new Guix machine, make sure to run 'guix home reconfigure /etc/guix/home.scm'."
+        farewellHook
+    fi
+}
+
+systemInitHook() {
+    echo "herd start cow-store /mnt"
     echo "mkdir -p /mnt/etc/guix"
-    echo "cp -r /tmp/jonageexWorker/geex/* /mnt/etc/guix/"
-    echo "mv /mnt/etc/guix/config.scm /mnt/etc/guix/geex.config.scm"
-    echo "cp /tmp/config.jonageex.scm /mnt/etc/guix/config.scm"
-    echo "Successfully copied librepup's Geex Configuration Files while preserving the 'config.scm' you just created."
-    echo "After finishing the installation process and booting into your new Guix machine, make sure to run 'guix home /etc/guix/home.scm'."
+    echo "guix system init /tmp/config.jonageex.scm /mnt"
 }
 
 beginInstallation() {
@@ -991,8 +1019,9 @@ beginInstallation() {
         echo "Formatting $disk as $bios..."
         uefiFormatting
     fi
-    passwordSetup
     setupGuixHome
+    systemInitHook
+    passwordSetup
 }
 
 BOOTLOADER_UEFI_BLOCK=" (bootloader (bootloader-configuration\n              (keyboard-layout keyboard-layout)\n              (bootloader grub-efi-bootloader)\n              (targets '(\"/boot/efi\"))))\n"
@@ -1009,11 +1038,174 @@ finalConfirmation() {
   fi
 }
 
+geexDesktopHook() {
+    uefiFormatting
+    noticeSystemCfg=$(dialog --backtitle "Jonageex Installer" --title "Selection" --menu "You have selected the 'desktop' Geex configuration system, the installer will now continue to create necessary directories in the mounted filesystem, copy files, and alert you about the fact that you may need to manually edit the '/systems/desktop.scm' file manually to adjust bootloader and filesystem settings." 32 50 10 \
+                             continue "Continue" \
+                             abort "Abort" \
+                             3>&1 1>&2 2>&3) || exit 1
+    if [ "$noticeSystemCfg" == "abort" ]; then
+        echo "Aborting..."
+        exit 1
+    fi
+    echo "mkdir -p /mnt/etc/guix"
+    echo "cp -r /tmp/jonageex.tmp.storage/geex/* /mnt/etc/guix/"
+    echo "herd start cow-store /mnt"
+    lastEditNotice
+    echo "guix system init /mnt/etc/guix/config.scm /mnt"
+    desktopFinishNotice=$(dialog --backtitle "Jonageex Installer" --title "Completed System Initialization" --menu "System Initialization is now complete, a fully functioning Guix system should now be present at '/mnt', with configuration files in '/mnt/etc/guix'. The setup will now continue with the password configuration phase, and then exit soon, make sure to verify everything worked as intended before rebooting!" 32 50 10 \
+                                 continue "Continue" \
+                                 abort "Abort" \
+                                 3>&1 1>&2 2>&3) || exit 1
+    if [ "$desktopFinishNotice" == "continue" ]; then
+        passwordSetup
+        nextStepOne=$(dialog --backtitle "Jonageex Installer" --title "Continuing to Guix Home Setup" --menu "The password setup phase is completed, the installer will now continue on to the Guix Home setup hook, afterwards the installer will exit and print out a few useful bits of information so you can verify the installation worked as intended. Continue?" 32 50 10 \
+                             continue "Continue" \
+                             abort "Abort" \
+                             3>&1 1>&2 2>&3) || exit 1
+        if [ "$nextStepOne" == "continue" ]; then
+            export geexUser="yes"
+            setupGuixHome
+        else
+            echo "Aborting..."
+            exit 1
+        fi
+    fi
+}
+
+geexLaptopHook() {
+    legacyFormatting
+    noticeSystemCfg=$(dialog --backtitle "Jonageex Installer" --title "Selection" --menu "You have selected the 'laptop' Geex configuration system, the installer will now continue to create necessary directories in the mounted filesystem, copy files, and alert you about the fact that you may need to manually edit the '/systems/laptop.scm' file manually to adjust bootloader and filesystem settings." 32 50 10 \
+                             continue "Continue" \
+                             abort "Abort" \
+                             3>&1 1>&2 2>&3) || exit 1
+    if [ "$noticeSystemCfg" == "abort" ]; then
+        echo "Aborting..."
+        exit 1
+    fi
+    echo "mkdir -p /mnt/etc/guix"
+    echo "cp -r /tmp/jonageex.tmp.storage/geex/* /mnt/etc/guix/"
+    echo "herd start cow-store /mnt"
+    lastEditNotice
+    echo "guix system init /mnt/etc/guix/config.scm /mnt"
+    laptopFinishNotice=$(dialog --backtitle "Jonageex Installer" --title "Completed System Initialization" --menu "System Initialization is now complete, a fully functioning Guix system should now be present at '/mnt', with configuration files in '/mnt/etc/guix'. The setup will now continue with the password configuration phase, and then exit soon, make sure to verify everything worked as intended before rebooting!" 32 50 10 \
+                                 continue "Continue" \
+                                 abort "Abort" \
+                                 3>&1 1>&2 2>&3) || exit 1
+    if [ "$laptopFinishNotice" == "continue" ]; then
+        passwordSetup
+        nextStepOne=$(dialog --backtitle "Jonageex Installer" --title "Continuing to Guix Home Setup" --menu "The password setup phase is completed, the installer will now continue on to the Guix Home setup hook, afterwards the installer will exit and print out a few useful bits of information so you can verify the installation worked as intended. Continue?" 32 50 10 \
+                             continue "Continue" \
+                             abort "Abort" \
+                             3>&1 1>&2 2>&3) || exit 1
+        if [ "$nextStepOne" == "continue" ]; then
+            export geexUser="yes"
+            setupGuixHome
+        else
+            echo "Aborting..."
+            exit 1
+        fi
+    fi
+}
+
+manualGitCloneHook() {
+    echo "mkdir -p /tmp/jonageex.tmp.storage"
+    echo "cd /tmp/jonageex.tmp.storage"
+    echo "git clone https://github.com/librepup/geex.git"
+    gitComplete=$(dialog --backtitle "Jonageex Installer" --title "Finished Cloning" --menu "The Installer has finished cloning the Geex repository into '/tmp/jonageex.tmp.storage/geex', you can now edit the files in there before pressing continue." 32 50 10 \
+                         continue "Continue" \
+                         abort "Abort" \
+                         3>&1 1>&2 2>&3) || exit 1
+    if [ "$gitComplete" == "continue" ]; then
+        if [ "$geexSys" == "desktop" ]; then
+            geexDesktopHook
+        elif [ "$geexSys" == "laptop" ]; then
+            geexLaptopHook
+        elif [ "$geexSys" == "libre" ]; then
+            geexLibreHook
+        else
+            geexMinimalHook
+        fi
+    else
+        echo "Aborting..."
+        exit 1
+    fi
+}
+
+manualEditingNotice() {
+    warningManualEdit=$(dialog --backtitle "Jonageex Installer" --title "Warning" --menu "Using the pre-made Geex system configuration setups means that you will have to go into '/tmp/jonageex.tmp.storage/geex/systems/' and manually set up the bootloader and filesystems block for your according <system>.scm file. Please remember this before continuing! Do you understand?" 32 50 10 \
+                               yes "Yes, I understand." \
+                               no "No" \
+                               3>&1 1>&2 2>&3) || exit 1
+    if [ "$warningManualEdit" == "no" ]; then
+        echo "Aborting..."
+        exit 1
+    else
+        manualGitCloneHook
+    fi
+}
+
+desktopSel() {
+    manualEditingNotice
+}
+
+laptopSel() {
+    manualEditingNotice
+}
+
+libreSel() {
+    manualEditingNotice
+}
+
+minimalSel() {
+    manualEditingNotice
+}
+
+
+geexConfigSelection() {
+    geexSel=$(dialog --backtitle "Jonageex Installer" --title "Pick Geex Setup" --menu "Please pick one of the available pre-made Geex system configuration setups." 32 50 10 \
+                     desktop "Desktop" \
+                     laptop "Laptop" \
+                     libre "Libre" \
+                     minimal "Minimal" \
+                     3>&1 1>&2 2>&3) || exit 1
+    if [ "$geexSel" == "desktop" ]; then
+        export geexSys="desktop"
+        desktopSel
+    elif [ "$geexSel" == "laptop" ]; then
+        export geexSys="laptop"
+        laptopSel
+    elif [ "$geexSel" == "libre" ]; then
+        export geexSys="libre"
+        libreSel
+    else
+        export geexSys="minimal"
+        minimalSel
+    fi
+}
+
+optionalPreConfigSetup() {
+    usePreMade=$(dialog --backtitle "Jonageex Installer" --title "Geex Configurations" --menu "Do you want to use the pre-made Geex configuration files?" 12 40 5 \
+           yes "Yes" \
+           no "No" \
+           3>&1 1>&2 2>&3) || exit 1
+    if [ "$usePreMade" == "yes" ]; then
+        geexConfigSelection
+    else
+        finalConfirmation
+    fi
+}
+
+warning=$(dialog --backtitle "Jonageex Installer" --title "Verification" --menu "Please verify that all the entered values are CORRECT! Once the installation procedure begins, YOU CANNOT REVERSE THIS PROCESS ANYMORE!" 12 40 5 \
+       continue "Continue" \
+       abort "Abort" \
+       3>&1 1>&2 2>&3) || exit 1
+
 if [ "$warning" == "continue" ]; then
     dialog --backtitle "Jonageex Installer" --title "Summary" --msgbox "Summary:\n\nUsername: $username\nHostname: $hostname\nNvidia: $nvidia\nKeyboard: $keyboardlayout\nDisk: $disk\nBIOS: $bios\nOpt. Services: $optionalServicesSummaryText" 24 40
     beginConfiguration
     dialog --backtitle "Jonageex Installer" --title "Finalization | READ CAREFULLY\!" --textbox "/tmp/config.jonageex.scm" 22 75
-    finalConfirmation
+    optionalPreConfigSetup
 else
     echo "[ Aborted Installation ]"
     exit
