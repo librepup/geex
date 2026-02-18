@@ -104,6 +104,7 @@
                                             "glibc-locales"
                                             "ncurses"
                                             "fzf"
+                                            "procps"
                                             "nss-certs"
                                             "rsync"
                                             "dmidecode"

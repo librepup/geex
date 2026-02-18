@@ -138,6 +138,7 @@
                                             "grep"
                                             "libnotify"
                                             "gnucash"
+                                            "procps"
                                             "rofi"
                                             "xset"
                                             "coreutils"
