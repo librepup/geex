@@ -77,6 +77,7 @@
                                             "emacs-windower"
                                             "emacs-company"
                                             "emacs-corfu-terminal"
+                                            "emacs-rc-mode"
                                             "emacs-guix"
                                             "emacs-simple-httpd"
                                             "emacs-org"

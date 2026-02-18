@@ -157,6 +157,11 @@ Enable the Beacon Line-Highlighter Globally.
 (require 'beacon)
 (beacon-mode 1)
 #+END_SRC
+** RC (Plan9 Shell) Mode
+#+BEGIN_SRC emacs-lisp
+(require 'rc-mode)
+(add-to-list 'auto-mode-alist '("\\.rc\\'" . rc-mode))
+#+END_SRC
 ** Resize Split Panes
 #+BEGIN_SRC emacs-lisp
 (global-set-key (kbd "C-S-<up>") 'shrink-window)
