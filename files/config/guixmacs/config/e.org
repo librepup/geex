@@ -540,7 +540,7 @@ Now we set up EMMS to listen to music inside of emacs.
 #+END_SRC
 ** EXWM
 #+BEGIN_SRC emacs-lisp
-(require 'exwm))
+(require 'exwm)
 (add-hook 'exwm-init-hook
           (lambda ()
             (let ((exwm-config (expand-file-name "~/.guixmacs/exwm/colemak.el")))

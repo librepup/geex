@@ -113,8 +113,6 @@
                                             "emacs-exwm"
                                             "emacs-exwm-x"
                                             "emacs-desktop-environment"
-                                            "emacs-helm-exwm"
-                                            "emacs-helm"
                                             "emacs-browse-url-dwim"
                                             "emacs-exwm-surf"
                                             "emacs-exwm-ss"
