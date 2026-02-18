@@ -83,10 +83,18 @@ alias isogztoiso="gunzip $@"
 
 # Functions
 ec() {
-  guix shell emacs-pgtk -- emacsclient -c -nw "$@"
+  if ! command -v emacsclient >/dev/null 2>&1; then
+    guix shell emacs-pgtk -- emacsclient -c -nw "$@"
+  else
+    emacsclient -c -nw "$@"
+  fi
 }
 eg() {
-  guix shell emacs-pgtk -- emacsclient -c "$@"
+  if ! command -v emacsclient >/dev/null 2>&1; then
+    guix shell emacs-pgtk -- emacsclient -c "$@"
+  else
+    emacsclient -c "$@"
+  fi
 }
 e() {
   emacsclient -c -nw "$@"
@@ -101,7 +109,7 @@ gw() {
       ;;
   esac
 }
-gs() {
+style() {
   if [[ -z "$1" ]]; then
     echo "guix style -f <file.scm>"
     return 1
