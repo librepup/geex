@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+guix shell \
+     emacs-pgtk \
+     emacs-exwm \
+     emacs-windower \
+     emacs-dmenu \
+     emacs-exwm-mff \
+     emacs-helm \
+     emacs-helm-exwm \
+     emacs-doom-modeline \
+     emacs-exwm-x \
+     coreutils \
+     emacs-desktop-environment \
+     emacs-guix \
+     emacs-fancy-dabbrev \
+     emacs-hoon-mode \
+     emacs-emms \
+     emacs-impatient-mode \
+     emacs-vim-tab-bar \
+     emacs-erc \
+     emacs-erc-image \
+     emacs-org \
+     emacs-pabbrev \
+     emacs-use-package \
+     emacs-lsp-mode \
+     emacs-lsp-ui \
+     emacs-markdown-mode \
+     emacs-multiple-cursors \
+     emacs-rainbow-mode \
+     emacs-hydra \
+     emacs-major-mode-hydra \
+     emacs-all-the-icons \
+     --pure --container

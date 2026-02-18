@@ -40,7 +40,7 @@
 
 (home-environment
   (packages (specifications->packages (list "git"
-                                            ;; Desktop Applications
+                                            "kitty"
                                             "discord"
                                             "element-desktop"
                                             "osu-lazer-bin"
@@ -56,7 +56,6 @@
                                             "zathura"
                                             "krita"
                                             "thunar"
-                                            ;; "mpv"
                                             "mpv-nvidia"
                                             "steam-nvidia"
                                             "protonup"
@@ -65,13 +64,12 @@
                                             "zsh-autosuggestions"
                                             "zsh-syntax-highlighting"
                                             ;; Emacs
-                                            ;; "emacs" ; X11 Emacs
-                                            "emacs-pgtk" ;Wayland Emacs
-                                            "emacs-fancy-dabbrev" ;From Jonabron Channel
-                                            "emacs-hoon-mode" ;From Jonabron Channel
+                                            "emacs-pgtk"
+                                            "emacs-fancy-dabbrev"
+                                            "emacs-hoon-mode"
                                             "emacs-emms"
                                             "emacs-impatient-mode"
-                                            "emacs-vim-tab-bar" ;From Emacs Channel
+                                            "emacs-vim-tab-bar"
                                             "emacs-erc"
                                             "emacs-erc-image"
                                             "emacs-windower"
@@ -111,7 +109,6 @@
                                             "emacs-doom-modeline"
                                             "emacs-org-texlive-collection"
                                             "emacs-pipewire"
-                                            ;; EXWM
                                             "emacs-exwm"
                                             "emacs-exwm-x"
                                             "emacs-desktop-environment"
@@ -127,6 +124,7 @@
                                             "emacs-exwm-mff"
                                             "emacs-dmenu"
                                             ;; Tools
+                                            "plan9port"
                                             "xinput"
                                             "xmodmap"
                                             "jami"
@@ -224,8 +222,6 @@
                                             "font-jonafonts"
                                             "font-dejavu"
                                             "font-google-noto-emoji"
-                                            ;; Terminal
-                                            "kitty"
                                             ;; Fetchers
                                             "hyfetch"
                                             "neofetch"
