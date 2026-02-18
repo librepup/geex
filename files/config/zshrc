@@ -54,10 +54,12 @@ alias rebuildsub="sudo guix system reconfigure /etc/guix/config.scm --substitute
 alias rb="sudo guix system reconfigure /etc/guix/config.scm $@"
 alias rebuildhome="guix home reconfigure /etc/guix/home.scm $@"
 alias rbh="guix home reconfigure /etc/guix/home.scm $@"
+alias home="guix home reconfigure /etc/guix/home.scm $@"
 alias rebuildhomesub="guix home reconfigure /etc/guix/home.scm --substitute-urls='https://ci.guix.gnu.org https://berlin.guix.gnu.org https://bordeaux.guix.gnu.org https://substitutes.nonguix.org https://hydra-guix-129.guix.gnu.org' $@"
 alias rbhc="guix home container $@"
+alias guixhomecontainer="guix home container $@"
 alias rebuildhomecontainer="guix home container $@"
-alias garbage="guix gc && sudo guix system delete-generations 1d && guix package --delete-generations $@"
+alias garbage="guix gc && sudo guix system delete-generations 1d && guix gc --optimize && guix package --delete-generations $@"
 alias shreddy="shred -z -u -v --iterations=1 $@"
 alias size="du -sh $@"
 alias tarShow="tar tvf $@"
@@ -103,6 +105,21 @@ gs() {
     return 1
   fi
   guix style -f "$@"
+}
+rs() {
+  guix shell plan9port -- 9 rc -c \
+    "fn l { eza --icons \$* };
+     fn ls { eza --icons \$* };
+     fn la { eza --icons -l -r -A -T -L=1 \$* };
+     fn q { exit };
+     fn l9 { 9 ls \$* };
+     fn 9l { 9 ls \$* };
+     fn cp { rsync -ah --progress \$* };
+     fn ec { emacsclient -c -nw \$* };
+     fn pwd { 9 pwd \$* };
+     fn date { /run/current-system/sw/bin/date \$* };
+     prompt='(9) % ';
+     rc"
 }
 gss() {
   echo "[ Status ]"
@@ -486,6 +503,9 @@ function c() {
 echoout() {
   echo "$(<"$1")"
 }
+catout() {
+  sh -c "cat $@"
+}
 ports() {
   doas ss -tulnp | awk '
     NR==1 {print; next}
@@ -552,6 +572,9 @@ set_prompt() {
   elif [[ ${(L)PWD} == *git* ]]; then
     PROMPT='  @git %1d$ '
     PS1='  @git %1d$ '
+  elif [[ ${(L)PWD} == *plan9* ]]; then
+    PROMPT='(9) %~ '
+    PS1='(9) %~ '
   else
     PROMPT='  %~ '
     PS1='  %~ '
