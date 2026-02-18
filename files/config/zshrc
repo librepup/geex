@@ -69,18 +69,34 @@ alias xwp="feh --bg-fill $@"
 alias fehwp="feh --bg-fill $@"
 alias wp="swaybg -m fill -i $@"
 alias zipCreate="echo 'Arg1: Archive.zip, Arg2: Folder/';zip -r $@"
-alias e="emacs -nw $@"
-alias ec="emacsclient -c -nw $@"
-alias ee="emacs -nw -Q --eval '(load-file \"~/.guixmacs/themes/guix-theme.el\")' --eval \"(load-theme 'guix t)\" $@"
-alias ed="emacs -nw -Q $@"
-alias gwng="guix weather $@ --substitute-urls='https://substitutes.nonguix.org'"
-alias gw="guix weather $@"
+alias ee="emacs -nw $@"
+alias et="emacs -nw -Q --eval '(load-file \"~/.guixmacs/themes/guix-theme.el\")' --eval \"(load-theme 'guix t)\" $@"
+alias eq="emacs -nw -Q $@"
 alias mvv="rsync -r -P $@"
 alias mvr="rsync -r -P $@"
 alias guixcontainer="printf 'Make sure your <filename.scm> is in an isolated folder with nothing else in it!\nUsage:\n  guixcontainer <filename.scm>\n';guix system container -L . $@"
 alias guixcontainerenter="printf 'Usage:\n  guixcontainerenter <pid>\n';doas guix container exec $@ /run/current-system/profile/bin/bash --login"
 
 # Functions
+ec() {
+  guix shell emacs-pgtk -- emacsclient -c -nw "$@"
+}
+eg() {
+  guix shell emacs-pgtk -- emacsclient -c "$@"
+}
+e() {
+  emacsclient -c -nw "$@"
+}
+gw() {
+  case "$1" in
+    nonguix)
+      guix weather "$2" --substitute-urls='https://substitutes.nonguix.org'
+      ;;
+    *)
+      guix weather "$1"
+      ;;
+  esac
+}
 gs() {
   if [[ -z "$1" ]]; then
     echo "guix style -f <file.scm>"
