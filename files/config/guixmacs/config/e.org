@@ -162,6 +162,11 @@ Enable the Beacon Line-Highlighter Globally.
 (require 'rc-mode)
 (add-to-list 'auto-mode-alist '("\\.rc\\'" . rc-mode))
 #+END_SRC
+** E-Shell Auto-Suggest
+#+BEGIN_SRC emacs-lisp
+(require 'esh-autosuggest)
+(add-hook 'eshell-mode-hook #'esh-autosuggest-mode)
+#+END_SRC
 ** Resize Split Panes
 #+BEGIN_SRC emacs-lisp
 (global-set-key (kbd "C-S-<up>") 'shrink-window)

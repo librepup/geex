@@ -69,6 +69,7 @@
                                             "emacs-hoon-mode"
                                             "emacs-emms"
                                             "emacs-impatient-mode"
+                                            "emacs-esh-autosuggest"
                                             "emacs-vim-tab-bar"
                                             "emacs-erc"
                                             "emacs-erc-image"
