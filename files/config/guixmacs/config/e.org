@@ -127,7 +127,9 @@ Set a few sane defaults (copied from https://github.com/johanwiden/exwm-setup).
 ** Start Server
 Automatically start an Emacs Server that can be connected to via 'emacsclient -c'.
 #+BEGIN_SRC emacs-lisp
-(server-start)
+(require 'server)
+(unless (server-running-p)
+  (server-start))
 #+END_SRC
 ** Pipewire
 #+BEGIN_SRC emacs-lisp
