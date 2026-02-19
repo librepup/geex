@@ -11,7 +11,12 @@ This GNU Guix Configuration pre-configures a few useful channels to make certain
 
 # Usage
 ## Setup
-Clone this repository via `git clone https://github.com/nixpup/geex`, then move the files to their respective destinations:
+Clone this repository via `git clone https://github.com/nixpup/geex`, then run the mover script (`geexMover.sh`), or move the files to their respective destinations manually:
+### Mover
+ - `chmod a+x ./geexMover.sh`
+ - `./geexMover.sh`
+
+### Manual
  - `cp channels.scm ~/.config/guix/channels.scm`
  - `cp channels.scm /etc/guix/channels.scm`
  - `cp -r files /etc/guix/files`
