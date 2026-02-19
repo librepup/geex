@@ -165,10 +165,71 @@ libreStage2() {
 minimalStage2() {
     echo "Entered Minimal System Setup Stage 2"
 }
+biosLegacyEditHook() {
+    legacyBlock="$(echo -e " (bootloader (bootloader-configuration\n              (keyboard-layout keyboard-layout)\n              (bootloader grub-bootloader)\n              (targets '(\"${diskPrefixed}1\"))))\n")"
+    legacyBlockVerify=$(dialog --backtitle "Geex Installer" --title "Verify BIOS Block" --menu "$legacyBlock" 32 50 10 \
+                             continue "Continue" \
+                             abort "Abort" \
+                             3>&1 1>&2 2>&3) || exit 1
+    if [ "$legacyBlockVerify" == "abort" ]; then
+        echo "[ Status ]: Aborting..."
+        exit 1
+    fi
+    if [ -f "/tmp/geex.config.${stager}.dd" ]; then
+        sed -i 's/GEEX_BIOS_OPTIONAL/$uefiBlock/g' /tmp/geex.config.${stager}.dd
+        successMessage=$(dialog --backtitle "Geex Installer" --title "Success" --menu "Successfully wrote BIOS hook into '/tmp/geex.config.${stager}.dd'." 32 50 10 \
+                                continue "Continue" \
+                                abort "Abort" \
+                                3>&1 1>&2 2>&3) || exit 1
+        if [ "$successMessage" == "abort" ]; then
+            echo "[ Status ] Aborting..."
+            exit 1
+        fi
+    else
+        errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --menu "The Installer encountered an error: '/tmp/geex.config.${stager}.dd' was not found, thus the BIOS hook did not finish writing.\n\nContinue anyways?" 32 50 10 \
+                              continue "Continue" \
+                              abort "Abort" \
+                              3>&1 1>&2 2>&3) || exit 1
+        if [ "$errorMessage" == "abort" ]; then
+            echo "[ Status ]: Aborting..."
+            exit 1
+        fi
+    fi
+}
+biosUefiEditHook() {
+    uefiBlock="$(echo -e " (bootloader (bootloader-configuration\n              (keyboard-layout keyboard-layout)\n              (bootloader grub-efi-bootloader)\n              (targets '(\"/boot/efi\"))))\n")"
+    uefiBlockVerify=$(dialog --backtitle "Geex Installer" --title "Verify BIOS Block" --menu "$uefiBlock" 32 50 10 \
+                             continue "Continue" \
+                             abort "Abort" \
+                             3>&1 1>&2 2>&3) || exit 1
+    if [ "$uefiBlockVerify" == "abort" ]; then
+        echo "[ Status ]: Aborting..."
+        exit 1
+    fi
+    if [ -f "/tmp/geex.config.${stager}.dd" ]; then
+        sed -i 's/GEEX_BIOS_OPTIONAL/$uefiBlock/g' /tmp/geex.config.${stager}.dd
+        successMessage=$(dialog --backtitle "Geex Installer" --title "Success" --menu "Successfully wrote BIOS hook into '/tmp/geex.config.${stager}.dd'." 32 50 10 \
+                                continue "Continue" \
+                                abort "Abort" \
+                                3>&1 1>&2 2>&3) || exit 1
+        if [ "$successMessage" == "abort" ]; then
+            echo "[ Status ] Aborting..."
+            exit 1
+        fi
+    else
+        errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --menu "The Installer encountered an error: '/tmp/geex.config.${stager}.dd' was not found, thus the BIOS hook did not finish writing.\n\nContinue anyways?" 32 50 10 \
+                              continue "Continue" \
+                              abort "Abort" \
+                              3>&1 1>&2 2>&3) || exit 1
+        if [ "$errorMessage" == "abort" ]; then
+            echo "[ Status ]: Aborting..."
+            exit 1
+        fi
+    fi
+}
 systemInstallHook() {
     echo "[ Status ]: Beginning formal GNU Guix installation..."
 }
-
 
 # Installer Hooks
 installerHook() {
@@ -256,8 +317,13 @@ installerHook() {
             fi
         fi
     fi
-    biosHook
     disksHook
+    biosHook
+    if [ "$bios" == "legacy" ]; then
+        biosLegacyEditHook
+    else
+        biosUefiEditHook
+    fi
     keyboard=$(dialog --backtitle "Geex Installer" --title "Keyboard Layout" --menu "Select your preferred Keyboard Layout:" 12 40 5 \
                       us "English (US)" \
                       colemak "English (Colemak)" \
