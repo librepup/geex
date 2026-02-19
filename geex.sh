@@ -83,7 +83,7 @@ cat > /tmp/geex.channels.dd <<'EOF'
         %default-channels)
 EOF
 
-cat > /tmp/geex.config.desktop.dd <<'EOF'
+cat > /tmp/geex.config.desktop.template.dd <<'EOF'
 (use-modules (gnu)
              (gnu system)
              (gnu system nss)
@@ -142,16 +142,7 @@ cat > /tmp/geex.config.desktop.dd <<'EOF'
     ;; Bootloader
     GEEX_BIOS_OPTIONAL
 
-    ;; File Systems
-    (file-systems (cons* (file-system
-                           (mount-point "/")
-                           (device (file-system-label "guix-root"))
-                           (type "ext4"))
-                         (file-system
-                           (mount-point "/boot/efi")
-                           (device (file-system-label "guix-efi"))
-                           ;; or: (device (uuid "PARTITION_UUID" 'fat32))
-                           (type "vfat")) %base-file-systems))
+    GEEX_FILESYSTEM_OPTIONAL
 
     ;; Users
     (users (cons (user-account
@@ -254,7 +245,7 @@ systemsSelection() {
 setKeyboardUs() {
     echo "Keyboard: English (US)"
     if [ -f "/tmp/geex.config.${stager}.dd" ]; then
-        sed -i 's/GEEX_KEYBOARD_LAYOUT/"us"/g' /tmp/geex.config.dd
+        sed -i 's/GEEX_KEYBOARD_LAYOUT/"us"/g' /tmp/geex.config.${stager}.dd
     else
         echo "No '/tmp/geex.config.${stager}.dd' found..."
         export keyboardUsFeedback="[ Layout (US) ]: '/tmp/geex.config.${stager}.dd' absent."
@@ -263,7 +254,7 @@ setKeyboardUs() {
 setKeyboardColemak() {
     echo "Keyboard: English (Colemak)"
     if [ -f "/tmp/geex.config.${stager}.dd" ]; then
-        sed -i 's/GEEX_KEYBOARD_LAYOUT/"us" "colemak"/g' /tmp/geex.config.dd
+        sed -i 's/GEEX_KEYBOARD_LAYOUT/"us" "colemak"/g' /tmp/geex.config.${stager}.dd
     else
         echo "No '/tmp/geex.config.${stager}.dd' found..."
         export keyboardColemakFeedback="[ Layout (Colemak) ]: '/tmp/geex.config.${stager}.dd' absent."
@@ -272,7 +263,7 @@ setKeyboardColemak() {
 setKeyboardDe() {
     echo "Keyboard: German (DE)"
     if [ -f "/tmp/geex.config.${stager}.dd" ]; then
-        sed -i 's/GEEX_KEYBOARD_LAYOUT/"de"/g' /tmp/geex.config.dd
+        sed -i 's/GEEX_KEYBOARD_LAYOUT/"de"/g' /tmp/geex.config.${stager}.dd
     else
         echo "No '/tmp/geex.config.${stager}.dd' found..."
         export keyboardDeFeedback="[ Layout (DE) ]: '/tmp/geex.config.${stager}.dd' absent."
@@ -360,12 +351,27 @@ customStage2() {
 }
 filesystemHook() {
     if [ "$bios" == "uefi" ]; then
-        export filesystemBlock="$(echo -e "    (file-systems (cons* (file-system\n                           (mount-point \"/\")\n                           (device (file-system-label \"guix-root\"))\n                           (type \"ext4\"))\n                         (file-system\n                           (mount-point \"/boot/efi\")\n                           (device (file-system-label \"guix-efi\"))\n                           (type \"vfat\")) %base-file-systems))\n")"
+        export efiPartName=$(ls /dev/disk/by-label/ | grep -x -e 'guix-efi' -e 'GUIX-EFI')
+        if [[ "$efiPartName" == "" ]]; then
+            export efiPartName="guix-efi"
+        fi
+        export filesystemBlock="$(echo -e "    (file-systems (cons* (file-system\n                           (mount-point \"/\")\n                           (device (file-system-label \"guix-root\"))\n                           (type \"ext4\"))\n                         (file-system\n                           (mount-point \"/boot/efi\")\n                           (device (file-system-label \"$efiPartName\"))\n                           (type \"vfat\")) %base-file-systems))\n")"
     else
         export filesystemBlock="$(echo -e "    (file-systems (cons* (file-system\n                           (mount-point \"/\")\n                           (device (file-system-label \"guix-root\"))\n                           (type \"ext4\")) %base-file-systems))\n")"
     fi
+    if [ -f "/tmp/geex.filesystem.block.dd" ]; then
+        rm /tmp/geex.filesystem.block.dd
+    fi
+    echo "$filesystemBlock" >> /tmp/geex.filesystem.block.dd
     if [ -f "/tmp/geex.config.${stager}.dd" ]; then
-        sed -i 's/GEEX_FILESYSTEM_OPTIONAL/$filesystemBlock/g' /tmp/geex.config.${stager}.dd
+        sed -i "/GEEX_FILESYSTEM_OPTIONAL/{
+        r /tmp/geex.filesystem.block.dd
+        d
+        }" /tmp/geex.config.${stager}.dd
+        #sed -i "/GEEX_FILESYSTEM_OPTIONAL/r /tmp/geex.filesystem.block.dd" \
+        #-e "/GEEX_FILESYSTEM_OPTIONAL/d" \
+        #/tmp/geex.config.${stager}.dd
+        #sed -i "s/GEEX_FILESYSTEM_OPTIONAL/$filesystemBlock/g" /tmp/geex.config.${stager}.dd
         export wroteFilesystemBlock=1
     else
         errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --menu "The Installer failed to write the File-System Block to '/tmp/geex.config.${stager}.dd'. Do you still want to continue?\n\n(!) Warning (!)\nThis may make your system unable to boot, unless you manually write a file-system block into the resulting, final config." 32 50 10 \
@@ -380,7 +386,7 @@ filesystemHook() {
     fi
 }
 biosLegacyEditHook() {
-    legacyBlock="$(echo -e " (bootloader (bootloader-configuration\n              (keyboard-layout keyboard-layout)\n              (bootloader grub-bootloader)\n              (targets '(\"${diskPrefixed}1\"))))\n")"
+    legacyBlock="$(echo -e "    (bootloader (bootloader-configuration\n              (keyboard-layout keyboard-layout)\n              (bootloader grub-bootloader)\n              (targets '(\"${diskPrefixed}1\"))))\n")"
     legacyBlockVerify=$(dialog --backtitle "Geex Installer" --title "Verify BIOS Block" --menu "$legacyBlock" 32 50 10 \
                              continue "Continue" \
                              abort "Abort" \
@@ -389,8 +395,19 @@ biosLegacyEditHook() {
         echo "[ Status ]: Aborting..."
         exit 1
     fi
+    if [ -f "/tmp/geex.bios.block.dd" ]; then
+        rm /tmp/geex.bios.block.dd
+    fi
+    echo "$legacyBlock" >> /tmp/geex.bios.block.dd
     if [ -f "/tmp/geex.config.${stager}.dd" ]; then
-        sed -i 's/GEEX_BIOS_OPTIONAL/$uefiBlock/g' /tmp/geex.config.${stager}.dd
+        sed -i "/GEEX_BIOS_OPTIONAL/{
+        r /tmp/geex.bios.block.dd
+        d
+        }" /tmp/geex.config.${stager}.dd
+        #sed -i "/GEEX_BIOS_OPTIONAL/r /tmp/geex.bios.block.dd" \
+        #-e "/GEEX_BIOS_OPTIONAL/d" \
+        #/tmp/geex.config.${stager}.dd
+        #sed -i "s/GEEX_BIOS_OPTIONAL/$legacyBlock/g" /tmp/geex.config.${stager}.dd
         successMessage=$(dialog --backtitle "Geex Installer" --title "Success" --menu "Successfully wrote BIOS hook into '/tmp/geex.config.${stager}.dd'." 32 50 10 \
                                 continue "Continue" \
                                 abort "Abort" \
@@ -413,7 +430,7 @@ biosLegacyEditHook() {
     fi
 }
 biosUefiEditHook() {
-    uefiBlock="$(echo -e " (bootloader (bootloader-configuration\n              (keyboard-layout keyboard-layout)\n              (bootloader grub-efi-bootloader)\n              (targets '(\"/boot/efi\"))))\n")"
+    uefiBlock="$(echo -e "    (bootloader (bootloader-configuration\n              (keyboard-layout keyboard-layout)\n              (bootloader grub-efi-bootloader)\n              (targets '(\"/boot/efi\"))))\n")"
     uefiBlockVerify=$(dialog --backtitle "Geex Installer" --title "Verify BIOS Block" --menu "$uefiBlock" 32 50 10 \
                              continue "Continue" \
                              abort "Abort" \
@@ -422,8 +439,19 @@ biosUefiEditHook() {
         echo "[ Status ]: Aborting..."
         exit 1
     fi
+    if [ -f "/tmp/geex.bios.block.dd" ]; then
+        rm /tmp/geex.bios.block.dd
+    fi
+    echo "$uefiBlock" >> /tmp/geex.bios.block.dd
     if [ -f "/tmp/geex.config.${stager}.dd" ]; then
-        sed -i 's/GEEX_BIOS_OPTIONAL/$uefiBlock/g' /tmp/geex.config.${stager}.dd
+        sed -i "/GEEX_BIOS_OPTIONAL/{
+        r /tmp/geex.bios.block.dd
+        d
+        }" /tmp/geex.config.${stager}.dd
+        #sed -i "/GEEX_BIOS_OPTIONAL/r /tmp/geex.bios.block.dd" \
+        #-e "/GEEX_BIOS_OPTIONAL/d" \
+        #/tmp/geex.config.${stager}.dd
+        #sed -i "s/GEEX_BIOS_OPTIONAL/$uefiBlock/g" /tmp/geex.config.${stager}.dd
         successMessage=$(dialog --backtitle "Geex Installer" --title "Success" --menu "Successfully wrote BIOS hook into '/tmp/geex.config.${stager}.dd'." 32 50 10 \
                                 continue "Continue" \
                                 abort "Abort" \
@@ -592,7 +620,7 @@ installerHook() {
         exit 1
     else
         if [ -f "/tmp/geex.config.${stager}.dd" ]; then
-            sed -i 's/GEEX_USERNAME/$username/g' /tmp/geex.config.${stager}.dd
+            sed -i "s/GEEX_USERNAME/$username/g" /tmp/geex.config.${stager}.dd
         else
             errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --menu "File '/tmp/geex.config.${stager}.dd' was not found, thus the Installer did NOT set the Username to '$username'." 32 50 10 \
                                   continue "Continue anyways" \
@@ -611,7 +639,7 @@ installerHook() {
         exit 1
     else
         if [ -f "/tmp/geex.config.${stager}.dd" ]; then
-            sed -i 's/GEEX_HOSTNAME/$hostname/g' /tmp/geex.config.${stager}.dd
+            sed -i "s/GEEX_HOSTNAME/$hostname/g" /tmp/geex.config.${stager}.dd
         else
             errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --menu "File '/tmp/geex.config.${stager}.dd' was not found, thus the Installer did NOT set the Hostname to '$hostname'." 32 50 10 \
                                   continue "Continue anyways" \
@@ -653,6 +681,7 @@ installerHook() {
     else
         export wroteBiosBlock="Yes"
     fi
+    filesystemHook
     summaryTextContents="$(echo -e "[!] Read Carefully [!]\n\nUsername: $username\nHostname: $hostname\nDisk: $disk (Part Format: ${diskPrefixed}1, ${diskPrefixed}2, ... )\nBIOS: $bios (Detected: $detectedBios)\nKeyboard: $keyboard\nSystemchoice: $systemchoice\nStager: $stager\nStagerfile: '/tmp/geex.config.${stager}.dd'\nWrote BIOS Block?: ${wroteBiosBlock}")"
     echo "$summaryTextContents" >> /tmp/geex.summary.dd
     summary=$(dialog --backtitle "Geex Installer" --title "Summary" --textbox "/tmp/geex.summary.dd" 22 75 3>&1 1>&2 2>&3)
