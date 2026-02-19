@@ -11,8 +11,8 @@ case "$1" in
         export configFile="$HOME/Geex/files/config/waybar/config.jsonc"
         ;;
     *|"")
-        export configPath="$HOME/.config/waybar"
-        export configFile="$HOME/.config/waybar/config.jsonc"
+        export configPath="$HOME/Geex/files/config/waybar"
+        export configFile="$HOME/Geex/files/config/waybar/config.jsonc"
         ;;
 esac
 
@@ -28,7 +28,7 @@ case "$2" in
         export waybarTheme="style.css"
         ;;
     *|"")
-        export waybarTheme="guix.css"
+        export waybarTheme="jungle.css"
         ;;
 esac
 
