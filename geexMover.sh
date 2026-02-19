@@ -224,3 +224,4 @@ unset userName
 unset homeDirectory
 unset manualHomeDirectory
 unset manualUserName
+unset userGuess
