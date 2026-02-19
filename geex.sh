@@ -1,5 +1,48 @@
 #!/usr/bin/env sh
 
+for arg in "$@"; do
+    case "$arg" in
+        g|-g|--g|git|-git|--git|github|-github|--github)
+            echo -e \
+                 "Information: REPO and CONTACT
+
+  REPO
+    https://github.com/librepup/geex
+
+  CONTACT
+    librepup@member.fsf.org"
+            exit 1
+            ;;
+    esac
+done
+
+for arg in "$@"; do
+    case "$arg" in
+        h|-h|--h|help|-help|--help)
+            echo -e \
+                 "Usage: ENVIRONMENT geex OPTION
+Run geex with OPTION, if given.
+
+COMMAND must be one of the sub-commands listed below:
+
+  main commands
+    help                         display help message
+    git                          display github repository url and developer contact information
+    install                      start the interactive installer
+    debug                        start application in debug mode
+
+ENVIRONMENT can be one of the environment variables listed below:
+
+  main environment variables
+    GEEX_DEBUG                   start application in debug mode
+    GEEX_DEBUG_MODE              start application in debug mode
+    GEEX_IGNORE_MISSING          ignore if packages are missing
+    GEEX_DEBUG_MISSING_ENABLE    pretend as if packages were missing"
+            exit 1
+            ;;
+    esac
+done
+
 # Check if Commands are Missing
 export missingCommandCount=0
 for cmd in cp awk dialog git grep parted lsblk find; do
@@ -43,8 +86,6 @@ fi
 if [ ! -z "$GUIX_ENVIRONMENT" ]; then
     echo "[ Status ]: Running inside Guix Shell for Command Compatibility"
 fi
-
-dialog --clear
 
 cat > /tmp/geex.channels.dd <<'EOF'
 (append (list
@@ -154,14 +195,18 @@ cat > /tmp/geex.config.desktop.template.dd <<'EOF'
                                            "audio"
                                            "video"
                                            "input"
-                                           "tty"
-                                           "nixbld"))
+                                           GEEX_NIX_GROUP_OPTIONAL
+                                           "tty"))
                    (shell (file-append zsh "/bin/zsh"))) %base-user-accounts))
 
     ;; Packages
     (packages (append (map specification->package
                            '("eza" "bat"
                              "zoxide"
+                             GEEX_DOAS_PACKAGE_OPTIONAL
+                             GEEX_I3_PACKAGE_OPTIONAL
+                             GEEX_NAITRE_PACKAGE_OPTIONAL
+                             GEEX_XMONAD_PACKAGE_OPTIONAL
                              "ripgrep"
                              "grep"
                              "coreutils"
@@ -189,13 +234,10 @@ cat > /tmp/geex.config.desktop.template.dd <<'EOF'
     ;; Services
     (services
      (append (list (service alsa-service-type)
-                   (service gnome-desktop-service-type)
-                   (service nix-service-type)
-                   (simple-service 'doas-config etc-service-type
-                                   (list `("doas.conf" ,(plain-file
-                                                         "doas.conf"
-                                                         "permit nopass keepenv root
-permit persist keepenv setenv :wheel"))))
+                   GEEX_NIX_SERVICE_OPTIONAL
+                   GEEX_HURD_SERVICE_OPTIONAL
+                   GEEX_GNOME_SERVICE_OPTIONAL
+                   GEEX_DOAS_SERVICE_OPTIONAL
                    (set-xorg-configuration
                     (xorg-configuration (keyboard-layout keyboard-layout)
                                         (modules (cons nvidia-driver
@@ -232,6 +274,168 @@ permit persist keepenv setenv :wheel"))))
 EOF
 
 # Setup Hooks
+desktopEnvironmentsHook() {
+    deSelection=$(dialog --checklist "Select Desktop(s):" 15 50 5 \
+                         gnome "Gnome" on \
+                         naitre "NaitreHUD" on \
+                         xmonad "XMonad" off \
+                         i3wm "i3wm" off \
+                         3>&1 1>&2 2>&3) || exit 1
+    # i3wm
+    i3PackageBlock="$(echo -e "                             \"i3-wm\"\n                             \"i3-autotiling\"\n                             \"dmenu\"\n                             \"i3status\"")"
+    if [ -f "/tmp/geex.wm.i3.packages.dd" ]; then
+        rm /tmp/geex.wm.i3.packages.dd
+    fi
+    echo "$i3PackageBlock" >> /tmp/geex.wm.i3.packages.dd
+    # Gnome
+    gnomeServiceBlock="$(echo -e "                   (service gnome-desktop-service-type)")"
+    if [ -f "/tmp/geex.wm.gnome.service.dd" ]; then
+        rm /tmp/geex.wm.gnome.service.dd
+    fi
+    echo "$gnomeServiceBlock" >> /tmp/geex.wm.gnome.service.dd
+    # NaitreHUD
+    naitrePackageBlock="$(echo -e "                             \"naitre\"\n                             \"vicinae\"\n                             \"waybar\"\n                             \"dankmaterialshell\"\n                             \"swaybg\"\n                             \"wl-clipboard\"")"
+    if [ -f "/tmp/geex.wm.naitre.packages.dd" ]; then
+        rm /tmp/geex.wm.naitre.packages.dd
+    fi
+    echo "$naitrePackageBlock" >> /tmp/geex.wm.naitre.packages.dd
+    # XMonad
+    xmonadPackageBlock="$(echo -e "                             \"xmonad\"\n                             \"ghc-xmonad-contrib\"\n                             \"xmobad\"")"
+    if [ -f "/tmp/geex.wm.xmonad.packages.dd" ]; then
+        rm /tmp/geex.wm.xmonad.packages.dd
+    fi
+    echo "$xmonadPackageBlock" >> /tmp/geex.wm.xmonad.packages.dd
+    # Replace if Selected
+    if [ -f "/tmp/geex.config.${stager}.dd" ]; then
+        if [[ "$deSelection" == *i3wm* ]]; then
+            sed -i "/GEEX_I3_PACKAGE_OPTIONAL/{
+                   r /tmp/geex.wm.i3.packages.dd
+                   d
+                   }" /tmp/geex.config.${stager}.dd
+            export installedDesktopi3=1
+        else
+            sed -i 's/GEEX_I3_PACKAGE_OPTIONAL//g' /tmp/geex.config.${stager}.dd
+            export installedDesktopi3=0
+        fi
+        if [[ "$deSelection" == *gnome* ]]; then
+            sed -i "/GEEX_GNOME_SERVICE_OPTIONAL/{
+                   r /tmp/geex.wm.gnome.service.dd
+                   d
+                   }" /tmp/geex.config.${stager}.dd
+            export installedDesktopGnome=1
+        else
+            sed -i 's/GEEX_GNOME_SERVICE_OPTIONAL//g' /tmp/geex.config.${stager}.dd
+            export installedDesktopGnome=0
+        fi
+        if [[ "$deSelection" == *naitre* ]]; then
+            sed -i "/GEEX_NAITRE_PACKAGE_OPTIONAL/{
+                   r /tmp/geex.wm.naitre.packages.dd
+                   d
+                   }" /tmp/geex.config.${stager}.dd
+            export installedDesktopNaitre=1
+        else
+            sed -i 's/GEEX_NAITRE_PACKAGE_OPTIONAL//g' /tmp/geex.config.${stager}.dd
+            export installedDesktopNaitre=0
+        fi
+        if [[ "$deSelection" == *xmonad* ]]; then
+            sed -i "/GEEX_XMONAD_PACKAGE_OPTIONAL/{
+                   r /tmp/geex.wm.xmonad.packages.dd
+                   d
+                   }" /tmp/geex.config.${stager}.dd
+            export installedDesktopXmonad=1
+        else
+            sed -i 's/GEEX_XMONAD_PACKAGE_OPTIONAL//g' /tmp/geex.config.${stager}.dd
+            export installedDesktopXmonad=0
+        fi
+        export finishedDesktopSetup=1
+    else
+        export finishedDesktopSetup=0
+    fi
+}
+serviceSetupHook() {
+    serviceSelection=$(dialog --checklist "Select Services:" 15 50 5 \
+                              hurd "GNU Hurd" off \
+                              nix "Nix" off \
+                              doas "doas" on \
+                              3>&1 1>&2 2>&3) || exit 1
+    read -r -a serviceSelectionArray <<< "$serviceSelection"
+    serviceSelectionCount="${#serviceSelectionArray[@]}"
+    serviceSelectionSummaryText=$(printf '%s\n' "${serviceSelectionArray[@]}")
+    # Nix Service
+    nixServiceBlock="$(echo -e "                   (service nix-service-type)\n")"
+    nixGroupBlock="$(echo -e "                                           \"nixbld\"")"
+    if [ -f "/tmp/geex.service.nix.block.dd" ]; then
+        rm /tmp/geex.service.nix.block.dd
+    fi
+    if [ -f "/tmp/geex.group.nix.block.dd" ]; then
+        rm /tmp/geex.group.nix.block.dd
+    fi
+    echo -e "$nixServiceBlock" >> /tmp/geex.service.nix.block.dd
+    echo -e "$nixGroupBlock" >> /tmp/geex.group.nix.block.dd
+    # Doas Service
+    doasPackageBlock="$(echo -e "                             \"opendoas\"")"
+    doasServiceBlock="$(echo -e "                   (simple-service 'doas-config etc-service-type\n                                   (list \`(\"doas.conf\" ,(plain-file\n                                                         \"doas.conf\"\n                                                         \"permit nopass keepenv root\npermit persist keepenv setenv :wheel\"))))")"
+    if [ -f "/tmp/geex.service.doas.block.dd" ]; then
+        rm /tmp/geex.service.doas.block.dd
+    fi
+    if [ -f "/tmp/geex.package.doas.block.dd" ]; then
+        rm /tmp/geex.package.doas.block.dd
+    fi
+    echo "$doasServiceBlock" >> /tmp/geex.service.doas.block.dd
+    echo "$doasPackageBlock" >> /tmp/geex.package.doas.block.dd
+    # Hurd Service
+    hurdServiceBlock="$(echo -e "                   (service hurd-vm-service-type\n                                       (hurd-vm-configuration (memory-size 2048)\n                                                              (secret-directory \"/etc/guix/hurd-secrets\")))")"
+    if [ -f "/tmp/geex.service.hurd.block.dd" ]; then
+        rm /tmp/geex.service.hurd.block.dd
+    fi
+    echo -e "$hurdServiceBlock" >> /tmp/geex.service.hurd.block.dd
+    # Replace if Selected
+    if [ -f "/tmp/geex.config.${stager}.dd" ]; then
+        if [[ "$serviceSelection" == *doas* ]]; then
+            sed -i "/GEEX_DOAS_SERVICE_OPTIONAL/{
+                   r /tmp/geex.service.doas.block.dd
+                   d
+                   }" /tmp/geex.config.${stager}.dd
+            sed -i "/GEEX_DOAS_PACKAGE_OPTIONAL/{
+                   r /tmp/geex.package.doas.block.dd
+                   d
+                   }" /tmp/geex.config.${stager}.dd
+            export installedServiceDoas=1
+        else
+            sed -i 's/GEEX_DOAS_SERVICE_OPTIONAL//g' /tmp/geex.config.${stager}.dd
+            sed -i 's/GEEX_DOAS_PACKAGE_OPTIONAL//g' /tmp/geex.config.${stager}.dd
+            export installedServiceDoas=0
+        fi
+        if [[ "$serviceSelection" == *nix* ]]; then
+            sed -i "/GEEX_NIX_SERVICE_OPTIONAL/{
+                   r /tmp/geex.service.nix.block.dd
+                   d
+                   }" /tmp/geex.config.${stager}.dd
+            sed -i "/GEEX_NIX_GROUP_OPTIONAL/{
+                   r /tmp/geex.group.nix.block.dd
+                   d
+                   }" /tmp/geex.config.${stager}.dd
+            export installedServiceNix=1
+        else
+            sed -i 's/GEEX_NIX_SERVICE_OPTIONAL//g' /tmp/geex.config.${stager}.dd
+            sed -i 's/GEEX_NIX_GROUP_OPTIONAL//g' /tmp/geex.config.${stager}.dd
+            export installedServiceNix=0
+        fi
+        if [[ "$serviceSelection" == *hurd* ]]; then
+            sed -i "/GEEX_HURD_SERVICE_OPTIONAL/{
+                   r /tmp/geex.service.hurd.block.dd
+                   d
+                   }" /tmp/geex.config.${stager}.dd
+            export installedServiceHurd=1
+        else
+            sed -i 's/GEEX_HURD_SERVICE_OPTIONAL//g' /tmp/geex.config.${stager}.dd
+            export installedServiceHurd=0
+        fi
+        export finishedServiceSetup=1
+    else
+        export finishedServiceSetup=0
+    fi
+}
 systemsSelection() {
     systemchoice=$(dialog --backtitle "Geex Installer" --title "Systemchoice" --menu "Please choose one of the following available pre-made Systems Configurations, or select 'Custom' to create your own Configuration.\n\nOptions:\n  - desktop -> Nvidia-Enabled Desktop Configuration\n  - laptop -> Portable (No Nvidia) Configuration\n  - libre -> Fully Libre (Linux-Libre Kernel) Configuration\n  - minimal -> Minimalistic Server Configuration" 32 50 10 \
                           desktop "Desktop" \
@@ -567,6 +771,11 @@ homeHook() {
 
 # Installer Hooks
 installerHook() {
+    if [ -n "$GEEX_DEBUG" ] || [ -n "$GEEX_DEBUG_MODE" ]; then
+        debugNotice=$(dialog --backtitle "Geex Installer" --title "Debug Notice" --menu "The Installer has detected that you are running in Debug Mode!\n\nCommands will now not actually install anything, copy anything, make changes to your disks, or initialize the GNU Guix System." 14 60 4 \
+                             acknowledge "Yes, I understand." \
+                   3>&1 1>&2 2>&3) || exit 1
+    fi
     welcome=$(dialog --backtitle "Geex Installer" --title "Welcome" --menu "Welcome to the (still experimental) Geex Installer, this Installer will help you to install the Geex Configuration Files onto real Hardware, or install a custom version of Guix, with your very own Configuration Files, to a system of your choice.\n\nThis Installer is pre-alpha code, so please follow instructions carefully when given, and verify everything worked after the installation finishes.\n\nTo begin, click 'I agree'." 32 50 10 \
                                 agree "I agree" \
                                 abort "Abort" \
@@ -682,9 +891,28 @@ installerHook() {
         export wroteBiosBlock="Yes"
     fi
     filesystemHook
-    summaryTextContents="$(echo -e "[!] Read Carefully [!]\n\nUsername: $username\nHostname: $hostname\nDisk: $disk (Part Format: ${diskPrefixed}1, ${diskPrefixed}2, ... )\nBIOS: $bios (Detected: $detectedBios)\nKeyboard: $keyboard\nSystemchoice: $systemchoice\nStager: $stager\nStagerfile: '/tmp/geex.config.${stager}.dd'\nWrote BIOS Block?: ${wroteBiosBlock}")"
+    serviceSetupHook
+    if [ "$wroteFilesystemBlock" == 0 ]; then
+        export isFilesystemWritten="No"
+    else
+        export isFilesystemWritten="Yes"
+    fi
+    if [ "$finishedServiceSetup" == 0 ]; then
+        export areServicesWritten="No"
+        export serviceSelection="None"
+    else
+        export areServicesWritten="Yes"
+    fi
+    desktopEnvironmentsHook
+    if [ "$finishedDesktopSetup" == 0 ]; then
+        export areDesktopsWritten="No"
+        export deSelection="None"
+    else
+        export areDesktopsWritten="Yes"
+    fi
+    summaryTextContents="$(echo -e "[!] Read Carefully [!]\n\nUsername: $username\nHostname: $hostname\nDisk: $disk (Part Format: ${diskPrefixed}1, ${diskPrefixed}2, ... )\nBIOS: $bios (Detected: $detectedBios)\nKeyboard: $keyboard\nSystemchoice: $systemchoice\nStager: $stager\nStagerfile: '/tmp/geex.config.${stager}.dd'\nWrote BIOS Block?: ${wroteBiosBlock}\nWrote Filesystems?: $isFilesystemWritten\nWrote Services?: $areServicesWritten\nServices: $serviceSelection\nWrote Desktops?: $areDesktopsWritten\nDesktops: $deSelection")"
     echo "$summaryTextContents" >> /tmp/geex.summary.dd
-    summary=$(dialog --backtitle "Geex Installer" --title "Summary" --textbox "/tmp/geex.summary.dd" 22 75 3>&1 1>&2 2>&3)
+    summary=$(dialog --backtitle "Geex Installer" --title "Summary" --textbox "/tmp/geex.summary.dd" 34 75 3>&1 1>&2 2>&3)
     confirmation=$(dialog --backtitle "Geex Installer" --title "Confirmation" --menu "Have you confirmed whether or not all the information provided is correct? If so, would you like to begin the installation now?" 32 50 10 \
                           yes "Yes, begin Installation" \
                           no "No, Abort" \
@@ -782,30 +1010,22 @@ installerHook() {
         exit 1
 }
 
-# Check for Help Argument
-if [ "$1" == "h" ] || [ "$1" == "help" ] || [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
-    echo -e \
-         "geex - Geex Systems Configuration Utility
-  options:
-    arguments:
-      - [i/-i/--i] [install/-install/--install] => Start interactive Installer
-      - [g/-g/--g] [git/-git/--git] [github/-github/--github] => Print Geex's GitHub Repository URL
-    environment variables:
-      - GEEX_DEBUG/GEEX_DEBUG_MODE => Do not perform any operations, just pretend.
-      - GEEX_IGNORE_MISSING => Ignore Missing Packages, try to Continue Anyways
-      - GEEX_DEBUG_MISSING_ENABLE => Pretend as if Packages were Missing"
-    exit 1
-elif [ "$1" == "g" ] || [ "$1" == "git" ] || [ "$1" == "-g" ] || [ "$1" == "--g" ] || [ "$1" == "-git" ] || [ "$1" == "--git" ] || [ "$1" == "github" ] || [ "$1" == "-github" ] || [ "$1" == "--github" ]; then
-    echo -e \
-         "Geex GitHub Repository:
-  - URL: https://github.com/librepup/geex
+for arg in "$@"; do
+    case "$arg" in
+        d|-d|--d|debug|-debug|--debug)
+            export GEEX_DEBUG=1
+            export GEEX_DEBUG_MODE=1
+            ;;
+    esac
+done
 
-LibrePup E-Mail (for questions):
-  - E-Mail: librepup@member.fsf.org"
-    exit 1
-elif [ "$1" == "i" ] || [ "$1" == "-i" ] || [ "$1" == "--i" ] || [ "$1" == "install" ] || [ "$1" == "-install" ] || [ "$1" == "--install" ]; then
-    installerHook
-fi
+for arg in "$@"; do
+    case "$arg" in
+        i|-i|--i|install|-install|--install)
+            installerHook
+            ;;
+    esac
+done
 
 # Create Randomized Backup Name
 export randFunc="$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 12)"
