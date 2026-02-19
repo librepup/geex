@@ -18,6 +18,108 @@ done
 
 for arg in "$@"; do
     case "$arg" in
+        c|-c|--c|clean|-clean|--clean)
+            if [ -f "/tmp/geex.config.desktop.dd" ]; then
+                rm /tmp/geex.config.desktop.dd
+            fi
+            if [ -f "/tmp/geex.config.laptop.dd" ]; then
+                rm /tmp/geex.config.laptop.dd
+            fi
+            if [ -f "/tmp/geex.config.libre.dd" ]; then
+                rm /tmp/geex.config.libre.dd
+            fi
+            if [ -f "/tmp/geex.config.minimal.dd" ]; then
+                rm /tmp/geex.config.minimal.dd
+            fi
+            if [ -f "/tmp/geex.config.desktop.template.dd" ]; then
+                rm /tmp/geex.config.desktop.template.dd
+            fi
+            if [ -f "/tmp/geex.config.laptop.template.dd" ]; then
+                rm /tmp/geex.config.laptop.template.dd
+            fi
+            if [ -f "/tmp/geex.config.libre.template.dd" ]; then
+                rm /tmp/geex.config.libre.template.dd
+            fi
+            if [ -f "/tmp/geex.config.minimal.template.dd" ]; then
+                rm /tmp/geex.config.minimal.template.dd
+            fi
+            if [ -f "/tmp/geex.summary.dd" ]; then
+                rm /tmp/geex.summary.dd
+            fi
+            if [ -f "/tmp/geex.keyboardstatus.dd" ]; then
+                rm /tmp/geex.keyboardstatus.dd
+            fi
+            if [ -f "/tmp/geex.detecteddisks.dd" ]; then
+                rm /tmp/geex.detecteddisks.dd
+            fi
+            if [ -f "/tmp/geex.detectedbios.dd" ]; then
+                rm /tmp/geex.detectedbios.dd
+            fi
+            if [ -f "/tmp/geex.home.scm" ]; then
+                rm /tmp/geex.home.scm
+            fi
+            if [ -f "/tmp/geex.bios.block.dd" ]; then
+                rm /tmp/geex.bios.block.dd
+            fi
+            if [ -f "/tmp/geex.filesystem.block.dd" ]; then
+                rm /tmp/geex.filesystem.block.dd
+            fi
+            if [ -f "/tmp/geex.service.hurd.block.dd" ]; then
+                rm /tmp/geex.service.hurd.block.dd
+            fi
+            if [ -f "/tmp/geex.service.nix.block.dd" ]; then
+                rm /tmp/geex.service.nix.block.dd
+            fi
+            if [ -f "/tmp/geex.group.nix.block.dd" ]; then
+                rm /tmp/geex.group.nix.block.dd
+            fi
+            if [ -f "/tmp/geex.package.doas.block.dd" ]; then
+                rm /tmp/geex.package.doas.block.dd
+            fi
+            if [ -f "/tmp/geex.service.doas.block.dd" ]; then
+                rm /tmp/geex.service.doas.block.dd
+            fi
+            if [ -f "/tmp/geex.wm.i3.packages.dd" ]; then
+                rm /tmp/geex.wm.i3.packages.dd
+            fi
+            if [ -f "/tmp/geex.wm.gnome.service.dd" ]; then
+                rm /tmp/geex.wm.gnome.service.dd
+            fi
+            if [ -f "/tmp/geex.wm.naitre.packages.dd" ]; then
+                rm /tmp/geex.wm.naitre.packages.dd
+            fi
+            if [ -f "/tmp/geex.wm.xmonad.packages.dd" ]; then
+                rm /tmp/geex.wm.xmonad.packages.dd
+            fi
+            if [ -d "/tmp/geex.git.storage" ]; then
+                rm -rf /tmp/geex.git.storage
+            fi
+            if [ -f "/tmp/geex.channels.dd" ]; then
+                rm /tmp/geex.channels.dd
+            fi
+            if [ -f "/tmp/channels.scm" ]; then
+                rm /tmp/channels.scm
+            fi
+            if [ -f "/tmp/geex.config.desktop.template.dd" ]; then
+                rm /tmp/geex.config.desktop.template.dd
+            fi
+            if [ -f "/tmp/geex.config.minimal.template.dd" ]; then
+                rm /tmp/geex.config.minimal.template.dd
+            fi
+            if [ -f "/tmp/geex.config.libre.template.dd" ]; then
+                rm /tmp/geex.config.libre.template.dd
+            fi
+            if [ -f "/tmp/geex.config.laptop.template.dd" ]; then
+                rm /tmp/geex.config.laptop.template.dd
+            fi
+            echo -e "Successfully cleaned up all possible leftovers."
+            exit 1
+            ;;
+    esac
+done
+
+for arg in "$@"; do
+    case "$arg" in
         h|-h|--h|help|-help|--help)
             echo -e \
                  "Usage: ENVIRONMENT geex OPTION
@@ -30,6 +132,7 @@ COMMAND must be one of the sub-commands listed below:
     git                          display github repository url and developer contact information
     install                      start the interactive installer
     debug                        start application in debug mode
+    clean                        clean up all possible leftovers
 
 ENVIRONMENT can be one of the environment variables listed below:
 
