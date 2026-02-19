@@ -658,6 +658,68 @@ EOF
 
 
 # Setup Hooks
+channelPullHook() {
+    if [ -f "/tmp/geex.channels.dd" ]; then
+        cp /tmp/geex.channels.dd /tmp/channels.scm
+        if [ -f "/mnt/etc/guix" ]; then
+            cp /tmp/channels.scm /mnt/etc/guix/channels.scm
+            export pullFrom="mnt"
+        elif [ -n "$GEEX_DEBUG" ] || [ -n "$GEEX_DEBUG_MODE" ]; then
+            export pullFrom="mock"
+        else
+            export pullFrom="tmp"
+        fi
+        if [ "$pullFrom" == "mnt" ]; then
+            guix pull --channels=/mnt/etc/guix/channels.scm
+            export finPull=1
+        elif [ "$pullFrom" == "tmp" ]; then
+            guix pull --channels=/tmp/channels.scm
+            export finPull=1
+        elif [ "$pullFrom" == "mock" ]; then
+            echo "[ Debug ]: Pretending to have pulled channels..."
+            export finPull=1
+        else
+            export finPull=0
+        fi
+    else
+        mkdir -p /tmp/geex.git.storage
+        git clone https://github.com/librepup/geex.git /tmp/geex.git.storage/geex
+        cp /tmp/geex.git.storage/geex/channels.scm /tmp/geex.git.channels.scm
+        guix pull /tmp/geex.git.channels.scm
+        export finPull=1
+    fi
+    if [ "$finPull" == 0 ]; then
+        errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --menu "The Installer failed to pull the appropriate Guix channels, due to one of the following issues:\n1. Connection issue - check your internet connection.\n2. File mismatch - cannot find channels.scm occurrence anywhere.\n3. Guix binary missing - if this is the issue, make sure you have the command 'guix' available.\n\nContinue anyways?" 32 50 10 \
+                              continue "Continue" \
+                              abort "Abort" \
+                              3>&1 1>&2 2>&3) || exit 1
+        if [ "$errorMessage" == "abort" ]; then
+            echo "[ Status ]: Aborting..."
+            exit 1
+        fi
+        export channelReport="No"
+    elif [ -n "$GEEX_DEBUG" ] || [ -n "$GEEX_DEBUG_MODE" ]; then
+        successMessage=$(dialog --backtitle "Geex Installer" --title "Success" --menu "Debug Mode Detected, pretending as if channels were pulled successfully. (Mock) Installation will now continue as planned." 32 50 10 \
+                                continue "Continue" \
+                                abort "Abort" \
+                                3>&1 1>&2 2>&3) || exit 1
+        if [ "$successMessage" == "abort" ]; then
+            echo "[ Status ]: Aborting..."
+            exit 1
+        fi
+        export channelReport="Mock"
+    else
+        successMessage=$(dialog --backtitle "Geex Installer" --title "Success" --menu "Successfully pulled in the latest channels! Installation will now continue as planned." 32 50 10 \
+                                continue "Continue" \
+                                abort "Abort" \
+                                3>&1 1>&2 2>&3) || exit 1
+        if [ "$successMessage" == "abort" ]; then
+            echo "[ Status ]: Aborting..."
+            exit 1
+        fi
+        export channelReport="Yes"
+    fi
+}
 desktopEnvironmentsHook() {
     deSelection=$(dialog --checklist "Select Desktop(s):" 15 50 5 \
                          gnome "Gnome" on \
@@ -1312,6 +1374,7 @@ installerHook() {
                           no "No, Abort" \
                           3>&1 1>&2 2>&3) || exit 1
     if [ "$confirmation" == "yes" ]; then
+        channelPullHook
         systemInstallHook
     else
         echo "[ Status ]: Aborting..."
@@ -1371,7 +1434,7 @@ installerHook() {
                     desktopsExist="Yes"
                 fi
                 if [ "$systemFinished" == 1 ]; then
-                    export finishedMessage="$(echo -e "Final Report\n============\nCopied Home?: $homeStatus\nHome-Get Method?: $homeGetMethod\nInstallation Path: '/mnt'\nWrote BIOS Block?: $wroteBiosBlock\nFormatted Disks?: $formattedDisksStatus\nWrote Filesystems?: $isFilesystemWritten\nInstalled Desktops?: $desktopsExist\nInstalled Services?: $areServicesWritten")"
+                    export finishedMessage="$(echo -e "Final Report\n============\nCopied Home?: $homeStatus\nHome-Get Method?: $homeGetMethod\nInstallation Path: '/mnt'\nWrote BIOS Block?: $wroteBiosBlock\nFormatted Disks?: $formattedDisksStatus\nWrote Filesystems?: $isFilesystemWritten\nInstalled Desktops?: $desktopsExist\nInstalled Services?: $areServicesWritten\nPulled Channels?: $channelReport")"
                     finishedNotice=$(dialog --backtitle "Geex Installer" --title "Finalization" --menu "$finishedMessage" 32 50 10 \
                                             finish "Finish" \
                                             abort "Abort" \
@@ -1385,7 +1448,7 @@ installerHook() {
                         echo -e "[ Status ]: Success! Geex (GNU Guix) was installed to your '$disk' Drive, and mounted at '/mnt'.\n[ Result ]: Here are your Files\n  - 'config.scm' -> /mnt/etc/guix/config.scm (and) /tmp/geex.config.${stager}.scm\n - 'home.scm' -> /mnt/etc/guix/home.scm\n[ Info ]: You may want to know about these useful Commands:\n - Rebuild System\n   - guix system reconfigure /etc/guix/config.scm\n - Rebuild Home\n   - guix home reconfigure /etc/guix/home.scm\n - Describe Generation\n   - guix describe\n - Pull Channels\n   - guix pull\n\nThank you for using Geex!"
                     fi
                 else
-                    export finishedMessage="$(echo -e "Final Report\n============\nCopied Home?: $homeStatus\nHome-Get Method?: $homeGetMethod\nInstallation Path: '/mnt'\nWrote BIOS Block?: $wroteBiosBlock\nFormatted Disks?: $formattedDisksStatus\nWrote Filesystems?: $isFilesystemWritten\nInstalled Desktops?: $desktopsExist\nInstalled Services?: $areServicesWritten")"
+                    export finishedMessage="$(echo -e "Final Report\n============\nCopied Home?: $homeStatus\nHome-Get Method?: $homeGetMethod\nInstallation Path: '/mnt'\nWrote BIOS Block?: $wroteBiosBlock\nFormatted Disks?: $formattedDisksStatus\nWrote Filesystems?: $isFilesystemWritten\nInstalled Desktops?: $desktopsExist\nInstalled Services?: $areServicesWritten\nPulled Channels?: $channelReport")"
                     finishedNotice=$(dialog --backtitle "Geex Installer" --title "Finalization" --menu "$finishedMessage" 32 50 10 \
                                             finish "Finish" \
                                             abort "Abort" \
