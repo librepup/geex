@@ -44,6 +44,202 @@ if [ ! -z "$GUIX_ENVIRONMENT" ]; then
     echo "[ Status ]: Running inside Guix Shell for Command Compatibility"
 fi
 
+dialog --clear
+
+cat > /tmp/geex.channels.dd <<'EOF'
+(append (list
+         (channel
+          (name 'jonabron)
+          (branch "master")
+          (url "https://github.com/librepup/jonabron.git"))
+         (channel
+          (name 'nonguix)
+          (url "https://gitlab.com/nonguix/nonguix")
+          (commit "48a8706d44040cc7014f36873dbd834c048aadd3")
+          (introduction
+           (make-channel-introduction
+            "897c1a470da759236cc11798f4e0a5f7d4d59fbc"
+            (openpgp-fingerprint
+             "2A39 3FFF 68F4 EF7A 3D29  12AF 6F51 20A0 22FB B2D5"))))
+         (channel
+           (name 'guix)
+           (url "https://git.guix.gnu.org/guix.git")
+           (commit "4baa120b8b298bec155c5b12c8068dda3c07df40")
+           (branch "master")
+           (introduction
+             (make-channel-introduction
+               "9edb3f66fd807b096b48283debdcddccfea34bad"
+               (openpgp-fingerprint
+                "BBB0 2DDF 2CEA F6A8 0D1D  E643 A2A0 6DF2 A33A 54FA"))))
+         (channel
+          (name 'emacs)
+          (url "https://github.com/garrgravarr/guix-emacs")
+          (commit "6601278b9ec901e20cfe5fd9caee3d9ce6e6d0c9")
+          (introduction
+           (make-channel-introduction
+            "d676ef5f94d2c1bd32f11f084d47dcb1a180fdd4"
+            (openpgp-fingerprint
+             "2DDF 9601 2828 6172 F10C  51A4 E80D 3600 684C 71BA")))))
+        %default-channels)
+EOF
+
+cat > /tmp/geex.config.desktop.dd <<'EOF'
+(use-modules (gnu)
+             (gnu system)
+             (gnu system nss)
+             (gnu packages)
+             (gnu packages xorg)
+             (gnu packages certs)
+             (gnu packages shells)
+             (gnu packages admin)
+             (gnu packages base)
+             (gnu services)
+             (gnu services xorg)
+             (gnu services desktop)
+             (gnu services nix)
+             (gnu services sound)
+             (gnu services audio)
+             (gnu services networking)
+             (gnu services virtualization)
+             (guix)
+             (guix utils)
+             ;; Nongnu & Nonguix
+             (nongnu packages linux)
+             (nongnu packages nvidia)
+             (nongnu services nvidia)
+             (nongnu system linux-initrd)
+             (nonguix transformations)
+             ;; Jonabron
+             (jonabron packages wm)
+             (jonabron packages fonts)
+             (jonabron packages games)
+             (jonabron packages communication))
+
+(use-service-modules desktop
+                     sound
+                     audio
+                     networking
+                     ssh
+                     xorg
+                     dbus)
+(use-package-modules wm
+                     bootloaders
+                     certs
+                     shells
+                     version-control
+                     xorg)
+
+(define %guix-os
+  (operating-system
+    (kernel linux)
+    (initrd microcode-initrd)
+    (firmware (append (list intel-microcode linux-firmware) %base-firmware))
+    (host-name "GEEX_HOSTNAME")
+    (timezone "Europe/Berlin")
+    (locale "en_US.utf8")
+    (keyboard-layout (keyboard-layout GEEX_KEYBOARD_LAYOUT))
+
+    ;; Bootloader
+    GEEX_BIOS_OPTIONAL
+
+    ;; File Systems
+    (file-systems (cons* (file-system
+                           (mount-point "/")
+                           (device (file-system-label "guix-root"))
+                           (type "ext4"))
+                         (file-system
+                           (mount-point "/boot/efi")
+                           (device (file-system-label "guix-efi"))
+                           ;; or: (device (uuid "PARTITION_UUID" 'fat32))
+                           (type "vfat")) %base-file-systems))
+
+    ;; Users
+    (users (cons (user-account
+                   (name "GEEX_USERNAME")
+                   (comment "GEEX_USERNAME User")
+                   (group "users")
+                   (home-directory "/home/GEEX_USERNAME")
+                   (supplementary-groups '("wheel" "netdev"
+                                           "audio"
+                                           "video"
+                                           "input"
+                                           "tty"
+                                           "nixbld"))
+                   (shell (file-append zsh "/bin/zsh"))) %base-user-accounts))
+
+    ;; Packages
+    (packages (append (map specification->package
+                           '("eza" "bat"
+                             "zoxide"
+                             "ripgrep"
+                             "grep"
+                             "coreutils"
+                             "file"
+                             "glibc-locales"
+                             "ncurses"
+                             "zsh"
+                             "git-minimal"
+                             "emacs-no-x"
+                             "usbutils"
+                             "pciutils"
+                             "wpa-supplicant"
+                             "dhcpcd"
+                             "naitre"
+                             "xmonad"
+                             "ghc-xmonad-contrib"
+                             "procps"
+                             "wget"
+                             "curl"
+                             "nss-certs"
+                             "bash"
+                             "sed"
+                             "kitty"))))
+
+    ;; Services
+    (services
+     (append (list (service alsa-service-type)
+                   (service gnome-desktop-service-type)
+                   (service nix-service-type)
+                   (simple-service 'doas-config etc-service-type
+                                   (list `("doas.conf" ,(plain-file
+                                                         "doas.conf"
+                                                         "permit nopass keepenv root
+permit persist keepenv setenv :wheel"))))
+                   (set-xorg-configuration
+                    (xorg-configuration (keyboard-layout keyboard-layout)
+                                        (modules (cons nvidia-driver
+                                                       %default-xorg-modules))
+                                        (drivers '("nvidia")))))
+
+             (modify-services %desktop-services
+               (gdm-service-type config =>
+                                 (gdm-configuration (inherit config)
+                                                    (wayland? #t)))
+               (guix-service-type config =>
+                                  (guix-configuration (inherit config)
+                                                      (substitute-urls (append
+                                                                        (list
+                                                                         "https://ci.guix.gnu.org"
+                                                                         "https://berlin.guix.gnu.org"
+                                                                         "https://bordeaux.guix.gnu.org"
+                                                                         "https://substitutes.nonguix.org"
+                                                                         "https://hydra-guix-129.guix.gnu.org"
+                                                                         "https://substitutes.guix.gofranz.com")
+                                                                        %default-substitute-urls))
+                                                      ;; Authorize via 'sudo guix archive --authorize < /etc/guix/files/keys/nonguix.pub'
+                                                      (authorized-keys (append
+                                                                        (list (local-file
+                                                                               "/etc/guix/files/keys/nonguix.pub"))
+                                                                        %default-authorized-guix-keys))))
+               (mingetty-service-type config =>
+                                      (mingetty-configuration (inherit config)
+                                                              (auto-login
+                                                               "GEEX_USERNAME"))))))))
+
+((compose (nonguix-transformation-nvidia))
+ %guix-os)
+EOF
+
 # Setup Hooks
 systemsSelection() {
     systemchoice=$(dialog --backtitle "Geex Installer" --title "Systemchoice" --menu "Please choose one of the following available pre-made Systems Configurations, or select 'Custom' to create your own Configuration.\n\nOptions:\n  - desktop -> Nvidia-Enabled Desktop Configuration\n  - laptop -> Portable (No Nvidia) Configuration\n  - libre -> Fully Libre (Linux-Libre Kernel) Configuration\n  - minimal -> Minimalistic Server Configuration" 32 50 10 \
@@ -128,42 +324,60 @@ disksHook() {
 }
 disksSetup() {
     echo "Formatting disks ($disk)..."
-    if [ "$bios" == "legacy" ]; then
-        echo "sudo parted $disk --script \\"
-        echo "  mklabel msdos \\"
-        echo "  mkpart primary ext4 1MiB 100% \\"
-        echo -e "  set 1 boot on\n\n"
-        echo "sudo mkfs.ext4 ${diskPrefixed}1"
-        echo "sudo mount ${diskPrefixed}1 /mnt"
-        echo -e "\nFinished Legacy Formatting and Mounting\n"
+    if [ -n "$GEEX_DEBUG" ] || [ -n "$GEEX_DEBUG_MODE" ]; then
+        echo "[ Status ]: Debug Mode Detected, pretending to format and mount disks..."
+        export formattedDisksStatus=2
     else
-        echo "sudo parted $disk --script \\"
-        echo "  mklabel gpt \\"
-        echo "  mkpart ESP fat32 1MiB 2048MiB \\"
-        echo "  set 1 esp on \\"
-        echo -e "  mkpart primary ext4 2048MiB 100%\n\n"
-        echo "sudo mkfs.fat -F32 ${diskPrefixed}1"
-        echo "sudo mkfs.ext4 ${diskPrefixed}2"
-        echo "sudo mount ${diskPrefixed}2 /mnt"
-        echo "sudo mkdir -p /mnt/boot"
-        echo "sudo mount ${diskPrefixed}1 /mnt/boot"
-        echo -e "\nFinished (U)EFI Formatting and Mounting\n"
+        if [ "$bios" == "legacy" ]; then
+            sudo parted $disk --script \
+              mklabel msdos \
+              mkpart primary ext4 1MiB 100% \
+              set 1 boot on
+            sudo mkfs.ext4 -L guix-root ${diskPrefixed}1
+            sudo mount ${diskPrefixed}1 /mnt
+            echo -e "\nFinished Legacy Formatting and Mounting\n"
+            export formattedDisksStatus=1
+        else
+            sudo parted $disk --script \
+              mklabel gpt \
+              mkpart ESP fat32 1MiB 2048MiB \
+              name 1 guix-efi \
+              set 1 esp on \
+              mkpart primary ext4 2048MiB 100% \
+              name 2 guix-root
+            sudo mkfs.fat -F32 -n guix-efi ${diskPrefixed}1
+            sudo mkfs.ext4 -L guix-root ${diskPrefixed}2
+            sudo mount ${diskPrefixed}2 /mnt
+            sudo mkdir -p /mnt/boot
+            sudo mount ${diskPrefixed}1 /mnt/boot
+            echo -e "\nFinished (U)EFI Formatting and Mounting\n"
+            export formattedDisksStatus=1
+        fi
     fi
 }
 customStage2() {
     echo "Entered Custom System Setup Stage 2"
 }
-desktopStage2() {
-    echo "Entered Desktop System Setup Stage 2"
-}
-laptopStage2() {
-    echo "Entered Laptop System Setup Stage 2"
-}
-libreStage2() {
-    echo "Entered Libre System Setup Stage 2"
-}
-minimalStage2() {
-    echo "Entered Minimal System Setup Stage 2"
+filesystemHook() {
+    if [ "$bios" == "uefi" ]; then
+        export filesystemBlock="$(echo -e "    (file-systems (cons* (file-system\n                           (mount-point \"/\")\n                           (device (file-system-label \"guix-root\"))\n                           (type \"ext4\"))\n                         (file-system\n                           (mount-point \"/boot/efi\")\n                           (device (file-system-label \"guix-efi\"))\n                           (type \"vfat\")) %base-file-systems))\n")"
+    else
+        export filesystemBlock="$(echo -e "    (file-systems (cons* (file-system\n                           (mount-point \"/\")\n                           (device (file-system-label \"guix-root\"))\n                           (type \"ext4\")) %base-file-systems))\n")"
+    fi
+    if [ -f "/tmp/geex.config.${stager}.dd" ]; then
+        sed -i 's/GEEX_FILESYSTEM_OPTIONAL/$filesystemBlock/g' /tmp/geex.config.${stager}.dd
+        export wroteFilesystemBlock=1
+    else
+        errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --menu "The Installer failed to write the File-System Block to '/tmp/geex.config.${stager}.dd'. Do you still want to continue?\n\n(!) Warning (!)\nThis may make your system unable to boot, unless you manually write a file-system block into the resulting, final config." 32 50 10 \
+                              continue "Continue" \
+                              abort "Abort" \
+                              3>&1 1>&2 2>&3) || exit 1
+        if [ "$errorMessage" == "abort" ]; then
+            echo "[ Status ]: Aborting..."
+            exit 1
+        fi
+        export wroteFilesystemBlock=0
+    fi
 }
 biosLegacyEditHook() {
     legacyBlock="$(echo -e " (bootloader (bootloader-configuration\n              (keyboard-layout keyboard-layout)\n              (bootloader grub-bootloader)\n              (targets '(\"${diskPrefixed}1\"))))\n")"
@@ -233,6 +447,94 @@ biosUefiEditHook() {
 }
 systemInstallHook() {
     echo "[ Status ]: Beginning formal GNU Guix installation..."
+    if [ -n "$GEEX_DEBUG" ] || [ -n "$GEEX_DEBUG_MODE" ]; then
+        echo "[ Status ]: Debug Mode Detected, pretending to install system..."
+    else
+        if ! command -v herd >/dev/null; then
+            echo "[ Error ]: Herd Missing, asking how to continue..."
+            errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --menu "The Installer encountered an error: the 'herd' binary is missing. Do you still want to continue?\n\n(!) Warning (!)\nThe system may not install correctly if the cow-store is not initialized correctly, continue at your own risk!" 32 50 10 \
+                                  continue "Continue" \
+                                  abort "Abort" \
+                                  3>&1 1>&2 2>&3) || exit 1
+            if [[ "$errorMessage" != "continue" ]]; then
+                echo "[ Status ]: Aborting..."
+                exit 1
+            fi
+        else
+            herd start cow-store /mnt
+            cp /tmp/geex.config.${stager}.dd /tmp/geex.config.${stager}.scm
+            mkdir -p /mnt/etc/guix
+            cp /tmp/geex.config.${stager}.scm /mnt/etc/guix/config.scm
+            if [ -f "/mnt/etc/guix/config.scm" ]; then
+                guix system init /mnt/etc/guix/config.scm /mnt
+                export installationStatus=1
+            elif [ -f "/tmp/geex.config.${stager}.scm" ]; then
+                guix system init /tmp/geex.config.${stager}.scm /mnt
+                export installationStatus=1
+            else
+                errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --menu "The Installer encountered an error: neither the '/mnt/etc/guix/config.scm', nor the '/tmp/geex.config.${stager}.scm' files are present.\n\nThe Installer must have failed the copying process, please investigate.\n\nThe Installer cannot continue meaningfully, still proceed in the broken installation process?" 32 50 10 \
+                                      continue "Yes, still Continue" \
+                                      abort "Abort" \
+                                      3>&1 1>&2 2>&3) || exit 1
+                if [ "$errorMessage" == "abort" ]; then
+                    echo "[ Status ]: Aborting..."
+                    exit 1
+                fi
+                export installationStatus=0
+            fi
+        fi
+    fi
+}
+passwordHook() {
+    if [ -n "$GEEX_DEBUG" ] || [ -n "$GEEX_DEBUG_MODE" ]; then
+        echo "[ Debug ]: Pretending to set passwords..."
+    else
+        echo "[ Status ]: Please enter 'root' password:"
+        passwd -R /mnt root
+        echo "[ Status ]: Please enter '$username' password:"
+        passwd -R /mnt $username
+    fi
+}
+homeHook() {
+    homeQuestion=$(dialog --backtitle "Geex Installer" --title "Home Setup" --menu "The Geex Installer offers the option to copy the generic Geex GNU Guix Home Configuration (home.scm) to your newly installed System.\n\nDo you want to copy the Geex GNU Guix Home Configuration to your system?\n\n(You can edit the '/mnt/etc/guix/home.scm' before or after rebooting to make changes.)" 32 50 10 \
+                          yes "Yes, Copy the Files" \
+                          no "No, don't Copy the Files" \
+                          3>&1 1>&2 2>&3) || exit 1
+    if [ -n "$GEEX_DEBUG" ] || [ -n "$GEEX_DEBUG_MODE" ]; then
+        echo "[ Status ]: Debug Mode Detected, continuing with mock installation..."
+        if [ "$homeQuestion" == "yes" ]; then
+            export copiedHome=2
+            echo "[ Status ]: Mock-copied Guix Home files..."
+        else
+            export copiedHome=0
+            echo "[ Status ]: Mock-denied the Guix Home File copying process..."
+        fi
+        export systemFinished=1
+    else
+        if [ "$homeQuestion" == "yes" ]; then
+            if [ -f "/tmp/geex.home.scm" ]; then
+                cp /tmp/geex.home.scm /mnt/etc/guix/home.scm
+                export copiedHome=1
+            elif command -v git >/dev/null; then
+                mkdir -p /tmp/geex.git.storage
+                git clone https://github.com/librepup/geex.git /tmp/geex.git.storage/geex
+                cp /tmp/geex.git.storage/geex/home.scm /mnt/etc/guix/home.scm
+                export copiedHome=1
+            else
+                export copiedHome=0
+                errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --menu "The Installer encountered an error while trying to copy the Geex GNU Guix Home Configuration File(s):\n  Neither '/tmp/geex.home.scm', nor the 'git' command were present.\n\nSkipping Guix Home configuration hook." 32 50 10 \
+                                      okay "Okay" \
+                                      3>&1 1>&2 2>&3) || exit 1
+            fi
+            export systemFinished=1
+        else
+            export copiedHome=0
+            export systemFinished=1
+            notice=$(dialog --backtitle "Geex Installer" --title "Notice" --menu "You have aborted the copying of Geex GNU Guix Home Configuration Files, the Installer will continue on as if the home configuration hook were never called." 32 50 10 \
+                            okay "Okay" \
+                            3>&1 1>&2 2>&3) || exit 1
+        fi
+    fi
 }
 
 # Installer Hooks
@@ -364,7 +666,91 @@ installerHook() {
         echo "[ Status ]: Aborting..."
         exit 1
     fi
-    exit 1
+    if [ "$installationStatus" == 1 ]; then
+        success=$(dialog --backtitle "Geex Installer" --title "Success" --menu "The Installer successfully installed your GNU Guix System ($systemchoice) to '/mnt'. Please verify the installation process actually succeeded. The Installer will now continue on to the Password Setup phase, and then ask for your Guix Home preferences." 32 50 10 \
+                         continue "Continue" \
+                         abort "Abort" \
+                         3>&1 1>&2 2>&3) || exit 1
+        if [ "$success" == "abort" ]; then
+            echo "[ Status ]: Aborting..."
+            exit 1
+        fi
+        passwordHook
+        homeHook
+    else
+        error=$(dialog --backtitle "Geex Installer" --title "Error" --menu "The Installer has encountered one or more errors during the system installation phase. Your system was NOT installed. Disks may still have been partitioned, formatted, and mounted - CHECK THIS!\n\nThe installer will now quit." 32 50 10 \
+                       okay "Okay" \
+                       3>&1 1>&2 2>&3) || exit 1
+
+        if [ -n "$GEEX_DEBUG" ] || [ -n "$GEEX_DEBUG_MODE" ]; then
+            if [ "$error" == "okay" ]; then
+                echo "[ Status ]: Debug Mode Detected, ignoring Exit Call..."
+            fi
+        else
+            if [ "$error" == "okay" ]; then
+                echo "[ Status ]: Quitting..."
+                exit 1
+            fi
+        fi
+        if [ -n "$GEEX_DEBUG" ] || [ -n "$GEEX_DEBUG_MODE" ]; then
+            noticePopup=$(dialog --backtitle "Geex Installer" --title "Notice" --menu "Debug Mode has been detected by the Installer. Your installation has either failed, or been runningin Debug Mode the entire time.\n\nThe Installer will now continue with a mock installation success hook." 32 50 10 \
+                                 okay "Okay" \
+                                 abort "Abort" \
+                                 3>&1 1>&2 2>&3) || exit 1
+            if [ "$noticePopup" == "okay" ]; then
+                passwordHook
+                homeHook
+                if [ "$formattedDisksStatus" == 1 ]; then
+                    export formattedDisksStatus="Yes"
+                elif [ "$formattedDisksStatus" == 2 ]; then
+                    export formattedDisksStatus="Mock Yes"
+                else
+                    export formattedDisksStatus="No"
+                fi
+                if [ "$copiedHome" == 1 ]; then
+                    export homeStatus="Yes"
+                elif [ "$copiedHome" == 2 ]; then
+                    export homeStatus="Mock Yes"
+                else
+                    export homeStatus="No"
+                fi
+                if [ "$systemFinished" == 1 ]; then
+                    export finishedMessage="$(echo -e "Final Report\n============\nCopied Home?: $homeStatus\nInstallation Path: '/mnt'\nWrote BIOS Block?: $wroteBiosBlock\nFormatted Disks?: $formattedDisksStatus\n")"
+                    finishedNotice=$(dialog --backtitle "Geex Installer" --title "Finalization" --menu "$finishedMessage" 32 50 10 \
+                                            finish "Finish" \
+                                            abort "Abort" \
+                                            3>&1 1>&2 2>&3) || exit 1
+                    if [ "$finishedNotice" == "abort" ]; then
+                        echo "[ Status ]: Aborting..."
+                        exit 1
+                    else
+                        dialog --clear
+                        clear
+                        echo -e "[ Status ]: Success! Geex (GNU Guix) was installed to your '$disk' Drive, and mounted at '/mnt'.\n[ Info ]: You may want to know about these useful Commands:\n - Rebuild System\n   - guix system reconfigure /etc/guix/config.scm\n - Rebuild Home\n   - guix home reconfigure /etc/guix/home.scm\n - Describe Generation\n   - guix describe\n - Pull Channels\n   - guix pull\n\nThank you for using Geex!"
+                    fi
+                else
+                    export finishedMessage="$(echo -e "Final Report\n============\nCopied Home?: $homeStatus\nInstallation Path: '/mnt'\nWrote BIOS Block?: $wroteBiosBlock\nFormatted Disks?: $formattedDisksStatus\n")"
+                    finishedNotice=$(dialog --backtitle "Geex Installer" --title "Finalization" --menu "$finishedMessage" 32 50 10 \
+                                            finish "Finish" \
+                                            abort "Abort" \
+                                            3>&1 1>&2 2>&3) || exit 1
+                    if [ "$finishedNotice" == "abort" ]; then
+                        echo "[ Status ]: Aborting..."
+                        exit 1
+                    else
+                        dialog --clear
+                        clear
+                        echo -e "[ Status ]: Success! Geex (GNU Guix) was installed to your '$disk' Drive, and mounted at '/mnt'.\n[ Info ]: You may want to know about these useful Commands:\n - Rebuild System\n   - guix system reconfigure /etc/guix/config.scm\n - Rebuild Home\n   - guix home reconfigure /etc/guix/home.scm\n - Describe Generation\n   - guix describe\n - Pull Channels\n   - guix pull\n\nThank you for using Geex!"
+                    fi
+                fi
+            else
+                echo "[ Status ]: Aborting..."
+                exit 1
+                fi
+            fi
+
+        fi
+        exit 1
 }
 
 # Check for Help Argument
