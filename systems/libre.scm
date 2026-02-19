@@ -95,6 +95,7 @@
                              "zoxide"
                              "ripgrep"
                              "grep"
+                             "file"
                              "coreutils"
                              "glibc-locales"
                              "ncurses"

@@ -116,6 +116,8 @@
                                             "dbus"
                                             "usbutils"
                                             "gcc-toolchain"
+                                            "fastfetch"
+                                            "sudo"
                                             "font-jonafonts"
                                             "font-dejavu"
                                             "font-google-noto-emoji")))
@@ -168,6 +170,11 @@
                        (file-append zsh "/bin/zsh"))
                       ("LESSHISTFILE" . "$XDG_CACHE_HOME/.lesshst")))
     ;; dotfiles
+    ;; others
+    (simple-service 'fastfetch-config home-files-service-type
+                    `((".config/fastfetch" ,(local-file
+                                             "../files/config/fastfetch"
+                                             #:recursive? #t))))
     ;; emacs
     (simple-service 'dot-emacs-config home-files-service-type
                     `((".emacs" ,(local-file "../files/config/guixmacs/emacs"))))

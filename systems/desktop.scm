@@ -92,6 +92,7 @@
                              "ripgrep"
                              "grep"
                              "coreutils"
+                             "file"
                              "glibc-locales"
                              "ncurses"
                              "zsh"

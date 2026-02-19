@@ -78,10 +78,13 @@ alias mvv="rsync -r -P $@"
 alias mvr="rsync -r -P $@"
 alias guixcontainer="printf 'Make sure your <filename.scm> is in an isolated folder with nothing else in it!\nUsage:\n  guixcontainer <filename.scm>\n';guix system container -L . $@"
 alias guixcontainerenter="printf 'Usage:\n  guixcontainerenter <pid>\n';doas guix container exec $@ /run/current-system/profile/bin/bash --login"
-alias gztoiso="gunzip $@"
-alias isogztoiso="gunzip $@"
 
 # Functions
+pasteclip() {
+  local rand="$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 12)"
+  wl-paste --type image/png > $rand.png
+  echo "Pasted Image '$rand.png'."
+}
 ec() {
   if ! command -v emacsclient >/dev/null 2>&1; then
     guix shell emacs-pgtk -- emacsclient -c -nw "$@"
@@ -178,6 +181,10 @@ cryptunmount() {
   doas cryptsetup close encrypted
 }
 extract() {
+  if [[ "$@" == "" ]]; then
+    echo -e "extract <archive> - Archive Extraction Utility\nusage:\n  - extract <archive>.tar/.tar.gz/.rar/.7z => Extracts Archive according to Filetype Extension"
+    return 1
+  fi
   for archive in "$@"; do
     case "$archive" in
       *.tar.bz2)   tar xjf "$archive"   ;;
@@ -227,7 +234,13 @@ gm() {
             printf "[ Restart Guix Daemon? ] (y/n) ~> "
             read -r restartGuixService
             if [ "$restartGuixService" = "y" ]; then
-                doas systemctl restart guix-daemon.service
+                if command -v systemctl >/dev/null; then
+                    doas systemctl restart guix-daemon.service
+                elif command -v herd >/dev/null; then
+                    herd restart guix-daemon
+                else
+                    echo "[ Error ]: Don't know how to restart Services."
+                fi
             else
                 return 1
             fi
@@ -273,11 +286,16 @@ gm() {
             echo "[ Deleted Old Generations ]"
             ;;
         rebuild|rb)
-            sudo guix system reconfigure /etc/guix/config.scm
-            echo "[ Rebuilt System ]"
+            if [ -f /etc/guix/config.scm ]; then
+                sudo guix system reconfigure /etc/guix/config.scm
+                echo "[ Rebuilt System ]"
+            else
+                echo "[ Error ]: 'config.scm' not present in '/etc/guix'."
+            fi
             ;;
         g|garbage|gc)
             guix gc
+            guix gc --optimize
             sudo guix system delete-generations 1d
             guix package --delete-generations
             echo "[ Collected Garbage ]"
@@ -287,8 +305,12 @@ gm() {
             echo "[ Optimized /gnu/store ]"
             ;;
         home|hm)
-            guix home reconfigure /etc/guix/home.scm
-            echo "[ Rebuilt Home ]"
+            if [ -f /etc/guix/home.scm ]; then
+                sudo guix home reconfigure /etc/guix/home.scm
+                echo "[ Rebuilt Home ]"
+            else
+                echo "[ Error ]: 'home.scm' not present in '/etc/guix'."
+            fi
             ;;
         lsc|listchannel|listchannels)
             echo "[ Channels ]:"
@@ -347,7 +369,7 @@ upload() {
       curl -T $2 -s -L -D - xfr.station307.com | grep human
       ;;
     *)
-      echo "Please choose either '1' or '2' for a file hoster."
+      echo "Please choose either '1' (dropcli.com) or '2' (station307.com) for a file hoster."
       ;;
   esac
 }
@@ -355,7 +377,7 @@ g() {
   local cmd="$1"
   local arg="$2"
   case "$cmd" in
-    credential|store|helper|passstore)
+    credential|store|helper|passstore|pass|password|passwords)
       git config --global credential.helper store
       echo "[ Initialized Git Credential Store ]"
       ;;
@@ -431,8 +453,10 @@ g() {
     p|push)
       if [[ $(echo $(git branch | sed 's/* //g')) == "main" ]]; then
         git push -u origin main
+      elif [[ $(echo $(git branch | sed 's/* //g')) == "master" ]]; then
+        git push -u origin master
       else
-        printf "Branch: "
+        printf "Branch Name (e.g. main, master, ...): "
         read -r pushBranch
         git push -u origin "$pushBranch"
       fi
@@ -446,6 +470,8 @@ g() {
     a|add)
       if [ "$arg" = "all" ]; then
         git add .
+        git add *
+        git add ./*
       elif [ -z "$arg" ]; then
         echo "Usage: g add <file>|all"
         return 1
@@ -467,8 +493,19 @@ g() {
       echo "[ Branches ]"
       echo "$(git branch --list)"
       ;;
+    coa|commita|commitauto|autocommit|ac)
+      rand="$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 12)"
+      echo "[ Committing with Default Message: Code($rand) ]"
+      git commit -m "Pushed Latest Commit: Code($rand)"
+      ;;
     co|cm|commit)
-      printf "[ Commit Message ]: ~> "
+      if [ "$arg" = "a" ]; then
+          rand="$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 12)"
+          echo "[ Committing with Default Message: Code($rand) ]"
+          git commit -m "Pushed Latest Commit: Code($rand)"
+          return 1
+      fi
+      printf "[ Commit Message ]: "
       read -r commitMessage
       if [ -z "$commitMessage" ]; then
         return 1

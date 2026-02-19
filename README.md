@@ -11,10 +11,12 @@ This GNU Guix Configuration pre-configures a few useful channels to make certain
 
 # Usage
 ## Setup
-Clone this repository via `git clone https://github.com/nixpup/geex`, then run the mover script (`geexMover.sh`), or move the files to their respective destinations manually:
+Clone this repository via `git clone https://github.com/nixpup/geex`, enter the cloned directory (`cd geex`), then run the mover script (`geex.sh`), or move the files to their respective destinations manually:
 ### Mover
- - `chmod a+x ./geexMover.sh`
+ - `chmod a+x ./geex.sh`
  - `./geexMover.sh`
+
+**Tip**: A full graphical (TUI - Terminal User Interface) and textual installer for the `geex.sh` script is in the works, you can test the installer functionality by running `GEEX_DEBUG=1 ./geex.sh -i` (omit `GEEX_DEBUG=1` if you want the installer to *actually* move, configure, and install files - Debug Mode only pretends to work for testing purposes).
 
 ### Manual
  - `cp channels.scm ~/.config/guix/channels.scm`
@@ -27,7 +29,7 @@ Clone this repository via `git clone https://github.com/nixpup/geex`, then run t
 ## Importing Keys
 Don't forget to import the [Nonguix](https://gitlab.com/nonguix/nonguix) Key via `sudo guix archive --authorize < /etc/guix/files/keys/nonguix.pub`.
 
-Then you can update Guix and its Channels by invoking `guix pull`, and afterwards check whether all Channels were correctly set up with `guix describe`. Make sure that `~/.config/guix/channels.scm` is the **first** item in your "$PATH".
+Then you can update Guix and its Channels by invoking `guix pull`, and afterwards check whether all Channels were correctly set up with `guix describe`. If you are currently logged in as the `root` user, run `guix pull --channels=/path/to/channels.scm`, as the `root` user does not have a native home directory. Make sure that `~/.config/guix/channels.scm` is the **first** item in your "$PATH".
 
 Update Bash's Guix binary and configuration with `hash guix` after `guix pull` is done.
 

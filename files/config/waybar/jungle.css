@@ -1,0 +1,165 @@
+@define-color primary              #F5B5A7;
+@define-color on_primary           #0a0a05;
+@define-color primary_container    #a89a8e;
+@define-color on_primary_container #f1dccc;
+
+@define-color secondary            #f1dccc;
+@define-color on_secondary         #a89a8e;
+@define-color secondary_container  #a89a8e;
+@define-color on_secondary_container #f1dccc;
+
+@define-color tertiary             #a89a8e;
+@define-color on_tertiary          #0a0a05;
+@define-color tertiary_container   #a89a8e;
+@define-color on_tertiary_container #f1dccc;
+
+@define-color surface              #0a0a05;
+@define-color surface_transparent  rgba(10, 10, 5, 0.7);
+@define-color surface_variant      #0a0a05;
+@define-color on_surface           #f1dccc;
+@define-color on_surface_variant   #f1dccc;
+
+@define-color outline_variant      #a89a8e;
+
+@define-color darker_background    rgba(27, 27, 14, 0.4);
+
+@define-color error                #F5B5A7;
+@define-color error_container      #97748C;
+@define-color on_error_container   #f1dccc;
+
+window#waybar {
+    background: @surface_transparent;
+    border-radius: 0px;
+}
+
+* {
+    font-family: "TempleOS";
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s cubic-bezier(0.05, 0.7, 0.1, 1);
+    border-radius: 80px;
+}
+
+#workspaces button {
+    margin: 6px 2px;
+    padding: 2px 6px;
+    transition:
+        padding 0.2s cubic-bezier(0.05, 0.7, 0.1, 1),
+        background-color 0.2s;
+}
+#workspaces button.active {
+    margin: 6px 2px;
+    padding: 2px 16px;
+}
+
+#disk.root,
+#disk.home,
+#memory,
+#cpu,
+#custom-weather,
+#custom-recording,
+#custom-brightness,
+#bluetooth,
+#pulseaudio,
+#network,
+#battery {
+    margin: 6px 2px;
+    padding: 2px 12px;
+}
+
+#tray {
+    margin: 6px 2px;
+    padding: 2px 16px;
+}
+
+#clock {
+    margin: 6px 2px;
+    padding: 2px 12px;
+}
+
+#custom-power {
+    margin: 6px 6px 6px 2px;
+    padding: 2px 12px;
+}
+
+menu {
+    background: @surface;
+    border-radius: 8px;
+}
+
+#workspaces button {
+    background: @darker_background;
+    color: @on_surface_variant;
+}
+#workspaces button.active {
+    background: @primary;
+    color: @on_primary;
+}
+#workspaces button:hover {
+    background: @primary;
+    color: @on_primary;
+}
+#workspaces button.visible,
+#workspaces button.persistent {
+    color: @darker_background;
+}
+#workspaces button.visible:hover,
+#workspaces button.persistent:hover {
+    color: @on_secondary_container;
+}
+
+#disk.root,
+#disk.home,
+#memory,
+#cpu,
+#custom-weather,
+#custom-recording,
+#custom-brightness,
+#bluetooth,
+#pulseaudio,
+#network,
+#battery {
+    background: @darker_background;
+    color: @on_surface_variant;
+}
+
+#custom-brightness:hover,
+#bluetooth:hover,
+#pulseaudio:hover,
+#pulseaudio.muted:hover,
+#network:hover,
+#custom-weather:hover,
+#custom-recording:hover,
+#disk.root:hover,
+#disk.home:hover,
+#memory:hover,
+#cpu:hover,
+#clock:hover,
+#battery:hover {
+    background: @secondary_container;
+    color: @on_secondary_container;
+}
+
+#pulseaudio.muted {
+    background: @darker_background;
+    color: @primary;
+}
+
+#tray {
+    background: @surface_variant;
+    color: @on_surface_variant;
+}
+
+#clock {
+    background: @darker_background;
+    color: @on_surface_variant;
+}
+
+#custom-power {
+    background: @primary;
+    color: @on_primary;
+}
+#custom-power:hover {
+    background: @error_container;
+    color: @on_primary;
+}

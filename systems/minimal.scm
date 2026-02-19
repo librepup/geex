@@ -100,7 +100,6 @@ permit persist keepenv setenv :wheel"))))
                                                                                "https://hydra-guix-129.guix.gnu.org"
                                                                                "https://substitutes.guix.gofranz.com")
                                                                               %default-substitute-urls))
-                                                            ;; Authorize via 'sudo guix archive --authorize < /etc/guix/channels/nonguix.pub'
                                                             (authorized-keys (append
                                                                               (list
                                                                                (local-file

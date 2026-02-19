@@ -81,6 +81,7 @@
                            '("eza" "bat"
                              "zoxide"
                              "ripgrep"
+                             "file"
                              "grep"
                              "coreutils"
                              "glibc-locales"
