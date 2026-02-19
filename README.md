@@ -11,12 +11,14 @@ This GNU Guix Configuration pre-configures a few useful channels to make certain
 
 # Usage
 ## Setup
-Clone this repository via `git clone https://github.com/nixpup/geex`, enter the cloned directory (`cd geex`), then run the mover script (`geex.sh`), or move the files to their respective destinations manually:
-### Mover
+Clone this repository via `git clone https://github.com/nixpup/geex`, enter the cloned directory (`cd geex`), then run the mover and installer script (`geex.sh`), or move the files to their respective destinations manually:
+### Mover and Installer
  - `chmod a+x ./geex.sh`
- - `./geexMover.sh`
+ - `./geex.sh -h`
 
-**Tip**: A full graphical (TUI - Terminal User Interface) and textual installer for the `geex.sh` script is in the works, you can test the installer functionality by running `GEEX_DEBUG=1 ./geex.sh -i` (omit `GEEX_DEBUG=1` if you want the installer to *actually* move, configure, and install files - Debug Mode only pretends to work for testing purposes).
+The installer allows you to pick from 4 pre-made system configurations, and tweak them to your liking. For example by defining which services to use, which desktops to install, and setting up your bootloader and filesystems. The installer also automatically formats your drive according to your setup (with permission only, of course).
+
+**Tip**: A full graphical (TUI - Terminal User Interface) and textual installer for the `geex.sh` script is in the works, and, mostly functional (State: **19.2.26@22:14**). You can test the installer functionality by running `GEEX_DEBUG=1 ./geex.sh -i` or `./geex.sh d i` (omit `GEEX_DEBUG=1`/`d` if you want the installer to *actually* move, configure, and install files - Debug Mode only pretends to work for testing purposes).
 
 ### Manual
  - `cp channels.scm ~/.config/guix/channels.scm`
