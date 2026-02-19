@@ -185,6 +185,7 @@ biosLegacyEditHook() {
             echo "[ Status ] Aborting..."
             exit 1
         fi
+        export wroteBiosBlock=1
     else
         errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --menu "The Installer encountered an error: '/tmp/geex.config.${stager}.dd' was not found, thus the BIOS hook did not finish writing.\n\nContinue anyways?" 32 50 10 \
                               continue "Continue" \
@@ -194,6 +195,7 @@ biosLegacyEditHook() {
             echo "[ Status ]: Aborting..."
             exit 1
         fi
+        export wroteBiosBlock=0
     fi
 }
 biosUefiEditHook() {
@@ -216,6 +218,7 @@ biosUefiEditHook() {
             echo "[ Status ] Aborting..."
             exit 1
         fi
+        export wroteBiosBlock=1
     else
         errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --menu "The Installer encountered an error: '/tmp/geex.config.${stager}.dd' was not found, thus the BIOS hook did not finish writing.\n\nContinue anyways?" 32 50 10 \
                               continue "Continue" \
@@ -225,6 +228,7 @@ biosUefiEditHook() {
             echo "[ Status ]: Aborting..."
             exit 1
         fi
+        export wroteBiosBlock=0
     fi
 }
 systemInstallHook() {
@@ -342,7 +346,12 @@ installerHook() {
     esac
     keyboardStatusHook
     disksSetup
-    summaryTextContents="$(echo -e "[!] Read Carefully [!]\n\nUsername: $username\nHostname: $hostname\nDisk: $disk (Part Format: ${diskPrefixed}1, ${diskPrefixed}2, ... )\nBIOS: $bios (Detected: $detectedBios)\nKeyboard: $keyboard\nSystemchoice: $systemchoice\nStager: $stager\nStagerfile: '/tmp/geex.config.${stager}.dd'")"
+    if [ "$wroteBiosBlock" == 0 ]; then
+        export wroteBiosBlock="No"
+    else
+        export wroteBiosBlock="Yes"
+    fi
+    summaryTextContents="$(echo -e "[!] Read Carefully [!]\n\nUsername: $username\nHostname: $hostname\nDisk: $disk (Part Format: ${diskPrefixed}1, ${diskPrefixed}2, ... )\nBIOS: $bios (Detected: $detectedBios)\nKeyboard: $keyboard\nSystemchoice: $systemchoice\nStager: $stager\nStagerfile: '/tmp/geex.config.${stager}.dd'\nWrote BIOS Block?: ${wroteBiosBlock}")"
     echo "$summaryTextContents" >> /tmp/geex.summary.dd
     summary=$(dialog --backtitle "Geex Installer" --title "Summary" --textbox "/tmp/geex.summary.dd" 22 75 3>&1 1>&2 2>&3)
     confirmation=$(dialog --backtitle "Geex Installer" --title "Confirmation" --menu "Have you confirmed whether or not all the information provided is correct? If so, would you like to begin the installation now?" 32 50 10 \
