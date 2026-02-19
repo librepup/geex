@@ -935,7 +935,9 @@ disksSetup() {
     fi
 }
 customStage2() {
-    echo "Entered Custom System Setup Stage 2"
+    echo "[ Status ]: Entered Custom System Setup Stage 2"
+    echo "[ Info ]: The complete customization stage is not yet finished, please use one of the existing configuration templates."
+    exit 1
 }
 filesystemHook() {
     if [ "$bios" == "uefi" ]; then
