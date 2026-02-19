@@ -259,7 +259,6 @@ cat > /tmp/geex.config.desktop.template.dd <<'EOF'
                                                                          "https://hydra-guix-129.guix.gnu.org"
                                                                          "https://substitutes.guix.gofranz.com")
                                                                         %default-substitute-urls))
-                                                      ;; Authorize via 'sudo guix archive --authorize < /etc/guix/files/keys/nonguix.pub'
                                                       (authorized-keys (append
                                                                         (list (local-file
                                                                                "/etc/guix/files/keys/nonguix.pub"))
@@ -272,6 +271,391 @@ cat > /tmp/geex.config.desktop.template.dd <<'EOF'
 ((compose (nonguix-transformation-nvidia))
  %guix-os)
 EOF
+
+cat > /tmp/geex.config.minimal.template.dd <<'EOF'
+(use-modules (gnu)
+             (gnu system)
+             (gnu system nss)
+             (gnu packages)
+             (gnu packages xorg)
+             (gnu packages certs)
+             (gnu packages shells)
+             (gnu packages admin)
+             (gnu packages base)
+             (gnu services)
+             (gnu services xorg)
+             (gnu services desktop)
+             (gnu services nix)
+             (gnu services sound)
+             (gnu services audio)
+             (gnu services networking)
+             (guix)
+             (guix utils)
+             ;; Jonabron
+             (jonabrok packages wm)
+             ;; Nongnu & Nonguix
+             (nongnu packages linux)
+             (nongnu system linux-initrd))
+
+(use-service-modules desktop
+                     sound
+                     audio
+                     networking
+                     ssh
+                     xorg
+                     dbus)
+(use-package-modules wm bootloaders certs shells version-control)
+
+(define %guix-os
+  (operating-system
+    (kernel linux)
+    (initrd microcode-initrd)
+    (firmware (append (list intel-microcode linux-firmware) %base-firmware))
+    (host-name "GEEX_HOSTNAME")
+    (timezone "Europe/Berlin")
+    (locale "en_US.utf8")
+    (keyboard-layout (keyboard-layout GEEX_KEYBOARD_LAYOUT))
+
+    ;; Bootloader
+    GEEX_BIOS_OPTIONAL
+
+    GEEX_FILESYSTEM_OPTIONAL
+
+    ;; Users
+    (users (cons (user-account
+                   (name "GEEX_USERNAME")
+                   (comment "GEEX_USERNAME User")
+                   (group "users")
+                   (home-directory "/home/GEEX_USERNAME")
+                   (supplementary-groups '("wheel" "netdev"
+                                           "audio"
+                                           "video"
+                                           GEEX_NIX_GROUP_OPTIONAL
+                                           "input"
+                                           "tty"))
+                   (shell (file-append zsh "/bin/zsh"))) %base-user-accounts))
+
+    ;; Packages
+    (packages (append (map specification->package
+                           '("grep" "coreutils"
+                             "glibc-locales"
+                             "ncurses"
+                             "zsh"
+                             "git-minimal"
+                             "emacs-no-x"
+                             "usbutils"
+                             GEEX_I3_PACKAGE_OPTIONAL
+                             GEEX_NAITRE_PACKAGE_OPTIONAL
+                             GEEX_DOAS_PACKAGE_OPTIONAL
+                             GEEX_XMONAD_PACKAGE_OPTIONAL
+                             "pciutils"
+                             "wpa-supplicant"
+                             "procps"
+                             "wget"
+                             "curl"
+                             "nss-certs"
+                             "bash"
+                             "sed"
+                             "dhcpcd"))))
+
+    ;; Services
+    (services
+     (append (list (service alsa-service-type)
+                   GEEX_DOAS_SERVICE_OPTIONAL
+                   GEEX_NIX_SERVICE_OPTIONAL
+                   GEEX_HURD_SERVICE_OPTIONAL
+                   GEEX_GNOME_SERVICE_OPTIONAL
+              )
+
+                   (modify-services %desktop-services
+                     (guix-service-type config =>
+                                        (guix-configuration (inherit config)
+                                                            (substitute-urls (append
+                                                                              (list
+                                                                               "https://ci.guix.gnu.org"
+                                                                               "https://berlin.guix.gnu.org"
+                                                                               "https://bordeaux.guix.gnu.org"
+                                                                               "https://substitutes.nonguix.org"
+                                                                               "https://hydra-guix-129.guix.gnu.org"
+                                                                               "https://substitutes.guix.gofranz.com")
+                                                                              %default-substitute-urls))
+                                                            (authorized-keys (append
+                                                                              (list
+                                                                               (local-file
+                                                                                "/etc/guix/files/keys/nonguix.pub"))
+                                                                              %default-authorized-guix-keys))))))))))
+
+%guix-os
+EOF
+
+cat > /tmp/geex.config.libre.template.dd <<'EOF'
+(use-modules (gnu)
+             (gnu system)
+             (gnu system nss)
+             (gnu packages)
+             (gnu packages xorg)
+             (gnu packages certs)
+             (gnu packages shells)
+             (gnu packages admin)
+             (gnu packages base)
+             (gnu services)
+             (gnu services xorg)
+             (gnu services desktop)
+             (gnu services nix)
+             (gnu services sound)
+             (gnu services audio)
+             (gnu services networking)
+             (guix)
+             (guix utils)
+             (jonabron packages wm))
+
+(use-service-modules desktop
+                     sound
+                     audio
+                     networking
+                     ssh
+                     xorg
+                     dbus)
+(use-package-modules wm
+                     bootloaders
+                     certs
+                     shells
+                     version-control
+                     xorg)
+
+(define %guix-os
+  (operating-system
+    (host-name "GEEX_HOSTNAME")
+    (timezone "Europe/Berlin")
+    (locale "en_US.utf8")
+    (keyboard-layout (keyboard-layout GEEX_KEYBOARD_LAYOUT))
+
+    ;; Bootloader
+    GEEX_BIOS_OPTIONAL
+
+    GEEX_FILESYSTEM_OPTIONAL
+
+    ;; Users
+    (users (cons (user-account
+                   (name "GEEX_USERNAME")
+                   (comment "GEEX_USERNAME User")
+                   (group "users")
+                   (home-directory "/home/GEEX_USERNAME")
+                   (supplementary-groups '("wheel" "netdev"
+                                           "audio"
+                                           "video"
+                                           "input"
+                                           GEEX_NIX_GROUP_OPTIONAL
+                                           "tty"))
+                   (shell (file-append zsh "/bin/zsh"))) %base-user-accounts))
+
+    ;; Packages
+    (packages (append (map specification->package
+                           '("eza" "bat"
+                             "zoxide"
+                             "ripgrep"
+                             "grep"
+                             "file"
+                             "coreutils"
+                             "glibc-locales"
+                             "ncurses"
+                             "zsh"
+                             "git-minimal"
+                             "emacs-no-x"
+                             "usbutils"
+                             "pciutils"
+                             "wpa-supplicant"
+                             "dhcpcd"
+                             GEEX_I3_PACKAGE_OPTIONAL
+                             GEEX_XMONAD_PACKAGE_OPTIONAL
+                             GEEX_NAITRE_PACKAGE_OPTIONAL
+                             GEEX_DOAS_PACKAGE_OPTIONAL
+                             "procps"
+                             "wget"
+                             "curl"
+                             "nss-certs"
+                             "bash"
+                             "sed"
+                             "kitty"))))
+
+    ;; Services
+    (services
+     (append (list (set-xorg-configuration
+                    (xorg-configuration (keyboard-layout keyboard-layout)))
+                   GEEX_GNOME_SERVICE_OPTIONAL
+                   GEEX_NIX_SERVICE_OPTIONAL
+                   GEEX_DOAS_SERVICE_OPTIONAL
+                   GEEX_HURD_SERVICE_OPTIONAL
+             )
+             (modify-services %desktop-services
+               (gdm-service-type config =>
+                                 (gdm-configuration (inherit config)
+                                                    (wayland? #t)))
+               (delete pulseaudio-service-type)
+               (guix-service-type config =>
+                                  (guix-configuration (inherit config)
+                                                      (substitute-urls (append
+                                                                        (list
+                                                                         "https://ci.guix.gnu.org"
+                                                                         "https://berlin.guix.gnu.org"
+                                                                         "https://bordeaux.guix.gnu.org"
+                                                                         "https://hydra-guix-129.guix.gnu.org"
+                                                                         "https://substitutes.guix.gofranz.com")
+                                                                        %default-substitute-urls))))
+               (mingetty-service-type config =>
+                                      (mingetty-configuration (inherit config)
+                                                              (auto-login
+                                                               "GEEX_USERNAME"))))))))
+
+%guix-os
+EOF
+
+cat > /tmp/geex.config.laptop.template.dd <<'EOF'
+(use-modules (gnu)
+             (gnu system)
+             (gnu system nss)
+             (gnu packages)
+             (gnu packages xorg)
+             (gnu packages certs)
+             (gnu packages shells)
+             (gnu packages admin)
+             (gnu packages base)
+             (gnu services)
+             (gnu services xorg)
+             (gnu services desktop)
+             (gnu services nix)
+             (gnu services sound)
+             (gnu services audio)
+             (gnu services networking)
+             (guix)
+             (guix utils)
+             ;; Nongnu & Nonguix
+             (nongnu packages linux)
+             (nongnu system linux-initrd)
+             ;; Jonabron
+             (jonabron packages wm)
+             (jonabron packages fonts)
+             (jonabron packages communication)
+             (jonabron packages games))
+
+(use-service-modules desktop
+                     sound
+                     audio
+                     networking
+                     ssh
+                     xorg
+                     dbus
+                     pm)
+(use-package-modules wm
+                     bootloaders
+                     certs
+                     shells
+                     version-control
+                     xorg)
+
+(define %guix-os
+  (operating-system
+    (kernel linux)
+    (initrd microcode-initrd)
+    (firmware (append (list intel-microcode linux-firmware) %base-firmware))
+    (host-name "GEEX_HOSTNAME")
+    (timezone "Europe/Berlin")
+    (locale "en_US.utf8")
+    (keyboard-layout (keyboard-layout GEEX_KEYBOARD_LAYOUT))
+
+    ;; Bootloader
+    GEEX_BIOS_OPTIONAL
+
+    GEEX_FILESYSTEM_OPTIONAL
+
+    ;; Users
+    (users (cons (user-account
+                   (name "GEEX_USERNAME")
+                   (comment "GEEX_USERNAME User")
+                   (group "users")
+                   (home-directory "/home/GEEX_USERNAME")
+                   (supplementary-groups '("wheel" "netdev"
+                                           "audio"
+                                           "video"
+                                           "input"
+                                           GEEX_NIX_GROUP_OPTIONAL
+                                           "tty"))
+                   (shell (file-append zsh "/bin/zsh"))) %base-user-accounts))
+
+    ;; Packages
+    (packages (append (map specification->package
+                           '("eza" "bat"
+                             "zoxide"
+                             GEEX_DOAS_PACKAGE_OPTIONAL
+                             GEEX_I3_PACKAGE_OPTIONAL
+                             GEEX_NAITRE_PACKAGE_OPTIONAL
+                             GEEX_XMONAD_PACKAGE_OPTIONAL
+                             "ripgrep"
+                             "grep"
+                             "coreutils"
+                             "file"
+                             "glibc-locales"
+                             "ncurses"
+                             "zsh"
+                             "git-minimal"
+                             "emacs-no-x"
+                             "usbutils"
+                             "pciutils"
+                             "wpa-supplicant"
+                             "dhcpcd"
+                             "naitre"
+                             "xmonad"
+                             "ghc-xmonad-contrib"
+                             "procps"
+                             "wget"
+                             "curl"
+                             "nss-certs"
+                             "bash"
+                             "sed"
+                             "kitty"))))
+
+    ;; Services
+    (services
+     (append (list (service alsa-service-type)
+                   (service tlp-service-type
+                            (tlp-configuration (cpu-scaling-governor-on-ac '("performace"))
+                                               (cpu-scaling-governor-on-bat '("powersave"))
+                                               (sched-powersave-on-bat? #t)))
+                   GEEX_NIX_SERVICE_OPTIONAL
+                   GEEX_HURD_SERVICE_OPTIONAL
+                   GEEX_GNOME_SERVICE_OPTIONAL
+                   GEEX_DOAS_SERVICE_OPTIONAL
+                   (set-xorg-configuration
+                    (xorg-configuration (keyboard-layout keyboard-layout))))
+
+             (modify-services %desktop-services
+               (gdm-service-type config =>
+                                 (gdm-configuration (inherit config)
+                                                    (wayland? #t)))
+               (guix-service-type config =>
+                                  (guix-configuration (inherit config)
+                                                      (substitute-urls (append
+                                                                        (list
+                                                                         "https://ci.guix.gnu.org"
+                                                                         "https://berlin.guix.gnu.org"
+                                                                         "https://bordeaux.guix.gnu.org"
+                                                                         "https://substitutes.nonguix.org"
+                                                                         "https://hydra-guix-129.guix.gnu.org"
+                                                                         "https://substitutes.guix.gofranz.com")
+                                                                        %default-substitute-urls))
+                                                      (authorized-keys (append
+                                                                        (list (local-file
+                                                                               "/etc/guix/files/keys/nonguix.pub"))
+                                                                        %default-authorized-guix-keys))))
+               (mingetty-service-type config =>
+                                      (mingetty-configuration (inherit config)
+                                                              (auto-login
+                                                               "GEEX_USERNAME"))))))))
+
+%guix-os
+EOF
+
+
 
 # Setup Hooks
 desktopEnvironmentsHook() {
@@ -698,9 +1082,11 @@ systemInstallHook() {
             mkdir -p /mnt/etc/guix
             cp /tmp/geex.config.${stager}.scm /mnt/etc/guix/config.scm
             if [ -f "/mnt/etc/guix/config.scm" ]; then
+                guix style -f /mnt/etc/guix/config.scm
                 guix system init /mnt/etc/guix/config.scm /mnt
                 export installationStatus=1
             elif [ -f "/tmp/geex.config.${stager}.scm" ]; then
+                guix style -f /tmp/geex.config.${stager}.scm
                 guix system init /tmp/geex.config.${stager}.scm /mnt
                 export installationStatus=1
             else
@@ -742,24 +1128,29 @@ homeHook() {
             echo "[ Status ]: Mock-denied the Guix Home File copying process..."
         fi
         export systemFinished=1
+        export homeGetMethod="mock"
     else
         if [ "$homeQuestion" == "yes" ]; then
             if [ -f "/tmp/geex.home.scm" ]; then
                 cp /tmp/geex.home.scm /mnt/etc/guix/home.scm
                 export copiedHome=1
+                export homeGetMethod="local"
             elif command -v git >/dev/null; then
                 mkdir -p /tmp/geex.git.storage
                 git clone https://github.com/librepup/geex.git /tmp/geex.git.storage/geex
                 cp /tmp/geex.git.storage/geex/home.scm /mnt/etc/guix/home.scm
                 export copiedHome=1
+                export homeGetMethod="git"
             else
                 export copiedHome=0
                 errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --menu "The Installer encountered an error while trying to copy the Geex GNU Guix Home Configuration File(s):\n  Neither '/tmp/geex.home.scm', nor the 'git' command were present.\n\nSkipping Guix Home configuration hook." 32 50 10 \
                                       okay "Okay" \
                                       3>&1 1>&2 2>&3) || exit 1
+                export homeGetMethod="none"
             fi
             export systemFinished=1
         else
+            export homeGetMethod="none"
             export copiedHome=0
             export systemFinished=1
             notice=$(dialog --backtitle "Geex Installer" --title "Notice" --menu "You have aborted the copying of Geex GNU Guix Home Configuration Files, the Installer will continue on as if the home configuration hook were never called." 32 50 10 \
@@ -870,7 +1261,7 @@ installerHook() {
     keyboard=$(dialog --backtitle "Geex Installer" --title "Keyboard Layout" --menu "Select your preferred Keyboard Layout:" 12 40 5 \
                       us "English (US)" \
                       colemak "English (Colemak)" \
-                      de "Germane (DE)" \
+                      de "German (DE)" \
                       3>&1 1>&2 2>&3) || exit 1
     case "$keyboard" in
         us)
@@ -912,7 +1303,8 @@ installerHook() {
     fi
     summaryTextContents="$(echo -e "[!] Read Carefully [!]\n\nUsername: $username\nHostname: $hostname\nDisk: $disk (Part Format: ${diskPrefixed}1, ${diskPrefixed}2, ... )\nBIOS: $bios (Detected: $detectedBios)\nKeyboard: $keyboard\nSystemchoice: $systemchoice\nStager: $stager\nStagerfile: '/tmp/geex.config.${stager}.dd'\nWrote BIOS Block?: ${wroteBiosBlock}\nWrote Filesystems?: $isFilesystemWritten\nWrote Services?: $areServicesWritten\nServices: $serviceSelection\nWrote Desktops?: $areDesktopsWritten\nDesktops: $deSelection")"
     echo "$summaryTextContents" >> /tmp/geex.summary.dd
-    summary=$(dialog --backtitle "Geex Installer" --title "Summary" --textbox "/tmp/geex.summary.dd" 34 75 3>&1 1>&2 2>&3)
+    summary=$(dialog --backtitle "Geex Installer" --title "Summary" --textbox "/tmp/geex.summary.dd" 34 75 3>&1 1>&2 2>&3) || exit 1
+    configDisplay=$(dialog --backtitle "Geex Installer" --title "Written Configuration" --textbox "/tmp/geex.config.${stager}.dd" 34 75 3>&1 1>&2 2>&3) || exit 1
     confirmation=$(dialog --backtitle "Geex Installer" --title "Confirmation" --menu "Have you confirmed whether or not all the information provided is correct? If so, would you like to begin the installation now?" 32 50 10 \
                           yes "Yes, begin Installation" \
                           no "No, Abort" \
@@ -971,8 +1363,13 @@ installerHook() {
                 else
                     export homeStatus="No"
                 fi
+                if [ "$finishedDesktopSetup" == 0 ]; then
+                    desktopsExist="No"
+                else
+                    desktopsExist="Yes"
+                fi
                 if [ "$systemFinished" == 1 ]; then
-                    export finishedMessage="$(echo -e "Final Report\n============\nCopied Home?: $homeStatus\nInstallation Path: '/mnt'\nWrote BIOS Block?: $wroteBiosBlock\nFormatted Disks?: $formattedDisksStatus\n")"
+                    export finishedMessage="$(echo -e "Final Report\n============\nCopied Home?: $homeStatus\nHome-Get Method?: $homeGetMethod\nInstallation Path: '/mnt'\nWrote BIOS Block?: $wroteBiosBlock\nFormatted Disks?: $formattedDisksStatus\nWrote Filesystems?: $isFilesystemWritten\nInstalled Desktops?: $desktopsExist\nInstalled Services?: $areServicesWritten")"
                     finishedNotice=$(dialog --backtitle "Geex Installer" --title "Finalization" --menu "$finishedMessage" 32 50 10 \
                                             finish "Finish" \
                                             abort "Abort" \
@@ -983,10 +1380,10 @@ installerHook() {
                     else
                         dialog --clear
                         clear
-                        echo -e "[ Status ]: Success! Geex (GNU Guix) was installed to your '$disk' Drive, and mounted at '/mnt'.\n[ Info ]: You may want to know about these useful Commands:\n - Rebuild System\n   - guix system reconfigure /etc/guix/config.scm\n - Rebuild Home\n   - guix home reconfigure /etc/guix/home.scm\n - Describe Generation\n   - guix describe\n - Pull Channels\n   - guix pull\n\nThank you for using Geex!"
+                        echo -e "[ Status ]: Success! Geex (GNU Guix) was installed to your '$disk' Drive, and mounted at '/mnt'.\n[ Result ]: Here are your Files\n  - 'config.scm' -> /mnt/etc/guix/config.scm (and) /tmp/geex.config.${stager}.scm\n - 'home.scm' -> /mnt/etc/guix/home.scm\n[ Info ]: You may want to know about these useful Commands:\n - Rebuild System\n   - guix system reconfigure /etc/guix/config.scm\n - Rebuild Home\n   - guix home reconfigure /etc/guix/home.scm\n - Describe Generation\n   - guix describe\n - Pull Channels\n   - guix pull\n\nThank you for using Geex!"
                     fi
                 else
-                    export finishedMessage="$(echo -e "Final Report\n============\nCopied Home?: $homeStatus\nInstallation Path: '/mnt'\nWrote BIOS Block?: $wroteBiosBlock\nFormatted Disks?: $formattedDisksStatus\n")"
+                    export finishedMessage="$(echo -e "Final Report\n============\nCopied Home?: $homeStatus\nHome-Get Method?: $homeGetMethod\nInstallation Path: '/mnt'\nWrote BIOS Block?: $wroteBiosBlock\nFormatted Disks?: $formattedDisksStatus\nWrote Filesystems?: $isFilesystemWritten\nInstalled Desktops?: $desktopsExist\nInstalled Services?: $areServicesWritten")"
                     finishedNotice=$(dialog --backtitle "Geex Installer" --title "Finalization" --menu "$finishedMessage" 32 50 10 \
                                             finish "Finish" \
                                             abort "Abort" \
@@ -997,7 +1394,7 @@ installerHook() {
                     else
                         dialog --clear
                         clear
-                        echo -e "[ Status ]: Success! Geex (GNU Guix) was installed to your '$disk' Drive, and mounted at '/mnt'.\n[ Info ]: You may want to know about these useful Commands:\n - Rebuild System\n   - guix system reconfigure /etc/guix/config.scm\n - Rebuild Home\n   - guix home reconfigure /etc/guix/home.scm\n - Describe Generation\n   - guix describe\n - Pull Channels\n   - guix pull\n\nThank you for using Geex!"
+                        echo -e "[ Status ]: Success! Geex (GNU Guix) was installed to your '$disk' Drive, and mounted at '/mnt'.\n[ Result ]: Here are your Files\n  - 'config.scm' -> /mnt/etc/guix/config.scm (and) /tmp/geex.config.${stager}.scm\n - 'home.scm' -> /mnt/etc/guix/home.scm\n[ Info ]: You may want to know about these useful Commands:\n - Rebuild System\n   - guix system reconfigure /etc/guix/config.scm\n - Rebuild Home\n   - guix home reconfigure /etc/guix/home.scm\n - Describe Generation\n   - guix describe\n - Pull Channels\n   - guix pull\n\nThank you for using Geex!"
                     fi
                 fi
             else
