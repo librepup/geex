@@ -20,6 +20,13 @@ The installer allows you to pick from 4 pre-made system configurations, and twea
 
 **Tip**: A full graphical (TUI - Terminal User Interface) and textual installer for the `geex.sh` script is in the works, and, mostly functional (State: **19.2.26@22:14**). You can test the installer functionality by running `GEEX_DEBUG=1 ./geex.sh -i` or `./geex.sh d i` (omit `GEEX_DEBUG=1`/`d` if you want the installer to *actually* move, configure, and install files - Debug Mode only pretends to work for testing purposes).
 
+Possible options for the Geex Installer (`geex.sh`) are:
+ - `help` - Show Help Menu
+ - `clean` - Clean Up Leftovers
+ - `debug` - Enter Debug Mode
+ - `install` - Start Interactive Installer
+ - `git` - Print Repository URL and Contact E-Mail
+
 ### Manual
  - `cp channels.scm ~/.config/guix/channels.scm`
  - `cp channels.scm /etc/guix/channels.scm`
