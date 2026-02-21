@@ -1329,6 +1329,12 @@ disksHook() {
         fi
         export disk=$disk
     else
+        PARTS_WITH_LABELS=$(ls -l /dev/disk/by-label/ | awk '{print $11 " " $9"\\n"}' | sed "s|../../|\n/dev/|g")
+        if [[ "$PARTS_WITH_LABELS" == "" ]] || [[ -z "$PARTS_WITH_LABELS" ]]; then
+            echo "[ Status ]: No partitions with labels found, skipping notice message..."
+        else
+            partitionsNotice=$(dialog --backtitle "Geex Installer" --title "Partitions Notice" --msgbox "The Installer has detected the following Partitions with a Label assigned to them, you may want to watch out and make sure you do not overwrite the Disk they are a Part of, if these Partitions are important to you.\n\n$PARTS_WITH_LABELS" 15 50 3>&1 1>&2 2>&3) || exit 1
+        fi
         DISK_LIST=$(lsblk -dno NAME,SIZE | awk '{print "/dev/"$1, "("$2")"}')
         SELECTED_DISK=$(dialog --menu "Select Disk" 15 50 10 $DISK_LIST 3>&1 1>&2 2>&3) || exit 1
         if [[ -z "$SELECTED_DISK" ]]; then
