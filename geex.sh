@@ -1951,22 +1951,8 @@ livePreviewHook() {
     fi
 }
 liveKillHook() {
-    for i in $(seq 2 $END); do
-        if [[ -n "$findInstance" ]]; then
-            unset findInstance
-            export findInstance=$(ps aux | grep "[g]eexLive" | awk '{print $2}' | head -n 1)
-            kill $findInstance
-            unset findInstance
-            export findInstance=$(ps aux | grep "[g]eexLive" | awk '{print $2}' | head -n 1)
-        else
-            export findInstance=$(ps aux | grep "[g]eexLive" | awk '{print $2}' | head -n 1)
-            kill $findInstance
-            unset findInstance
-            export findInstance=$(ps aux | grep "[g]eexLive" | awk '{print $2}' | head -n 1)
-        fi
-        if [[ "$findInstance" == "" ]]; then
-            return 0
-        fi
+    while findInstance=$(ps aux | grep "[g]eexLive" | awk '{print $2}' | head -n 1) && [ -n "$findInstance" ]; do
+        kill "$findInstance"
     done
 }
 
