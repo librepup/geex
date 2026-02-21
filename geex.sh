@@ -89,6 +89,15 @@ done
 for arg in "$@"; do
     case "$arg" in
         c|-c|--c|clean|-clean|--clean)
+            if [ -f "/tmp/geex.guix.channel.pull.check.file.dd" ]; then
+                rm /tmp/geex.guix.channel.pull.check.file.dd
+            fi
+            if [ -f "/tmp/geex.guix.system.init.check.file.dd" ]; then
+                rm /tmp/geex.guix.system.init.check.file.dd
+            fi
+            if [ -f "/tmp/geex.guix.style.check.file.dd" ]; then
+                rm /tmp/geex.guix.style.check.file.dd
+            fi
             if [ -f "/tmp/geex.keyboard.variants.dd" ]; then
                 rm /tmp/geex.keyboard.variants.dd
             fi
@@ -489,6 +498,12 @@ if [ ! -z "$GUIX_ENVIRONMENT" ]; then
 fi
 if [ ! -z "$IN_NIX_SHELL" ]; then
     echo "[ Status ]: Running inside Nix Shell for Command Compatibility"
+fi
+
+if leftoverFileReport=$(ls -l -a /tmp | grep "geex") >/dev/null; then
+    export verboseFoundLeftoverFiles="Yes"
+else
+    export verboseFoundLeftoverFiles="No"
 fi
 
 cat > /tmp/geex.channels.dd <<'EOF'
@@ -1065,51 +1080,120 @@ EOF
 channelPullHook() {
     if [ -f "/tmp/geex.channels.dd" ]; then
         cp /tmp/geex.channels.dd /tmp/channels.scm
-        if [ -f "/mnt/etc/guix" ]; then
+        if [ -n "$GEEX_VERBOSE_MODE" ] || [ "$GEEX_VERBOSE_MODE" == 1 ]; then
+            verboseNotice=$(dialog --backtitle "Geex Installer" --title "Verbose Notice" --msgbox "The Installer has successfully copied the '/tmp/geex.channels.dd' file to '/tmp/channels.scm', and is now ready to pull the required Guix Channels." 24 40 3>&1 1>&2 2>&3)
+        fi
+        if [ -d "/mnt/etc/guix" ]; then
             cp /tmp/channels.scm /mnt/etc/guix/channels.scm
+            if [ -n "$GEEX_VERBOSE_MODE" ] || [ "$GEEX_VERBOSE_MODE" == 1 ]; then
+                verboseNotice=$(dialog --backtitle "Geex Installer" --title "Verbose Notice" --msgbox "The Installer has successfully copied the '/tmp/channels.scm' file to '/mnt/etc/guix/channels.scm', and is now ready to pull the required Guix Channels." 24 40 3>&1 1>&2 2>&3)
+            fi
             export pullFrom="mnt"
         elif [ -n "$GEEX_DEBUG" ] || [ -n "$GEEX_DEBUG_MODE" ]; then
             export pullFrom="Mock"
         else
+            if [ -n "$GEEX_VERBOSE_MODE" ] || [ "$GEEX_VERBOSE_MODE" == 1 ]; then
+                verboseNotice=$(dialog --backtitle "Geex Installer" --title "Verbose Notice" --msgbox "The Installer has not been able to set up the 'channels.scm' file to be copied to/appear in '/mnt/etc/guix/channels.scm', and will now continue to pull the channels from '/tmp/channels.scm'." 24 40 3>&1 1>&2 2>&3)
+            fi
             export pullFrom="tmp"
         fi
         if [ "$pullFrom" == "mnt" ]; then
-            guix pull --channels=/mnt/etc/guix/channels.scm
-            export finPull=1
+            export GEEX_GUIX_CHANNEL_PULL_CHECKFILE=/tmp/geex.guix.channel.pull.check.file.dd
+            if [ -f "$GEEX_GUIX_CHANNEL_PULL_CHECKFILE" ]; then
+                rm $GEEX_GUIX_CHANNEL_PULL_CHECKFILE
+            fi
+            guix pull --channels=/mnt/etc/guix/channels.scm && touch $GEEX_GUIX_CHANNEL_PULL_CHECKFILE
+            if [ -f "$GEEX_GUIX_CHANNEL_PULL_CHECKFILE" ]; then
+                export finPull=1
+            else
+                errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --menu "The Installer has failed to pull in the new and required channels in '/mnt/etc/guix/channels.scm'. This error is un-recoverable, and the installer would recommend you to abort the installation process now, and investigate this error. Possible causes are:\n\n - 'guix' Command is not Available\n - Installer Failed to write the Channels File ('/mnt/etc/guix/channels.scm')\n - Your Filesystem was not correctly Mounted to '/mnt'.\n\nIf you still want to continue, which is NOT RECOMMENDED, select 'Ignore and Continue Anyways', otherwise investigate the error and try again later." 40 120 10 \
+                                      abort "Abort" \
+                                      ignore "Ignore and Continue Anyways" \
+                                      3>&1 1>&2 2>&3) || exit 1
+                if [ "$errorMessage" == "abort" ]; then
+                    echo "[ Status ]: Aborting..."
+                    exit 1
+                else
+                    export finPull=0
+                fi
+            fi
         elif [ "$pullFrom" == "tmp" ]; then
-            guix pull --channels=/tmp/channels.scm
-            export finPull=1
+            export GEEX_GUIX_CHANNEL_PULL_CHECKFILE=/tmp/geex.guix.channel.pull.check.file.dd
+            if [ -f "$GEEX_GUIX_CHANNEL_PULL_CHECKFILE" ]; then
+                rm $GEEX_GUIX_CHANNEL_PULL_CHECKFILE
+            fi
+            guix pull --channels=/tmp/channels.scm && touch $GEEX_GUIX_CHANNEL_PULL_CHECKFILE
+            if [ -f "$GEEX_GUIX_CHANNEL_PULL_CHECKFILE" ]; then
+                export finPull=1
+            else
+                errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --menu "The Installer has failed to pull in the new and required channels in '/tmp/channels.scm'. This error is un-recoverable, and the installer would recommend you to abort the installation process now, and investigate this error. Possible causes are:\n\n - 'guix' Command is not Available\n - Installer Failed to write the Channels File ('/tmp/channels.scm')\n - Your Filesystem was not correctly Mounted to '/mnt'.\n - Your '/tmp' Directory is not Writeable/Read-Only\n\nIf you still want to continue, which is NOT RECOMMENDED, select 'Ignore and Continue Anyways', otherwise investigate the error and try again later." 40 120 10 \
+                                      abort "Abort" \
+                                      ignore "Ignore and Continue Anyways" \
+                                      3>&1 1>&2 2>&3) || exit 1
+                if [ "$errorMessage" == "abort" ]; then
+                    echo "[ Status ]: Aborting..."
+                    exit 1
+                else
+                    export finPull=0
+                fi
+            fi
         elif [ "$pullFrom" == "Mock" ]; then
+            if [ -n "$GEEX_VERBOSE_MODE" ] || [ "$GEEX_VERBOSE_MODE" == 1 ]; then
+                verboseNotice=$(dialog --backtitle "Geex Installer" --title "Verbose Notice" --msgbox "The Installer has set your Guix Channel Pull-Method (pullFrom=$pullFrom) to 'Mock', this probably happened because you are running in Debug Mode.\n\nThe Installer will now pretend to have pulled the required Channels correctly and continue with a Mock Installation Process." 24 40 3>&1 1>&2 2>&3)
+            fi
             echo "[ Debug ]: Pretending to have pulled channels..."
             export finPull=1
         else
             export finPull=0
         fi
     else
+        if [ -n "$GEEX_VERBOSE_MODE" ] || [ "$GEEX_VERBOSE_MODE" == 1 ]; then
+            verboseNotice=$(dialog --backtitle "Geex Installer" --title "Verbose Notice" --msgbox "The Installer has encountered one or more errors trying to correctly set-up your 'channels.scm' Guix Channels File on both your '/mnt', as well as your '/tmp' directories.\n\nIt will now try to pull the 'channels.scm' file directly from GitHub in a last attempt to recover and continue with the installation process as intended." 24 40 3>&1 1>&2 2>&3)
+        fi
         mkdir -p /tmp/geex.git.storage
         git clone https://github.com/librepup/geex.git /tmp/geex.git.storage/geex
         cp /tmp/geex.git.storage/geex/channels.scm /tmp/geex.git.channels.scm
-        guix pull /tmp/geex.git.channels.scm
-        export finPull=1
+        export GEEX_GUIX_CHANNEL_PULL_CHECKFILE=/tmp/geex.guix.channel.pull.check.file.dd
+        if [ -f "$GEEX_GUIX_CHANNEL_PULL_CHECKFILE" ]; then
+            rm $GEEX_GUIX_CHANNEL_PULL_CHECKFILE
+        fi
+        guix pull /tmp/geex.git.channels.scm && touch $GEEX_GUIX_CHANNEL_PULL_CHECKFILE
+        if [ -f "$GEEX_GUIX_CHANNEL_PULL_CHECKFILE" ]; then
+            export finPull=1
+        else
+            errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --menu "The Installer has failed to pull in the new and required channels in '/tmp/geex.git.channels.scm'. This error is un-recoverable, and the installer would recommend you to abort the installation process now, and investigate this error. Possible causes are:\n\n - 'git' Command is not Available\n - The Repository URL Changed and is now Outdated (Unlikely)\n - 'guix' Command is not Available\n - Installer Failed to write the Channels File ('/tmp/geex.git.channels.scm')\n - Your Filesystem was not correctly Mounted to '/mnt'.\n - Your '/tmp' Directory is not Writeable/Read-Only\n\nIf you still want to continue, which is NOT RECOMMENDED, select 'Ignore and Continue Anyways', otherwise investigate the error and try again later." 40 120 10 \
+                                  abort "Abort" \
+                                  ignore "Ignore and Continue Anyways" \
+                                  3>&1 1>&2 2>&3) || exit 1
+            if [ "$errorMessage" == "abort" ]; then
+                echo "[ Status ]: Aborting..."
+                exit 1
+            else
+                export finPull=0
+            fi
+        fi
     fi
     if [ "$finPull" == 0 ]; then
         errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --menu "The Installer failed to pull the appropriate Guix channels, due to one of the following issues:\n1. Connection issue - check your internet connection.\n2. File mismatch - cannot find channels.scm occurrence anywhere.\n3. Guix binary missing - if this is the issue, make sure you have the command 'guix' available.\n\nContinue anyways?" 32 50 10 \
-                              continue "Continue" \
                               abort "Abort" \
+                              continue "Continue Anyways" \
                               3>&1 1>&2 2>&3) || exit 1
         if [ "$errorMessage" == "abort" ]; then
             echo "[ Status ]: Aborting..."
             exit 1
+        else
+            export channelReport="No"
         fi
-        export channelReport="No"
     elif [ -n "$GEEX_DEBUG" ] || [ -n "$GEEX_DEBUG_MODE" ]; then
-        successMessage=$(dialog --backtitle "Geex Installer" --title "Channels" --menu "Debug Mode Detected, pretending as if channels were pulled successfully.\n\nYour Mock Installation will now continue as planned." 32 50 10 \
-                                continue "Continue" \
-                                abort "Abort" \
-                                3>&1 1>&2 2>&3) || exit 1
-        if [ "$successMessage" == "abort" ]; then
-            echo "[ Status ]: Aborting..."
-            exit 1
+        if [ -n "$GEEX_VERBOSE_MODE" ] || [ "$GEEX_VERBOSE_MODE" == 1 ]; then
+            successMessage=$(dialog --backtitle "Geex Installer" --title "Channels" --menu "Debug Mode Detected, pretending as if channels were pulled successfully.\n\nYour Mock Installation will now continue as planned." 32 50 10 \
+                            continue "Continue" \
+                            abort "Abort" \
+                            3>&1 1>&2 2>&3) || exit 1
+            if [ "$successMessage" == "abort" ]; then
+                echo "[ Status ]: Aborting..."
+                exit 1
+            fi
         fi
         export channelReport="Mock"
     else
@@ -1432,6 +1516,7 @@ filesystemHook() {
         #/tmp/geex.config.${stager}.dd
         #sed -i "s/GEEX_FILESYSTEM_OPTIONAL/$filesystemBlock/g" /tmp/geex.config.${stager}.dd
         export wroteFilesystemBlock=1
+        export verboseFilesystemBlockText=$filesystemBlock
     else
         errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --menu "The Installer failed to write the File-System Block to '/tmp/geex.config.${stager}.dd'. Do you still want to continue?\n\n(!) Warning (!)\nThis may make your system unable to boot, unless you manually write a file-system block into the resulting, final config." 32 50 10 \
                               continue "Continue" \
@@ -1442,6 +1527,18 @@ filesystemHook() {
             exit 1
         fi
         export wroteFilesystemBlock=0
+    fi
+    if [ -n "$GEEX_VERBOSE_MODE" ] || [ "$GEEX_VERBOSE_MODE" == 1 ]; then
+        if [ "$wroteFilesystemBlock" == 1 ]; then
+            verboseWasFilesystemBlockWritten="Yes"
+        else
+            verboseWasFilesystemBlockWritten="No"
+        fi
+        if [ "$verboseWasFilesystemBlockWritten" == "Yes" ]; then
+            verboseNotice=$(dialog --backtitle "Geex Installer" --title "Verbose Notice" --msgbox "The Installer has successfully written your filesystems block into your '/tmp/geex.config.${stager}.dd' configuration file. Below is the full written block for verbosity:\n\nFilesystem Block:\n\`\`\`$verboseFilesystemBlockText\n\`\`\`" 34 68 3>&1 1>&2 2>&3)
+        else
+            verboseNotice=$(dialog --backtitle "Geex Installer" --title "Verbose Notice" --msgbox "The Installer failed to write your filesystems block into the appropriate '/tmp/geex.config.${stager}.dd' file for unknown reasons.\n\nPlease investigate this!" 34 68 3>&1 1>&2 2>&3)
+        fi
     fi
 }
 biosLegacyEditHook() {
@@ -1551,19 +1648,67 @@ systemInstallHook() {
             mkdir -p /mnt/etc/guix
             cp /tmp/geex.config.${stager}.scm /mnt/etc/guix/config.scm
             if [ -f "/mnt/etc/guix/config.scm" ]; then
-                guix style -f /mnt/etc/guix/config.scm
-                guix system init /mnt/etc/guix/config.scm /mnt
-                export installationStatus=1
+                export GEEX_GUIX_SYSTEM_INIT_CHECKFILE=/tmp/geex.guix.system.init.check.file.dd
+                export GEEX_GUIX_STYLE_CHECKFILE=/tmp/geex.guix.style.check.file.dd
+                if [ -f "$GEEX_GUIX_STYLE_CHECKFILE" ]; then
+                    rm $GEEX_GUIX_STYLE_CHECKFILE
+                fi
+                if [ -f "$GEEX_GUIX_SYSTEM_INIT_CHECKFILE" ]; then
+                    rm $GEEX_GUIX_SYSTEM_INIT_CHECKFILE
+                fi
+                guix style -f /mnt/etc/guix/config.scm && touch $GEEX_GUIX_STYLE_CHECKFILE
+                guix system init /mnt/etc/guix/config.scm /mnt && touch $GEEX_GUIX_SYSTEM_INIT_CHECKFILE
+                if [[ ! -f "$GEEX_GUIX_STYLE_CHECKFILE" ]]; then
+                    errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "The Installer failed to style the '/tmp/geex.config.${stager}.scm' file. This is either caused by the fact this file does not exist, or a problem with Guix itself (likely to happen if you do not have the 'guix' command available on your system).\n\nThis is not a fatal error, but it could pre-destine the installer to also fail at later stages that invole the 'guix' command, or other file operations.\n\nPlease investigate this error!" 34 75 3>&1 1>&2 2>&3) || exit 1
+                fi
+                if [ -f "$GEEX_GUIX_SYSTEM_INIT_CHECKFILE" ]; then
+                    export installationStatus=1
+                else
+                    fatalSystemErrorMessage="$(echo -e "The Installer has encountered a Fatal Error, it was not able to initialize the Guix System on your '/mnt' via the selected configuration file ('/mnt/etc/guix/config.scm').\n\nThis error is un-recoverable, and the installer will now quit, unless you force it to continue running.\n\nSelect 'Okay' to abort the installation process, and 'No, Ignore and Keep Going' to continue anyways (not recommended).")"
+                    errorMessage=$(dialog --backtitle "Geex Installer" --title "Fatal Error" --menu "$fatalSystemErrorMessage" 40 124 10 \
+                                          okay "Okay" \
+                                          ignore "No, Ignore and Keep Going" \
+                                          3>&1 1>&2 2>&3) || exit 1
+                    if [ "$errorMessage" == "okay" ]; then
+                        echo "[ Status ]: Aborting..."
+                        exit 1
+                    fi
+                    export installationStatus=0
+                fi
             elif [ -f "/tmp/geex.config.${stager}.scm" ]; then
-                guix style -f /tmp/geex.config.${stager}.scm
-                guix system init /tmp/geex.config.${stager}.scm /mnt
-                export installationStatus=1
+                export GEEX_GUIX_SYSTEM_INIT_CHECKFILE=/tmp/geex.guix.system.init.check.file.dd
+                export GEEX_GUIX_STYLE_CHECKFILE=/tmp/geex.guix.style.check.file.dd
+                if [ -f "$GEEX_GUIX_STYLE_CHECKFILE" ]; then
+                    rm $GEEX_GUIX_STYLE_CHECKFILE
+                fi
+                if [ -f "$GEEX_GUIX_SYSTEM_INIT_CHECKFILE" ]; then
+                    rm $GEEX_GUIX_SYSTEM_INIT_CHECKFILE
+                fi
+                guix style -f /tmp/geex.config.${stager}.scm && touch $GEEX_GUIX_STYLE_CHECKFILE
+                guix system init /tmp/geex.config.${stager}.scm /mnt && touch $GEEX_GUIX_SYSTEM_INIT_CHECKFILE
+                if [[ ! -f "$GEEX_GUIX_STYLE_CHECKFILE" ]]; then
+                    errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "The Installer failed to style the '/tmp/geex.config.${stager}.scm' file. This is either caused by the fact this file does not exist, or a problem with Guix itself (likely to happen if you do not have the 'guix' command available on your system).\n\nThis is not a fatal error, but it could pre-destine the installer to also fail at later stages that invole the 'guix' command, or other file operations.\n\nPlease investigate this error!" 34 75 3>&1 1>&2 2>&3) || exit 1
+                fi
+                if [ -f "$GEEX_GUIX_SYSTEM_INIT_CHECKFILE" ]; then
+                    export installationStatus=1
+                else
+                    fatalSystemErrorMessage="$(echo -e "The Installer has encountered a Fatal Error, it was not able to initialize the Guix System on your '/mnt' via the selected configuration file ('/tmp/geex.config.${stager}.scm').\n\nThis error is un-recoverable, and the installer will now quit, unless you force it to continue running.\n\nSelect 'Okay' to abort the installation process, and 'No, Ignore and Keep Going' to continue anyways (not recommended).")"
+                    errorMessage=$(dialog --backtitle "Geex Installer" --title "Fatal Error" --menu "$fatalSystemErrorMessage" 40 124 10 \
+                                          okay "Okay" \
+                                          ignore "No, Ignore and Keep Going" \
+                                          3>&1 1>&2 2>&3) || exit 1
+                    if [ "$errorMessage" == "okay" ]; then
+                        echo "[ Status ]: Aborting..."
+                        exit 1
+                    fi
+                    export installationStatus=0
+                fi
             elif [ -n "$GEEX_DEBUG" ] || [ -n "$GEEX_DEBUG_MODE" ]; then
                 export installationStatus=2
             else
-                errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --menu "The Installer encountered an error: neither the '/mnt/etc/guix/config.scm', nor the '/tmp/geex.config.${stager}.scm' files are present.\n\nThe Installer must have failed the copying process, please investigate.\n\nThe Installer cannot continue meaningfully, still proceed in the broken installation process?" 32 50 10 \
-                                      continue "Yes, still Continue" \
+                errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --menu "The Installer encountered an error: neither the '/mnt/etc/guix/config.scm', nor the '/tmp/geex.config.${stager}.scm' files are present. Or, the 'guix' command is not available to your system and thus not available to the installer.\n\nThe Installer must have failed the copying process, or errorer at a different stage. Please investigate.\n\nThe Installer cannot continue meaningfully, still proceed with the broken installation process?" 32 50 10 \
                                       abort "Abort" \
+                                      continue "Yes, still Continue" \
                                       3>&1 1>&2 2>&3) || exit 1
                 if [ "$errorMessage" == "abort" ]; then
                     echo "[ Status ]: Aborting..."
@@ -2004,6 +2149,35 @@ installerHook() {
     if [ -n "$GEEX_VERBOSE_MODE" ]; then
         verboseNotice=$(dialog --backtitle "Geex Installer" --title "Verbose Notice" --msgbox "The Installer has detected that you are running in Verbose Mode!\n\nYou will now see more popups and status messages as is the default, for the sake of debugging." 24 40 3>&1 1>&2 2>&3)
     fi
+    if [ -n "$GEEX_VERBOSE_MODE" ] || [ "$GEEX_VERBOSE_MODE" == 1 ]; then
+        if [ -f "/tmp/geex.channels.dd" ]; then
+            export verboseWroteChannelsFile="Yes"
+        else
+            export verboseWroteChannelsFile="No"
+        fi
+        if [ -f "/tmp/geex.config.desktop.template.dd" ]; then
+            export verboseWroteDesktopTemplateFile="Yes"
+        else
+            export verboseWroteDesktopTemplateFile="No"
+        fi
+        if [ -f "/tmp/geex.config.laptop.template.dd" ]; then
+            export verboseWroteLaptopTemplateFile="Yes"
+        else
+            export verboseWroteLaptopTemplateFile="No"
+        fi
+        if [ -f "/tmp/geex.config.minimal.template.dd" ]; then
+            export verboseWroteMinimalTemplateFile="Yes"
+        else
+            export verboseWroteMinimalTemplateFile="No"
+        fi
+        if [ -f "/tmp/geex.config.libre.template.dd" ]; then
+            export verboseWroteLibreTemplateFile="Yes"
+        else
+            export verboseWroteLibreTemplateFile="No"
+        fi
+        verboseDefaultFileWriteStatusText="$(echo -e "Verbose Mode Detected, informing you of all default systems template files that were created, as well as checking for any leftover files from possible previous installation procedures.\n\n - Found Leftovers?: $verboseFoundLeftoverFiles\n\nThe Installer Wrote the following Files:\n\n - Channels?: $verboseWroteChannelsFile\n - Desktop Template?: $verboseWroteDesktopTemplateFile\n - Laptop Template?: $verboseWroteLaptopTemplateFile\n - Libre Template?: $verboseWroteLibreTemplateFile\n - Minimal Template?: $verboseWroteMinimalTemplateFile")"
+        verboseNotice=$(dialog --backtitle "Geex Installer" --title "Verbose Notice" --msgbox "$verboseDefaultFileWriteStatusText" 34 68 3>&1 1>&2 2>&3)
+    fi
     welcome=$(dialog --backtitle "Geex Installer" --title "Welcome" --menu "Welcome to the (still experimental) Geex Installer, this Installer will help you to install the Geex Configuration Files onto real Hardware, or install a custom version of Guix, with your very own Configuration Files, to a system of your choice.\n\nThis Installer is pre-alpha code, so please follow instructions carefully when given, and verify everything worked after the installation finishes.\n\nTo begin, click 'I agree'." 32 50 10 \
                                 agree "I agree" \
                                 abort "Abort" \
@@ -2090,6 +2264,11 @@ installerHook() {
                 exit 1
             fi
         fi
+    fi
+    if [ -n "$GEEX_VERBOSE_MODE" ] || [ "$GEEX_VERBOSE_MODE" == 1 ]; then
+        verboseUsernameBlock=$(cat /tmp/geex.config.${stager}.dd | grep "name" | grep "$username" | sed "s/^[ \t]*//g")
+        verboseHostnameBlock=$(cat /tmp/geex.config.${stager}.dd | grep "$hostname" | sed "s/^[ \t]*//g")
+        verboseNotice=$(dialog --backtitle "Geex Installer" --title "Verbose Notice" --msgbox "The Installer has successfully set and wrote the following variables based on your input/selection:\n\n - Username: $username\n - Hostname: $hostname\n\nUsername Block:\n\`\`\`\n$verboseUsernameBlock\n\`\`\`\n\nHostname Block:\n\`\`\`\n$verboseHostnameBlock\n\`\`\`" 34 68 3>&1 1>&2 2>&3)
     fi
     timezoneHook
     keyboardHook
