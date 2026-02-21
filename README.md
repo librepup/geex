@@ -12,7 +12,7 @@ This GNU Guix Configuration pre-configures a few useful channels to make certain
 # Usage
 ## Setup
 Clone this repository via `git clone https://github.com/nixpup/geex`, enter the cloned directory (`cd geex`), then run the mover and installer script (`geex.sh`), or move the files to their respective destinations manually:
-### Mover and Installer
+### Geex Installer and Mover
  - `chmod a+x ./geex.sh`
  - `./geex.sh -h`
 
@@ -25,7 +25,17 @@ Possible options for the Geex Installer (`geex.sh`) are:
  - `clean` - Clean Up Leftovers
  - `debug` - Enter Debug Mode
  - `install` - Start Interactive Installer
+ - `mover` - Run in Mover Mode
+ - `live` - Enable Live-Preview Mode for the Installer
  - `git` - Print Repository URL and Contact E-Mail
+
+Example Commands:
+ - `./geex.sh d i` - Run Installer in Debug Mode
+ - `./geex.sh d v i l` - Run Installer in Debug, Verbose, and Live Mode
+ - `./geex.sh d m` - Run the Mover in Debug Mode
+ - `./geex.sh i` - Run the Installer (Warning: without Debug Mode, the installer WILL modify your system!)
+ - `./geex.sh c` - Clean-Up possible leftover Files
+ - `./geex.sh h` - Show the Help Screen
 
 ### Manual
  - `cp channels.scm ~/.config/guix/channels.scm`
