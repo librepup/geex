@@ -1865,12 +1865,38 @@ homeHook() {
         if [ "$homeQuestion" == "yes" ]; then
             if [ -f "/tmp/geex.home.scm" ]; then
                 cp /tmp/geex.home.scm /mnt/etc/guix/home.scm
-                export copiedHome=1
-                export homeGetMethod="local"
+                if [ -d "/tmp/geex.files" ] && [ -d "/tmp/geex.container" ]; then
+                    cp -r /tmp/geex.files /mnt/etc/guix/files
+                    cp -r /tmp/geex.containers /mnt/etc/guix/containers
+                    export copiedHome=1
+                    export homeGetMethod="local"
+                else
+                    mkdir -p /tmp/geex.git.storage
+                    git clone https://github.com/librepup/geex.git /tmp/geex.git.storage/geex
+                    cp -r /tmp/geex.git.storage/geex/files /mnt/etc/guix/files
+                    cp -r /tmp/geex.git.storage/geex/containers /mnt/etc/guix/containers
+                    export copiedHome=1
+                    export homeGetMethod="local+git"
+                fi
+                if [ "$copiedHome" == 0 ] || [ -z "$copiedHome" ]; then
+                    errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --menu "The Installer has encountered an error trying to copy the necessary directories needed for the Guix Home Configuration Setup. This is unexpected, as the installer did not expect it to be possible to encounter an error at this specific stage, as every possibility has been accounted for, so this error is either due to someone having tampered with the Geex Installers Code (do NOT do this), or another un-recoverable error.\n\nThe Installer will now pretend as if you have not selected the option to copy Guix Home Configuration Files at all." 32 50 10 \
+                                          okay "Okay" \
+                                          abort "Abort" \
+                                          3>&1 1>&2 2>&3) || exit 1
+                    if [ "$errorMessage" == "abort" ]; then
+                        echo "[ Status ]: Aborting..."
+                        exit 1
+                    fi
+                    export homeGetMethod="broken"
+                    export copiedHome=0
+                    export systemFinished=1
+                fi
             elif command -v git >/dev/null; then
                 mkdir -p /tmp/geex.git.storage
                 git clone https://github.com/librepup/geex.git /tmp/geex.git.storage/geex
                 cp /tmp/geex.git.storage/geex/home.scm /mnt/etc/guix/home.scm
+                cp -r /tmp/geex.git.storage/geex/files /mnt/etc/guix/files
+                cp -r /tmp/geex.git.storage/geex/containers /mnt/etc/guix/containers
                 export copiedHome=1
                 export homeGetMethod="git"
             else
