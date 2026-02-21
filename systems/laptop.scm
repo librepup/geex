@@ -84,6 +84,7 @@
                              "file"
                              "grep"
                              "coreutils"
+                             "util-linux"
                              "glibc-locales"
                              "ncurses"
                              "zsh"

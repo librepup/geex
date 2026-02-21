@@ -65,6 +65,7 @@
     (packages (append (map specification->package
                            '("grep" "coreutils"
                              "glibc-locales"
+                             "util-linux"
                              "ncurses"
                              "zsh"
                              "git-minimal"

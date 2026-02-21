@@ -50,7 +50,7 @@
     ;; (keyboard-layout keyboard-layout)
     ;; (bootloader grub-bootloader)
     ;; (targets '("/dev/sda1"))))
-    
+
     ;; File Systems
     ;; - Regular
     (file-systems (cons* (file-system
@@ -74,7 +74,7 @@
     ;; (mount-point "/boot/efi")
     ;; (type "vfat")))
     ;; %base-file-systems))
-    
+
     ;; Users
     (users (cons (user-account
                    (name "puppy")
@@ -97,6 +97,7 @@
                              "grep"
                              "file"
                              "coreutils"
+                             "util-linux"
                              "glibc-locales"
                              "ncurses"
                              "zsh"
