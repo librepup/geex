@@ -37,6 +37,8 @@ Example Commands:
  - `./geex.sh c` - Clean-Up possible leftover Files
  - `./geex.sh h` - Show the Help Screen
 
+**Update**: State now, 21.2.2026@20:22, the `geex.sh` (Geex) Installer is now able to configure, set up, and install a fully functional GNU Guix system according to the users needs and inputs. Currently, the installer only supports using pre-made systems configurations (`./systems/<system>.scm` in this repository), and changes these pre-made configurations according to the users input and selections. A fully 100% custom configuration generator mode is in the works and planned to be added as soon as possible.
+
 ### Manual
  - `cp channels.scm ~/.config/guix/channels.scm`
  - `cp channels.scm /etc/guix/channels.scm`
