@@ -1535,7 +1535,7 @@ filesystemHook() {
             verboseWasFilesystemBlockWritten="No"
         fi
         if [ "$verboseWasFilesystemBlockWritten" == "Yes" ]; then
-            verboseNotice=$(dialog --backtitle "Geex Installer" --title "Verbose Notice" --msgbox "The Installer has successfully written your filesystems block into your '/tmp/geex.config.${stager}.dd' configuration file. Below is the full written block for verbosity:\n\nFilesystem Block:\n\`\`\`$verboseFilesystemBlockText\n\`\`\`" 34 68 3>&1 1>&2 2>&3)
+            verboseNotice=$(dialog --backtitle "Geex Installer" --title "Verbose Notice" --msgbox "The Installer has successfully written your filesystems block into your '/tmp/geex.config.${stager}.dd' configuration file. Below is the full written block for verbosity:\n\nFilesystem Block:\n\`\`\`\n$verboseFilesystemBlockText\n\`\`\`" 34 68 3>&1 1>&2 2>&3)
         else
             verboseNotice=$(dialog --backtitle "Geex Installer" --title "Verbose Notice" --msgbox "The Installer failed to write your filesystems block into the appropriate '/tmp/geex.config.${stager}.dd' file for unknown reasons.\n\nPlease investigate this!" 34 68 3>&1 1>&2 2>&3)
         fi
@@ -1544,7 +1544,7 @@ filesystemHook() {
 biosLegacyEditHook() {
     export diskPrefixed=$diskPrefixed
     legacyBlock="$(echo -e "    (bootloader (bootloader-configuration\n              (keyboard-layout keyboard-layout)\n              (bootloader grub-bootloader)\n              (targets '(\"${diskPrefixed}1\"))))\n")"
-    legacyBlockVerify=$(dialog --backtitle "Geex Installer" --title "Verify BIOS Block" --menu "$legacyBlock" 32 50 10 \
+    legacyBlockVerify=$(dialog --backtitle "Geex Installer" --title "Verify BIOS Block" --menu "Please verify that the BIOS Block below is correct and can be written:\n\n\`\`\`\n$legacyBlock\n\`\`\`\n\n\n  " 28 50 10 \
                                continue "Continue" \
                                abort "Abort" \
                                3>&1 1>&2 2>&3) || exit 1
@@ -1587,7 +1587,7 @@ biosLegacyEditHook() {
 biosUefiEditHook() {
     export diskPrefixed=$diskPrefixed
     uefiBlock="$(echo -e "    (bootloader (bootloader-configuration\n              (keyboard-layout keyboard-layout)\n              (bootloader grub-efi-bootloader)\n              (targets '(\"/boot/efi\"))))\n")"
-    uefiBlockVerify=$(dialog --backtitle "Geex Installer" --title "Verify BIOS Block" --menu "$uefiBlock" 32 50 10 \
+    uefiBlockVerify=$(dialog --backtitle "Geex Installer" --title "Verify BIOS Block" --menu "Please verify that the BIOS Block below is correct and can be written:\n\n\`\`\`\n$uefiBlock\n\`\`\`\n\n\n  " 28 50 10 \
                              continue "Continue" \
                              abort "Abort" \
                              3>&1 1>&2 2>&3) || exit 1
@@ -1982,6 +1982,18 @@ timezoneHook() {
     fi
     export TIMEZONE=$TIMEZONE
     sed -i "s|GEEX_TIMEZONE|$TIMEZONE|g" /tmp/geex.config.${stager}.dd
+    if [ -n "$TIMEZONE" ]; then
+        if [ "$fellBackNum" == 0 ]; then
+            export wroteTimezoneBlock="Yes"
+        else
+            export wroteTimezoneBlock="Yes (Fallback)"
+        fi
+    else
+        export wroteTimezoneBlock="No"
+    fi
+    if [ -n "$GEEX_VERBOSE_MODE" ] || [ "$GEEX_VERBOSE_MODE" == 1 ]; then
+        export verboseTimezoneBlockText=$(cat /tmp/geex.config.${stager}.dd | grep "$TIMEZONE" | sed "s/^[ \t]*//g")
+    fi
 }
 keyboardSelectVariantHook() {
     while true; do
@@ -2069,9 +2081,6 @@ keyboardHook() {
             export foundKeyboardBlock="Yes"
         else
             export foundKeyboardBlock="No"
-        fi
-        if [[ -n "$GEEX_VERBOSE_MODE" ]]; then
-            verbosePopup=$(dialog --backtitle "Geex Installer" --title "Verbose Notice" --msgbox "The Installer has detected that you are running in Verbose Mode, thus it will now provide more information on the keyboard layout and variant hook processes.\n\nLayout: $selectedLayout\nVariant: $selectedVariant\nLayout Block (Raw): $keyboard\nWrote Keyboard Block?: $wroteKeyboardBlock\nFound Keyboard Block?: $foundKeyboardBlock" 24 40 3>&1 1>&2 2>&3) || exit 1
         fi
     else
         echo "No '/tmp/geex.config.${stager}.dd' found..."
@@ -2272,7 +2281,10 @@ installerHook() {
     fi
     timezoneHook
     keyboardHook
-    keyboardStatusHook
+    if [ -n "$GEEX_VERBOSE_MODE" ] || [ "$GEEX_VERBOSE_MODE" == 1 ]; then
+        verboseKeyboardBlockText=$(cat /tmp/geex.config.${stager}.dd | grep "$keyboard" | sed "s/^[ \t]*//g")
+        verboseNotice=$(dialog --backtitle "Geex Installer" --title "Verbose Notice" --msgbox "The Installer has written and set up the following options and code-blocks for your Region, Timezone, Keyboard Layout and Layout Variant:\n\nSettings:\n - Keyboard: $keyboardInfo\n - Region/Timezone: $TIMEZONE\n - Wrote Keyboard Block?: $wroteKeyboardBlock\n - Wrote Timezone Block?: $wroteTimezoneBlock\n\nTimezone Block:\n\`\`\`\n$verboseTimezoneBlockText\n\`\`\`\n\nKeyboard Block:\n\`\`\`\n$verboseKeyboardBlockText\n\`\`\`" 34 68 3>&1 1>&2 2>&3)
+    fi
     if [ -f "/tmp/geex.timezone.success.dd" ]; then
         rm /tmp/geex.timezone.success.dd
     fi
