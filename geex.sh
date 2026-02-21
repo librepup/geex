@@ -64,10 +64,23 @@ for arg in "$@"; do
                  "Information: REPO and CONTACT
 
   REPO
-    https://github.com/librepup/geex
+    https://github.com/librepup/geex"
+            exit 1
+            ;;
+    esac
+done
 
-  CONTACT
-    librepup@member.fsf.org"
+for arg in "$@"; do
+    case "$arg" in
+        copyright|-copyright|--copyright|credits|-credits|--credits|credit|-credit|--credit)
+            echo -e \
+                 "Credits: Geex Installer
+
+CREATOR
+  librepup
+
+CONTACT
+  librepup@member.fsf.org"
             exit 1
             ;;
     esac
