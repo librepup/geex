@@ -1971,7 +1971,7 @@ installerHook() {
         moverFunction
         exit 1
     fi
-    if [ -n "$GEEX_LIVE_MODE" ]; then
+    if [ "$GEEX_LIVE_MODE" == 1 ]; then
         liveMessage="$(echo -e "The Installer has detected that you are running in Live Mode, thus, once you have made a system choice, two live windows will open automatically, one display the entire configuration file while the installer is working on it (in full length), and one displaying the same file, but exclusive to the last 50 lines.\n\nIf you want to disable this, do not use the 'l', 'live', or '--live' flags. If you did not use those flags and Live Mode was still activated, make sure to unset the GEEX_LIVE_MODE variable before running the Geex Installer again.\n\nDo you want to continue using Live Mode, then select the 'Yes' option. If you did not want to or intend to use Live Mode, please select the 'No' option.")"
         livePopup=$(dialog --backtitle "Geex Installer" --title "Live Notice" --yesno "$liveMessage" 24 60 \
                            3>&1 1>&2 2>&3)
@@ -2042,7 +2042,7 @@ installerHook() {
         fi
         "${systemchoice}Stage2"
     fi
-    if [ "$GEEX_LIVE_MODE" == 1 ] || [ -z "$GEEX_LIVE_OVERRIDE" ]; then
+    if [ "$GEEX_LIVE_MODE" == 1 ] && [ -z "$GEEX_LIVE_OVERRIDE" ]; then
         livePreviewHook
     fi
     username=$(dialog --backtitle "Geex Installer" --title "Username" --inputbox "Enter your Username:" 8 40 \
