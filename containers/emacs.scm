@@ -119,7 +119,6 @@
                                             "usbutils"
                                             "gcc-toolchain"
                                             "fastfetch"
-                                            "sudo"
                                             "font-jonafonts"
                                             "font-dejavu"
                                             "font-google-noto-emoji")))
