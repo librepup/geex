@@ -1954,6 +1954,9 @@ liveKillHook() {
     while findInstance=$(ps aux | grep "[g]eexLive" | awk '{print $2}' | head -n 1) && [ -n "$findInstance" ]; do
         kill "$findInstance"
     done
+    if pgrep -f "geexLive" >/dev/null; then
+        pkill -9 -f "geexLive"
+    fi
 }
 
 # Installer Hooks
