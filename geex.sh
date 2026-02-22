@@ -1861,7 +1861,11 @@ systemInstallHook() {
                     rm $GEEX_GUIX_SYSTEM_INIT_CHECKFILE
                 fi
                 guix style -f ${geexMount}/etc/guix/config.scm && touch $GEEX_GUIX_STYLE_CHECKFILE
-                guix system init ${geexMount}/etc/guix/config.scm ${geexMount} && touch $GEEX_GUIX_SYSTEM_INIT_CHECKFILE
+                if [ "$GEEX_THE_HURD" == 1 ] && [ -z "$GEEX_FORCE_THE_HURD" ]; then
+                    errorMessage=$(dialog --backtitle "Geex Installer" --title "GNU Hurd" --msgbox "The Installer refused to initialize the GNU Guix system, because you have enabled 'GEEX_THE_HURD'. It is not intended to install GNU Guix with GNU Hurd 'the hurd' as your kernel. The Hurd does not support most hardware, is 32-bit only, and intended to be run inside a virtual machine.\n\nIf you want to experience GNU Hurd yourself, unset the variable 'GEEX_THE_HURD', restart the installer, and enable the 'GNU Hurd' service in the services selection.")
+                else
+                    guix system init ${geexMount}/etc/guix/config.scm ${geexMount} && touch $GEEX_GUIX_SYSTEM_INIT_CHECKFILE
+                fi
                 if [[ ! -f "$GEEX_GUIX_STYLE_CHECKFILE" ]]; then
                     errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "The Installer failed to style the '/tmp/geex.config.${stager}.scm' file. This is either caused by the fact this file does not exist, or a problem with Guix itself (likely to happen if you do not have the 'guix' command available on your system).\n\nThis is not a fatal error, but it could pre-destine the installer to also fail at later stages that invole the 'guix' command, or other file operations.\n\nPlease investigate this error!" 34 75 3>&1 1>&2 2>&3) || exit 1
                 fi
@@ -1889,7 +1893,11 @@ systemInstallHook() {
                     rm $GEEX_GUIX_SYSTEM_INIT_CHECKFILE
                 fi
                 guix style -f /tmp/geex.config.${stager}.scm && touch $GEEX_GUIX_STYLE_CHECKFILE
-                guix system init /tmp/geex.config.${stager}.scm ${geexMount} && touch $GEEX_GUIX_SYSTEM_INIT_CHECKFILE
+                if [ "$GEEX_THE_HURD" == 1 ] && [ -z "$GEEX_THE_HURD_ALLOW" ]; then
+                    errorMessage=$(dialog --backtitle "Geex Installer" --title "GNU Hurd" --msgbox "The Installer refused to initialize the GNU Guix system, because you have enabled 'GEEX_THE_HURD'. It is not intended to install GNU Guix with GNU Hurd 'the hurd' as your kernel. The Hurd does not support most hardware, is 32-bit only, and intended to be run inside a virtual machine.\n\nIf you want to experience GNU Hurd yourself, unset the variable 'GEEX_THE_HURD', restart the installer, and enable the 'GNU Hurd' service in the services selection.")
+                else
+                    guix system init /tmp/geex.config.${stager}.scm ${geexMount} && touch $GEEX_GUIX_SYSTEM_INIT_CHECKFILE
+                fi
                 if [[ ! -f "$GEEX_GUIX_STYLE_CHECKFILE" ]]; then
                     errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "The Installer failed to style the '/tmp/geex.config.${stager}.scm' file. This is either caused by the fact this file does not exist, or a problem with Guix itself (likely to happen if you do not have the 'guix' command available on your system).\n\nThis is not a fatal error, but it could pre-destine the installer to also fail at later stages that invole the 'guix' command, or other file operations.\n\nPlease investigate this error!" 34 75 3>&1 1>&2 2>&3) || exit 1
                 fi
@@ -2577,6 +2585,9 @@ installerHook() {
             sed -i "s|$kernelExists|$hurdBlock|g"
         fi
         hurdNotice=$(dialog --backtitle "Geex Instaler" --title "GNU Hurd" --msgbox "WARNING: You just replaced your 'linux' kernel with the GNU Hurd 'the hurd' kernel.\n\nThe Hurd only supports 32-bit, is very limited in terms of hardware support, and almost un-usable outside of a virtual machine. This replacement hook is more of an easter-egg, or a little memory hook to know how someone WOULD use the hurd on GNU Guix IF they wanted to.\n\nThis is not meant to actually be used, please exit the installer, unset the 'GEEX_THE_HURD' variable, and try again." 32 50 3>&1 1>&2 2>&3)
+    fi
+    if [ -n "$GEEX_THE_HURD_ALLOW" ] || [ "$GEEX_THE_HURD_ALLOW" == 1 ]; then
+        hurdNoticeImportant=$(dialog --backtitle "Geex Installer" --title "GNU Hurd" --msgbox "THIS IS YOUR LAST WARNING - TURN BACK NOW!\n\nYou have enable the environment variable 'GEEX_THE_HURD_ALLOW', this options ONLY exists, because I, the creator of this installer, want to give users FULL CONTROL, even if it is AGAINST THEIR OWN BEST INTEREST!\n\nDO NOT INSTALL GNU HURD AS YOUR MAIN SYSTEMS KERNEL!" 32 50 3>&1 1>&2 2>&3)
     fi
     username=$(dialog --backtitle "Geex Installer" --title "Username" --inputbox "Enter your Username:" 8 40 \
                       3>&1 1>&2 2>&3) || exit 1
