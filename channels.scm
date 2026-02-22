@@ -19,9 +19,7 @@
          (channel
           (name 'nonguix)
           (url "https://gitlab.com/nonguix/nonguix")
-          ;(commit "6c0ea215e0bd089bf3b2097e5c59dd726fbbe304")
           (commit "48a8706d44040cc7014f36873dbd834c048aadd3")
-          ;; Enable signature verification:
           (introduction
            (make-channel-introduction
             "897c1a470da759236cc11798f4e0a5f7d4d59fbc"
@@ -30,7 +28,6 @@
          (channel
            (name 'guix)
            (url "https://git.guix.gnu.org/guix.git")
-           ;(commit "fa6b510864828b618064ec9368c69e3a97965b45")
            (commit "4baa120b8b298bec155c5b12c8068dda3c07df40")
            (branch "master")
            (introduction
