@@ -650,7 +650,7 @@ cat > /tmp/geex.config.desktop.template.dd <<'EOF'
 
 (define %guix-os
   (operating-system
-    (kernel linux)
+    GEEX_KERNEL_OPTIONAL
     (initrd microcode-initrd)
     (firmware (append (list intel-microcode linux-firmware) %base-firmware))
     (host-name "GEEX_HOSTNAME")
@@ -789,7 +789,7 @@ cat > /tmp/geex.config.minimal.template.dd <<'EOF'
 
 (define %guix-os
   (operating-system
-    (kernel linux)
+    GEEX_KERNEL_OPTIONAL
     (initrd microcode-initrd)
     (firmware (append (list intel-microcode linux-firmware) %base-firmware))
     (host-name "GEEX_HOSTNAME")
@@ -1042,7 +1042,7 @@ cat > /tmp/geex.config.laptop.template.dd <<'EOF'
 
 (define %guix-os
   (operating-system
-    (kernel linux)
+    GEEX_KERNEL_OPTIONAL
     (initrd microcode-initrd)
     (firmware (append (list intel-microcode linux-firmware) %base-firmware))
     (host-name "GEEX_HOSTNAME")
@@ -2570,6 +2570,14 @@ installerHook() {
     if [ "$GEEX_LIVE_MODE" == 1 ] && [ -z "$GEEX_LIVE_OVERRIDE" ]; then
         livePreviewHook
     fi
+    if [[ -n "$GEEX_THE_HURD" ]] || [[ "$GEEX_THE_HURD" == 1 ]]; then
+        kernelExists=$(cat /tmp/geex.config.${stager}.dd | grep "\(kernel linux\)")
+        if [[ "$kernelExists" != "" ]]; then
+            export hurdBlock="(kernel hurd)\n    (hurd hurd)\n    (server-services %base-services-hurd)\n"
+            sed -i "s|$kernelExists|$hurdBlock|g"
+        fi
+        hurdNotice=$(dialog --backtitle "Geex Instaler" --title "GNU Hurd" --msgbox "WARNING: You just replaced your 'linux' kernel with the GNU Hurd 'the hurd' kernel.\n\nThe Hurd only supports 32-bit, is very limited in terms of hardware support, and almost un-usable outside of a virtual machine. This replacement hook is more of an easter-egg, or a little memory hook to know how someone WOULD use the hurd on GNU Guix IF they wanted to.\n\nThis is not meant to actually be used, please exit the installer, unset the 'GEEX_THE_HURD' variable, and try again." 32 50 3>&1 1>&2 2>&3)
+    fi
     username=$(dialog --backtitle "Geex Installer" --title "Username" --inputbox "Enter your Username:" 8 40 \
                       3>&1 1>&2 2>&3) || exit 1
     if [ "$username" == "" ]; then
@@ -2689,8 +2697,21 @@ installerHook() {
     if [ -f "/tmp/geex.summary.dd" ]; then
         rm /tmp/geex.summary.dd
     fi
+    if [[ -n "$GEEX_THE_HURD" ]] || [[ "$GEEX_THE_HURD" == 1 ]]; then
+        export hurdBlock="(kernel hurd)\n    (hurd hurd)\n    (server-services %base-services-hurd)\n"
+        sed -i "s|GEEX_KERNEL_OPTIONAL|$hurdBlock|g"
+    fi
     echo "$summaryTextContents" >> /tmp/geex.summary.dd
     summary=$(dialog --backtitle "Geex Installer" --title "Summary" --msgbox "$summaryTextContents" 34 75 3>&1 1>&2 2>&3) || exit 1
+    if [ "$GEEX_THE_HURD" == 1 ]; then
+        sed -i "s|GEEX_KERNEL_OPTIONAL|$hurdBlock|g" /tmp/geex.config.${stager}.dd
+    else
+        if [ "$systemchoice" == "libre" ] || [ "$stager" == "libre" ]; then
+            sed -i "s|GEEX_KERNEL_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+        else
+            sed -i "s|GEEX_KERNEL_OPTIONAL|\(kernel linux\)|g" /tmp/geex.config.${stager}.dd
+        fi
+    fi
     configDisplay=$(dialog --backtitle "Geex Installer" --title "Written Configuration" --textbox "/tmp/geex.config.${stager}.dd" 34 75 3>&1 1>&2 2>&3) || exit 1
     if [ "$GEEX_LIVE_MODE" == 1 ]; then
         liveNotice=$(dialog --backtitle "Geex Installer" --title "Live Notice" --msgbox "You have been using Live Mode for the duration of this installation process. However, the install process is nearing its end, the Live Preview Windows will now be selectively killed, and the installation procedure will continue." 34 75 3>&1 1>&2 2>&3) || exit 1
