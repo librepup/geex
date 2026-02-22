@@ -2428,9 +2428,28 @@ swapQuestion() {
         export userWantsSwap=0
     fi
 }
+verifyDirectoryStatusHook() {
+    if [[ -d "files" && -f "channels.scm" && -f "config.scm" && -d "systems" && -f "geex.sh" ]]; then
+        export compatibleDirectory=1
+        export compatibleDirectoryPath=$(pwd)
+    else
+        export compatibleDirectory=0
+        if [[ -n "$compatibleDirectoryPath" ]] || [[ "$compatibleDirectoryPath" != "" ]]; then
+            unset compatibleDirectoryPath
+        fi
+    fi
+}
 
 # Installer Hooks
 installerHook() {
+    verifyDirectoryStatusHook
+    if [ "$compatibleDirectory" == 1 ] && [ -n "$GEEX_VERBOSE_MODE" ]; then
+        verboseNotice=$(dialog --backtitle "Geex Installer" --title "Verbose Notice" --msgbox "Detected the current directory the Geex Installer has been executed from as compatible, and containing all required files.\n\nCompatible directory path is: '$compatibleDirectoryPath'" 24 40 3>&1 1>&2 2>&3)
+    elif [[ "$compatibleDirectory" != 1 ]] && [[ -n "$GEEX_VERBOSE_MODE" ]]; then
+        verboseNotice=$(dialog --backtitle "Geex Installer" --title "Verbose Notice" --msgbox "Detected the current directory the Geex Installer has been executed from as INCOMPATIBLE!\n\nThe directory from which you executed the Geex Installer does not contain all required files and directories to be self-sustaining and be able to fall back on local files." 24 40 3>&1 1>&2 2>&3)
+    else
+        echo "[ Status ]: Unknown case experienced, ignoring..."
+    fi
     if [ -n "$GEEX_VERBOSE_MODE" ]; then
         verboseNotice=$(dialog --backtitle "Geex Installer" --title "Verbose Notice" --msgbox "The Installer has detected that you are running in Verbose Mode!\n\nYou will now see more popups and status messages as is the default, for the sake of debugging." 24 40 3>&1 1>&2 2>&3)
     fi
