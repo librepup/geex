@@ -2587,7 +2587,7 @@ installerHook() {
         hurdNotice=$(dialog --backtitle "Geex Instaler" --title "GNU Hurd" --msgbox "WARNING: You just replaced your 'linux' kernel with the GNU Hurd 'the hurd' kernel.\n\nThe Hurd only supports 32-bit, is very limited in terms of hardware support, and almost un-usable outside of a virtual machine. This replacement hook is more of an easter-egg, or a little memory hook to know how someone WOULD use the hurd on GNU Guix IF they wanted to.\n\nThis is not meant to actually be used, please exit the installer, unset the 'GEEX_THE_HURD' variable, and try again." 32 50 3>&1 1>&2 2>&3)
     fi
     if [ -n "$GEEX_THE_HURD_ALLOW" ] || [ "$GEEX_THE_HURD_ALLOW" == 1 ]; then
-        hurdNoticeImportant=$(dialog --backtitle "Geex Installer" --title "GNU Hurd" --msgbox "THIS IS YOUR LAST WARNING - TURN BACK NOW!\n\nYou have enable the environment variable 'GEEX_THE_HURD_ALLOW', this options ONLY exists, because I, the creator of this installer, want to give users FULL CONTROL, even if it is AGAINST THEIR OWN BEST INTEREST!\n\nDO NOT INSTALL GNU HURD AS YOUR MAIN SYSTEMS KERNEL!" 32 50 3>&1 1>&2 2>&3)
+        hurdNoticeImportant=$(dialog --backtitle "Geex Installer" --title "GNU Hurd" --msgbox "THIS IS YOUR LAST WARNING - TURN BACK NOW!\n\nYou have enable the environment variable 'GEEX_THE_HURD_ALLOW', this option ONLY exists, because I, the creator of this installer, want to give users FULL CONTROL, even if it is AGAINST THEIR OWN BEST INTEREST!\n\nDO NOT INSTALL GNU HURD AS YOUR MAIN SYSTEMS KERNEL!" 32 50 3>&1 1>&2 2>&3)
     fi
     username=$(dialog --backtitle "Geex Installer" --title "Username" --inputbox "Enter your Username:" 8 40 \
                       3>&1 1>&2 2>&3) || exit 1
