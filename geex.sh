@@ -1500,14 +1500,18 @@ customStage2() {
     exit 1
 }
 filesystemHook() {
+    export rootPartName=$(ls /dev/disk/by-label/ | grep -x -e 'guix-root' -e 'GUIX-ROOT')
+    if [[ "$rootPartName" == "" ]]; then
+        export rootPartName="guix-root"
+    fi
     if [ "$bios" == "uefi" ]; then
         export efiPartName=$(ls /dev/disk/by-label/ | grep -x -e 'guix-efi' -e 'GUIX-EFI')
         if [[ "$efiPartName" == "" ]]; then
             export efiPartName="guix-efi"
         fi
-        export filesystemBlock="$(echo -e "    (file-systems (cons* (file-system\n                           (mount-point \"/\")\n                           (device (file-system-label \"guix-root\"))\n                           (type \"ext4\"))\n                         (file-system\n                           (mount-point \"/boot/efi\")\n                           (device (file-system-label \"$efiPartName\"))\n                           (type \"vfat\")) %base-file-systems))\n")"
+        export filesystemBlock="$(echo -e "    (file-systems (cons* (file-system\n                           (mount-point \"/\")\n                           (device (file-system-label \"$rootPartName\"))\n                           (type \"ext4\"))\n                         (file-system\n                           (mount-point \"/boot/efi\")\n                           (device (file-system-label \"$efiPartName\"))\n                           (type \"vfat\")) %base-file-systems))\n")"
     else
-        export filesystemBlock="$(echo -e "    (file-systems (cons* (file-system\n                           (mount-point \"/\")\n                           (device (file-system-label \"guix-root\"))\n                           (type \"ext4\")) %base-file-systems))\n")"
+        export filesystemBlock="$(echo -e "    (file-systems (cons* (file-system\n                           (mount-point \"/\")\n                           (device (file-system-label \"$rootPartName\"))\n                           (type \"ext4\")) %base-file-systems))\n")"
     fi
     if [ -f "/tmp/geex.filesystem.block.dd" ]; then
         rm /tmp/geex.filesystem.block.dd
@@ -1518,10 +1522,6 @@ filesystemHook() {
         r /tmp/geex.filesystem.block.dd
         d
         }" /tmp/geex.config.${stager}.dd
-        #sed -i "/GEEX_FILESYSTEM_OPTIONAL/r /tmp/geex.filesystem.block.dd" \
-        #-e "/GEEX_FILESYSTEM_OPTIONAL/d" \
-        #/tmp/geex.config.${stager}.dd
-        #sed -i "s/GEEX_FILESYSTEM_OPTIONAL/$filesystemBlock/g" /tmp/geex.config.${stager}.dd
         export wroteFilesystemBlock=1
         export verboseFilesystemBlockText=$filesystemBlock
     else
