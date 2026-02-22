@@ -1086,6 +1086,7 @@ EOF
 # Setup Hooks
 checkMountPointHook() {
     export randomMountNum=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 12)
+    export longRandomString=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 64)
     if mountpoint -q /mnt; then
         if mountpoint -q /Mount; then
             if mountpoint -q /Geex; then
@@ -1093,6 +1094,13 @@ checkMountPointHook() {
                     export geexMount="$(echo -e "/mnt${randomMountNum}")"
                     if [[ ! -d "$geexMount" ]]; then
                         mkdir -p $geexMount
+                    fi
+                    if mountpoint -q $geexMount; then
+                        unset geexMount
+                        export geexMount="$(echo -e "/tmp/geex.emergency.mount-${longRandomString}")"
+                        if [[ ! -d "$geexMount" ]]; then
+                            mkdir -p $geexMount
+                        fi
                     fi
                 else
                     if [[ ! -d "/UniqueMountPointFromGeex" ]]; then
@@ -1119,7 +1127,7 @@ checkMountPointHook() {
         export geexMount=/mnt
     fi
     if [ -n "$GEEX_VERBOSE_MODE" ] || [ "$GEEX_VERBOSE_MODE" == 1 ]; then
-        verboseNotice=$(dialog --backtitle "Geex Installer" --title "Verbose Notice" --msgbox "The Installer has analized your systems mount-points and determined that:\n\n$geexMount\n\nis the appropriate, free mount-point to use for systems initialization.\n\nThe Installer tested '/mnt', '/Mount', '/Geex', '/UniqueMountPointFromGeex', and '/mnt${randomMountNum}' for available mount-points." 34 68 3>&1 1>&2 2>&3)
+        verboseNotice=$(dialog --backtitle "Geex Installer" --title "Verbose Notice" --msgbox "The Installer has analized your systems mount-points and determined that:\n\n$geexMount\n\nis the appropriate, free mount-point to use for systems initialization.\n\nThe Installer tested '/mnt', '/Mount', '/Geex', '/UniqueMountPointFromGeex', and '/mnt${randomMountNum}' for available mount-points.\n\nIn worst-case scenarios, the installer would have fell back to mount to '/tmp/geex.emergency.mount-${longRandomString}'." 34 68 3>&1 1>&2 2>&3)
     fi
 }
 channelPullHook() {
