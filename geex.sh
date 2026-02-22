@@ -2095,6 +2095,13 @@ homeHook() {
                     export copiedHome=0
                     export systemFinished=1
                 fi
+            elif [ "$compatibleDirectory" == 1 ]; then
+                cp ${compatibleDirectoryPath}/home.scm ${geexMount}/etc/guix/home.scm
+                cp -r ${compatibleDirectoryPath}/files ${geexMount}/etc/guix/files
+                cp -r ${compatibleDirectoryPath}/systems ${geexMount}/etc/guix/systems
+                cp -r ${compatibleDirectoryPath}/containers ${geexMount}/etc/guix/containers
+                export copiedHome=1
+                export homeGetMethod="local"
             elif command -v git >/dev/null; then
                 mkdir -p /tmp/geex.git.storage
                 git clone https://github.com/librepup/geex.git /tmp/geex.git.storage/geex
@@ -2429,7 +2436,7 @@ swapQuestion() {
     fi
 }
 verifyDirectoryStatusHook() {
-    if [[ -d "files" && -f "channels.scm" && -f "config.scm" && -d "systems" && -f "geex.sh" ]]; then
+    if [[ -d "files" && -f "channels.scm" && -f "config.scm" && -d "systems" && -f "geex.sh" && -d "containers" ]]; then
         export compatibleDirectory=1
         export compatibleDirectoryPath=$(pwd)
     else
