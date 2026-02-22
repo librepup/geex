@@ -15,6 +15,7 @@ COMMAND must be one of the sub-commands listed below:
     clean                        clean up all possible leftovers
     live                         enable live preview mode
     mover                        start the mover mode
+    features                     get a list of things the installer configures
 
 ENVIRONMENT can be one of the environment variables listed below:
 
@@ -67,6 +68,40 @@ for arg in "$@"; do
 
   REPO
     https://github.com/librepup/geex"
+            exit 1
+            ;;
+    esac
+done
+
+for arg in "$@"; do
+    case "$arg" in
+        f|-f|--f|feat|-feat|--feat|features|-features|--features)
+            echo -e \
+                 "Geex FEATURES:
+
+FEATURES provided by the Geex Installer:
+
+  components
+    username
+    hostname
+    groups
+    region
+    timezone
+    keyboard
+    bios type
+    formatting
+    partitioning
+    filesystems
+    drivers
+    kernel
+    firmware
+    services
+    desktops
+    custom packages
+    system initialization
+    system installation
+    password setup
+    home configuration"
             exit 1
             ;;
     esac
@@ -237,6 +272,7 @@ COMMAND must be one of the sub-commands listed below:
     clean                        clean up all possible leftovers
     live                         enable live preview mode
     mover                        start the mover mode
+    features                     get a list of things the installer configures
 
 ENVIRONMENT can be one of the environment variables listed below:
 
