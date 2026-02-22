@@ -1088,14 +1088,34 @@ checkMountPointHook() {
     if mountpoint -q /mnt; then
         if mountpoint -q /Mount; then
             if mountpoint -q /Geex; then
-                export geexMount=/UniqueMountPointFromGeex
+                if mountpoint -q /UniqueMountPointFromGeex; then
+                    export randomMountNum=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 12)
+                    export geexMount="$(echo -e "/mnt${randomMountNum}")"
+                    if [[ ! -d "$geexMount" ]]; then
+                        mkdir -p $geexMount
+                    fi
+                else
+                    if [[ ! -d "/UniqueMountPointFromGeex" ]]; then
+                        mkdir -p /UniqueMountPointFromGeex
+                    fi
+                    export geexMount=/UniqueMountPointFromGeex
+                fi
             else
+                if [[ ! -d "/Geex" ]]; then
+                    mkdir -p /Geex
+                fi
                 export geexMount=/Geex
             fi
         else
+            if [[ ! -d "/Mount" ]]; then
+                mkdir -p /Mount
+            fi
             export geexMount=/Mount
         fi
     else
+        if [[ ! -d "/mnt" ]]; then
+            mkdir -p /mnt
+        fi
         export geexMount=/mnt
     fi
 }
