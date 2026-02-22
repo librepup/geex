@@ -651,8 +651,8 @@ cat > /tmp/geex.config.desktop.template.dd <<'EOF'
 (define %guix-os
   (operating-system
     GEEX_KERNEL_OPTIONAL
-    (initrd microcode-initrd)
-    (firmware (append (list intel-microcode linux-firmware) %base-firmware))
+    GEEX_INITRD_OPTIONAL
+    GEEX_FIRMWARE_OPTIONAL
     (host-name "GEEX_HOSTNAME")
     (timezone "GEEX_TIMEZONE")
     (locale "en_US.utf8")
@@ -790,8 +790,8 @@ cat > /tmp/geex.config.minimal.template.dd <<'EOF'
 (define %guix-os
   (operating-system
     GEEX_KERNEL_OPTIONAL
-    (initrd microcode-initrd)
-    (firmware (append (list intel-microcode linux-firmware) %base-firmware))
+    GEEX_INITRD_OPTIONAL
+    GEEX_FIRMWARE_OPTIONAL
     (host-name "GEEX_HOSTNAME")
     (timezone "GEEX_TIMEZONE")
     (locale "en_US.utf8")
@@ -1043,8 +1043,8 @@ cat > /tmp/geex.config.laptop.template.dd <<'EOF'
 (define %guix-os
   (operating-system
     GEEX_KERNEL_OPTIONAL
-    (initrd microcode-initrd)
-    (firmware (append (list intel-microcode linux-firmware) %base-firmware))
+    GEEX_INITRD_OPTIONAL
+    GEEX_FIRMWARE_OPTIONAL
     (host-name "GEEX_HOSTNAME")
     (timezone "GEEX_TIMEZONE")
     (locale "en_US.utf8")
@@ -2705,11 +2705,19 @@ installerHook() {
     summary=$(dialog --backtitle "Geex Installer" --title "Summary" --msgbox "$summaryTextContents" 34 75 3>&1 1>&2 2>&3) || exit 1
     if [ "$GEEX_THE_HURD" == 1 ]; then
         sed -i "s|GEEX_KERNEL_OPTIONAL|$hurdBlock|g" /tmp/geex.config.${stager}.dd
+        sed -i "s|GEEX_INITRD_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+        sed -i "s|GEEX_FIRMWARE_OPTIONAL||g" /tmp/geex.config.${stager}.dd
     else
         if [ "$systemchoice" == "libre" ] || [ "$stager" == "libre" ]; then
             sed -i "s|GEEX_KERNEL_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+            sed -i "s|GEEX_INITRD_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+            sed -i "s|GEEX_FIRMWARE_OPTIONAL||g" /tmp/geex.config.${stager}.dd
         else
+            export initrd="(initrd microcode-initrd)"
+            export firmware="(firmware (append (list intel-microcode linux-firmware) %base-firmware))"
             sed -i "s|GEEX_KERNEL_OPTIONAL|\(kernel linux\)|g" /tmp/geex.config.${stager}.dd
+            sed -i "s|GEEX_INITRD_OPTIONAL|$initrd|g" /tmp/geex.config.${stager}.dd
+            sed -i "s|GEEX_FIRMWARE_OPTIONAL|$firmware|g" /tmp/geex.config.${stager}.dd
         fi
     fi
     configDisplay=$(dialog --backtitle "Geex Installer" --title "Written Configuration" --textbox "/tmp/geex.config.${stager}.dd" 34 75 3>&1 1>&2 2>&3) || exit 1
