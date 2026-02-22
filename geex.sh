@@ -89,6 +89,9 @@ done
 for arg in "$@"; do
     case "$arg" in
         c|-c|--c|clean|-clean|--clean)
+            if [ -f "/tmp/geex.extra.packages.insertable.dd" ]; then
+                rm /tmp/geex.extra.packages.insertable.dd
+            fi
             if [ -f "/tmp/geex.guix.channel.pull.check.file.dd" ]; then
                 rm /tmp/geex.guix.channel.pull.check.file.dd
             fi
@@ -648,6 +651,7 @@ cat > /tmp/geex.config.desktop.template.dd <<'EOF'
                              "nss-certs"
                              "bash"
                              "sed"
+                             GEEX_EXTRA_PACKAGE_LIST_OPTIONAL
                              "kitty"))))
 
     ;; Services
@@ -775,6 +779,7 @@ cat > /tmp/geex.config.minimal.template.dd <<'EOF'
                              "nss-certs"
                              "bash"
                              "sed"
+                             GEEX_EXTRA_PACKAGE_LIST_OPTIONAL
                              "dhcpcd"))))
 
     ;; Services
@@ -894,6 +899,7 @@ cat > /tmp/geex.config.libre.template.dd <<'EOF'
                              "curl"
                              "nss-certs"
                              "bash"
+                             GEEX_EXTRA_PACKAGE_LIST_OPTIONAL
                              "sed"
                              "kitty"))))
 
@@ -1024,6 +1030,7 @@ cat > /tmp/geex.config.laptop.template.dd <<'EOF'
                              "dhcpcd"
                              "naitre"
                              "xmonad"
+                             GEEX_EXTRA_PACKAGE_LIST_OPTIONAL
                              "ghc-xmonad-contrib"
                              "procps"
                              "wget"
@@ -2151,6 +2158,68 @@ liveKillHook() {
         pkill -9 -f "geexLive"
     fi
 }
+searchForPackageFunction() {
+    local pkgName=$(echo "$1" | tr -d '[:space:]')
+    [[ -z "$pkgName" ]] && return 1
+    if guix search "$pkgName" | grep -qx "name: $pkgName"; then
+        echo "$pkgName"
+        return 0
+    else
+        return 1
+    fi
+}
+addCustomPackageHook() {
+    userPkgList=$(dialog --backtitle "Geex Installer" --title "Extra Packages" --inputbox "Enter Packages Separated by a Comma\n\nExample:\n\`\`\`\npackage-1, package-2, package-3\n\`\`\`\n" 20 64 3>&1 1>&2 2>&3) || exit 1
+    confirmedPkgList=""
+    IFS=',' read -ra ADDR <<< "$userPkgList"
+    for i in "${ADDR[@]}"; do
+        verified=$(searchForPackageFunction "$i")
+        if [[ $? -eq 0 ]]; then
+            if [ "$confirmedPkgList" == "" ] || [ -z "$confirmedPkgList" ]; then
+                confirmedPkgList="$verified"
+            else
+                confirmedPkgList="$confirmedPkgList $verified"
+            fi
+        fi
+    done
+    echo "[ Status ]: Final Package List: $confirmedPkgList"
+    export finalCustomPkgListWithCommas="$confirmedPkgList"
+    export finalCustomPkgListWithoutCommas=$(echo -e "$finalCustomPkgListWithCommas" | sed "s/, / /g" | sed "s/,/ /g")
+    export finalCustomPkgListCleanup=$(echo "$finalCustomPkgListWithoutCommas" | tr ' ' '\n' | sort -u | xargs)
+    export finalCustomPkgList=$(echo ${finalCustomPkgListCleanup//$'\n'/ })
+    pkgListConfirmationText="$(echo -e "Please confirm that the list below contains all of the custom packages you selected (filtered through a 'guix search' to determine whether each package exists or not):\n\n$finalCustomPkgList\n\nNote that at this stage, the installer does not check whether a package you defined is already present in your system configuration file, please make sure you do not add duplicate packages.")"
+    pkgListConfirmation=$(dialog --backtitle "Geex Installer" --title "Confirm Packages" --yesno "$pkgListConfirmationText" 34 75 3>&1 1>&2 2>&3)
+    pkgListConfirmation_RESPONSE_CODE=$?
+    if [ "$pkgListConfirmation_RESPONSE_CODE" -eq 0 ]; then
+        export pkgListWasConfirmed=1
+    else
+        export pkgListWasConfirmed=0
+    fi
+    if [ "$pkgListWasConfirmed" == 1 ]; then
+        export extraPackageList="$(echo -e "$finalCustomPkgList")"
+        echo -e "[ Status ]: List was Confirmed, full List:\n'$extraPackageList'"
+        if [[ "$extraPackageList" != "" ]] || [[ -n "$extraPackageList" ]]; then
+            export extraPackageListInsertable="$(echo -e "\nUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWU\"$extraPackageList" | sed "s/ /\"\n                             \"/g" | sed "s/UWU/ /g")"
+            if [ -f "/tmp/geex.extra.packages.insertable.dd" ]; then
+                rm /tmp/geex.extra.packages.insertable.dd
+            fi
+            echo -e "$extraPackageListInsertable" >> /tmp/geex.extra.packages.insertable.dd
+            sed -i "/GEEX_EXTRA_PACKAGE_LIST_OPTIONAL/{
+                   r /tmp/geex.extra.packages.insertable.dd
+                   d
+                   }" /tmp/geex.config.${stager}.dd
+        else
+            sed -i "s/GEEX_EXTRA_PACKAGE_LIST_OPTIONAL//g" /tmp/geex.config.${stager}.dd
+        fi
+        #sed "s|GEEX_EXTRA_PACKAGE_LIST_OPTIONAL|$extraPackageListInsertable|g" /tmp/geex.config.${stager}.dd
+    else
+        echo -e "[ Error ]: Error with List Confirmation"
+        sed "s|GEEX_EXTRA_PACKAGE_LIST_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+    fi
+    if [ "$extraPackageListInsertable" == "" ] || [ -z "$extraPackageListInsertable" ]; then
+        sed -i "s/GEEX_EXTRA_PACKAGE_LIST_OPTIONAL//g" /tmp/geex.config.${stager}.dd
+    fi
+}
 
 # Installer Hooks
 installerHook() {
@@ -2159,6 +2228,9 @@ installerHook() {
         moverFunction
         exit 1
     fi
+    #if [ "$GEEX_PKG_TEST_MODE" == 1 ]; then
+    #    addCustomPackageHook
+    #fi
     if [ "$GEEX_LIVE_MODE" == 1 ]; then
         liveMessage="$(echo -e "The Installer has detected that you are running in Live Mode, thus, once you have made a system choice, two live windows will open automatically, one display the entire configuration file while the installer is working on it (in full length), and one displaying the same file, but exclusive to the last 50 lines.\n\nIf you want to disable this, do not use the 'l', 'live', or '--live' flags. If you did not use those flags and Live Mode was still activated, make sure to unset the GEEX_LIVE_MODE variable before running the Geex Installer again.\n\nDo you want to continue using Live Mode, then select the 'Yes' option. If you did not want to or intend to use Live Mode, please select the 'No' option.")"
         livePopup=$(dialog --backtitle "Geex Installer" --title "Live Notice" --yesno "$liveMessage" 24 60 \
@@ -2375,6 +2447,7 @@ installerHook() {
     else
         export diskPrefixedPartNameTextblock="${diskPrefixed}1 (guix-efi), ${diskPrefixed}2 (guix-root)"
     fi
+    addCustomPackageHook
     summaryTextContents="$(echo -e "Please verify all the information below is accurate and exactly as you selected/want it:\n - Username: $username\n - $username Password Set?: $areAllPasswordsSet\n - Root Password Set?: $areAllPasswordsSet\n - Root and $username Password Match?: $wasPasswordReUsed\n - Hostname: $hostname\n - Timezone: $TIMEZONE\n - Disk: $disk\n - Disk Parts: $diskPrefixedPartNameTextblock\n - BIOS: $bios\n - Auto-Detected BIOS: $detectedBios\n - Keyboard: $keyboardInfo\n - Services: $serviceSelection\n - Desktops: $deSelection\n\nInternal Statistics:\n - Systemchoice: $systemchoice\n - Stager: $stager\n - Stagerfile: '/tmp/geex.config.${stager}.dd'\n\nWrote Blocks Status (Did the Installer Write ... X?):\n - BIOS Block?: ${wroteBiosBlock}\n - Filesystems?: $isFilesystemWritten\n - Services?: $areServicesWritten\n - Desktops?: $areDesktopsWritten\n - Keyboard?: $wroteKeyboardBlock (Found?: $foundKeyboardBlock)")"
     if [ -f "/tmp/geex.summary.dd" ]; then
         rm /tmp/geex.summary.dd
@@ -2525,6 +2598,20 @@ for arg in "$@"; do
         d|-d|--d|debug|-debug|--debug)
             export GEEX_DEBUG=1
             export GEEX_DEBUG_MODE=1
+            ;;
+    esac
+done
+
+for arg in "$@"; do
+    case "$arg" in
+        p|-p|--p|package|-package|--package|pkgtest|-pkgtest|--pkgtest)
+            export GEEX_PKG_TEST_MODE=1
+            export GEEX_DEBUG_MODE=1
+            ;;
+        pi|-pi|--pi|packageinstall|-packageinstall|--packageinstall|pkgtestinstall|-pkgtestinstall|--pkgtestinstall)
+            export GEEX_PKG_TEST_MODE=1
+            export GEEX_DEBUG_MODE=1
+            installerHook
             ;;
     esac
 done
