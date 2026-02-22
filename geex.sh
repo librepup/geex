@@ -1126,6 +1126,10 @@ checkMountPointHook() {
         fi
         export geexMount=/mnt
     fi
+    if mountpoint -q $geexMount; then
+        errorMessage=$(dialog --backtitle "Geex Installer" --title "Fatal Error" --msgbox "The installer has encountered a fatal, un-recoverable error:\n - Every single possible mount-point (including ones with 64-symbol long randomly generated name) are already marked as used.\n\nThis is most certainly a problem with your system, filesystem permissions, or the result of someone having tampered with the code of this installer.\n\nPlease FIX THIS YOURSELF before trying again. The installer will now forcefully exit." 34 68 3>&1 1>&2 2>&3)
+        exit 1
+    fi
     if [ -n "$GEEX_VERBOSE_MODE" ] || [ "$GEEX_VERBOSE_MODE" == 1 ]; then
         verboseNotice=$(dialog --backtitle "Geex Installer" --title "Verbose Notice" --msgbox "The Installer has analized your systems mount-points and determined that:\n\n$geexMount\n\nis the appropriate, free mount-point to use for systems initialization.\n\nThe Installer tested '/mnt', '/Mount', '/Geex', '/UniqueMountPointFromGeex', and '/mnt${randomMountNum}' for available mount-points.\n\nIn worst-case scenarios, the installer would have fell back to mount to '/tmp/geex.emergency.mount-${longRandomString}'." 34 68 3>&1 1>&2 2>&3)
     fi
