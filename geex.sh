@@ -2323,7 +2323,7 @@ installerHook() {
     fi
     if [ -n "$GEEX_DEBUG" ] || [ -n "$GEEX_DEBUG_MODE" ]; then
         if [ -n "$GEEX_FORCED_DEBUG" ] || [ "$GEEX_FORCED_DEBUG" == 1 ]; then
-            debugNotice=$(dialog --backtitle "Geex Installer" --title "Debug Notice" --msgbox "The Installer has detected that you are running in Debug Mode!\n\nThis Debug Mode has been FORCEFULLY activated since 'herd' was not detected on your device, thus assuming you are not running on a system that intends to actually install GNU Guix.\n\nCommands will now not actually install anything, copy anything, make changes to your disks, or initialize the GNU Guix System." 24 40 3>&1 1>&2 2>&3)
+            debugNotice=$(dialog --backtitle "Geex Installer" --title "Debug Notice" --msgbox "The Installer has detected that you are running in Debug Mode!\n\nThis Debug Mode has been FORCEFULLY activated since 'herd' was not detected on your device, thus assuming you are not running on a system that intends to actually install GNU Guix.\n\nCommands will now not actually install anything, copy anything, make changes to your disks, or initialize the GNU Guix System.\n\nIf you don't want this to happen, run the Geex Installer with the 'GEEX_IGNORE_FORCED_DEBUG' environment variable set to '1'." 24 40 3>&1 1>&2 2>&3)
         else
             debugNotice=$(dialog --backtitle "Geex Installer" --title "Debug Notice" --msgbox "The Installer has detected that you are running in Debug Mode!\n\nCommands will now not actually install anything, copy anything, make changes to your disks, or initialize the GNU Guix System." 24 40 3>&1 1>&2 2>&3)
         fi
