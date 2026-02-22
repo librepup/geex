@@ -25,6 +25,7 @@ ENVIRONMENT can be one of the environment variables listed below:
     GEEX_IGNORE_MISSING          ignore if packages are missing
     GEEX_LIVE_MODE               enable live preview mode for the installer
     GEEX_DEBUG_MISSING_ENABLE    pretend as if packages were missing
+    GEEX_PRETEND_FATAL           pretend to have encountered a fatal error
 
 EXAMPLES that you may consider running yourself listed below:
 
@@ -242,6 +243,7 @@ ENVIRONMENT can be one of the environment variables listed below:
     GEEX_IGNORE_MISSING          ignore if packages are missing
     GEEX_LIVE_MODE               enable live preview mode for the installer
     GEEX_DEBUG_MISSING_ENABLE    pretend as if packages were missing
+    GEEX_PRETEND_FATAL           pretend to have encountered a fatal error
 
 EXAMPLES that you may consider running yourself listed below:
 
@@ -1127,6 +1129,9 @@ checkMountPointHook() {
         export geexMount=/mnt
     fi
     if mountpoint -q $geexMount; then
+        export geexLastMountCheckResult="fatal"
+    fi
+    if [ "$geexLastMountCheckResult" == "fatal" ] || [ "$GEEX_PRETEND_FATAL" == 1 ]; then
         errorMessage=$(dialog --backtitle "Geex Installer" --title "Fatal Error" --msgbox "The installer has encountered a fatal, un-recoverable error:\n - Every single possible mount-point (including ones with 64-symbol long randomly generated name) are already marked as used.\n\nThis is most certainly a problem with your system, filesystem permissions, or the result of someone having tampered with the code of this installer.\n\nPlease FIX THIS YOURSELF before trying again. The installer will now forcefully exit." 34 68 3>&1 1>&2 2>&3)
         exit 1
     fi
