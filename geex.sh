@@ -1580,6 +1580,11 @@ disksSetup() {
     if [ -n "$GEEX_DEBUG" ] || [ -n "$GEEX_DEBUG_MODE" ]; then
         echo "[ Status ]: Debug Mode Detected..."
         export formattedDisksStatus=2
+        if [ "$userWantsSwap" == 1 ]; then
+            export formattedWithSwap="Mock Yes"
+        else
+            export formattedWithSwap="Mock No"
+        fi
     else
         if [ "$bios" == "legacy" ]; then
             if [ "$userWantsSwap" == 1 ]; then
@@ -1592,6 +1597,8 @@ disksSetup() {
                 sudo swapon ${diskPrefixed}1
                 sudo mkfs.ext4 -L guix-root ${diskPrefixed}2
                 sudo mount ${diskPrefixed}2 ${geexMount}
+                export formattedWithSwap="Yes"
+                export formattedDisksStatus=1
             else
                 sudo parted $disk --script \
                   mklabel msdos \
@@ -1599,6 +1606,8 @@ disksSetup() {
                   set 1 boot on
                 sudo mkfs.ext4 -L guix-root ${diskPrefixed}1
                 sudo mount ${diskPrefixed}1 ${geexMount}
+                export formattedWithSwap="No"
+                export formattedDisksStatus=1
             fi
         else
             # UEFI Logic
@@ -1619,6 +1628,8 @@ disksSetup() {
                 sudo mount ${diskPrefixed}3 ${geexMount}
                 sudo mkdir -p ${geexMount}/boot/efi
                 sudo mount ${diskPrefixed}2 ${geexMount}/boot/efi
+                export formattedWithSwap="Yes"
+                export formattedDisksStatus=1
             else
               sudo parted $disk --script \
                   mklabel gpt \
@@ -1634,6 +1645,7 @@ disksSetup() {
                 sudo mount ${diskPrefixed}1 ${geexMount}/boot
                 echo -e "\nFinished (U)EFI Formatting and Mounting\n"
                 export formattedDisksStatus=1
+                export formattedWithSwap="No"
             fi
         fi
         if [[ "$formattedDisksStatus" != 1 ]]; then
@@ -1658,9 +1670,11 @@ filesystemHook() {
                r /tmp/geex.swap.block.dd
                d
                }" /tmp/geex.config.${stager}.dd
+        export wroteSwapBlock="Yes"
     else
         unset swapBlock
         sed -i "s|GEEX_SWAP_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+        export wroteSwapBlock="No"
     fi
     export rootPartName=$(ls /dev/disk/by-label/ | grep -x -e 'guix-root' -e 'GUIX-ROOT')
     if [[ "$rootPartName" == "" ]]; then
@@ -1706,8 +1720,10 @@ filesystemHook() {
                r /tmp/geex.swap.block.dd
                d
                }" /tmp/gex.config.${stager}.dd
+        export wroteSwapBlock="Yes"
     else
         sed -i "s|GEEX_SWAP_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+        export wroteSwapBlock="No"
     fi
     if [ -n "$GEEX_VERBOSE_MODE" ] || [ "$GEEX_VERBOSE_MODE" == 1 ]; then
         if [ "$wroteFilesystemBlock" == 1 ]; then
@@ -2640,7 +2656,7 @@ installerHook() {
         export diskPrefixedPartNameTextblock="${diskPrefixed}1 (guix-efi), ${diskPrefixed}2 (guix-root)"
     fi
     addCustomPackageHook
-    summaryTextContents="$(echo -e "Please verify all the information below is accurate and exactly as you selected/want it:\n - Username: $username\n - $username Password Set?: $areAllPasswordsSet\n - Root Password Set?: $areAllPasswordsSet\n - Root and $username Password Match?: $wasPasswordReUsed\n - Hostname: $hostname\n - Timezone: $TIMEZONE\n - Disk: $disk\n - Disk Parts: $diskPrefixedPartNameTextblock\n - BIOS: $bios\n - Auto-Detected BIOS: $detectedBios\n - Keyboard: $keyboardInfo\n - Services: $serviceSelection\n - Desktops: $deSelection\n\nInternal Statistics:\n - Systemchoice: $systemchoice\n - Stager: $stager\n - Stagerfile: '/tmp/geex.config.${stager}.dd'\n\nWrote Blocks Status (Did the Installer Write ... X?):\n - BIOS Block?: ${wroteBiosBlock}\n - Filesystems?: $isFilesystemWritten\n - Services?: $areServicesWritten\n - Desktops?: $areDesktopsWritten\n - Keyboard?: $wroteKeyboardBlock (Found?: $foundKeyboardBlock)")"
+    summaryTextContents="$(echo -e "Please verify all the information below is accurate and exactly as you selected/want it:\n - Username: $username\n - $username Password Set?: $areAllPasswordsSet\n - Root Password Set?: $areAllPasswordsSet\n - Root and $username Password Match?: $wasPasswordReUsed\n - Hostname: $hostname\n - Timezone: $TIMEZONE\n - Disk: $disk\n - Disk Parts: $diskPrefixedPartNameTextblock\n - Formatted Swap?: $formattedWithSwap\n - Wrote Swap?: $wroteSwapBlock\n - BIOS: $bios\n - Auto-Detected BIOS: $detectedBios\n - Keyboard: $keyboardInfo\n - Services: $serviceSelection\n - Desktops: $deSelection\n\nInternal Statistics:\n - Systemchoice: $systemchoice\n - Stager: $stager\n - Stagerfile: '/tmp/geex.config.${stager}.dd'\n\nWrote Blocks Status (Did the Installer Write ... X?):\n - BIOS Block?: ${wroteBiosBlock}\n - Filesystems?: $isFilesystemWritten\n - Services?: $areServicesWritten\n - Desktops?: $areDesktopsWritten\n - Keyboard?: $wroteKeyboardBlock (Found?: $foundKeyboardBlock)")"
     if [ -f "/tmp/geex.summary.dd" ]; then
         rm /tmp/geex.summary.dd
     fi
@@ -2706,7 +2722,7 @@ installerHook() {
                     desktopsExist="Yes"
                 fi
                 if [ "$systemFinished" == 1 ]; then
-                    export finishedMessage="$(echo -e "Final Report\n============\n(Use Arrow Keys to Scroll)\n\nInformation:\n - Username: $username\n - $username Password Set?: $areAllPasswordsSet\n - Root Password Set?: $areAllPasswordsSet\n - Root and $username Password Match?: $wasPasswordReUsed\n - Hostname: $hostname\n - Timezone: $TIMEZONE\n - Disk: $disk\n - Disk Parts: $diskPrefixedPartNameTextblock\n - BIOS: $bios\n - Auto-Detected BIOS: $detectedBios\n - Keyboard: $keyboardInfo\n - Services: $serviceSelection\n - Desktops: $deSelection\n\nInternal Statistics:\n - Systemchoice: $systemchoice\n - Stager: $stager\n - Stagerfile: '/tmp/geex.config.${stager}.dd'\n\nWrote Blocks Status (Did the Installer Write ... X?):\n - BIOS Block?: ${wroteBiosBlock}\n - Filesystems?: $isFilesystemWritten\n - Services?: $areServicesWritten\n - Desktops?: $areDesktopsWritten\n - Keyboard?: $wroteKeyboardBlock (Found?: $foundKeyboardBlock)\n\nOther:\n - Pulled Channels?: $channelReport\n - Copied Home?: $homeStatus\n - Home-Get Method?: $homeGetMethod\n - Formatted Disks?: $formattedDisksStatus\n - Installation Path: '${geexMount}'\n\nFinish Installation?")"
+                    export finishedMessage="$(echo -e "Final Report\n============\n(Use Arrow Keys to Scroll)\n\nInformation:\n - Username: $username\n - $username Password Set?: $areAllPasswordsSet\n - Root Password Set?: $areAllPasswordsSet\n - Root and $username Password Match?: $wasPasswordReUsed\n - Hostname: $hostname\n - Timezone: $TIMEZONE\n - Disk: $disk\n - Disk Parts: $diskPrefixedPartNameTextblock\n - BIOS: $bios\n - Auto-Detected BIOS: $detectedBios\n - Swap?: $formattedWithSwap\n - Keyboard: $keyboardInfo\n - Services: $serviceSelection\n - Desktops: $deSelection\n\nInternal Statistics:\n - Systemchoice: $systemchoice\n - Stager: $stager\n - Stagerfile: '/tmp/geex.config.${stager}.dd'\n\nWrote Blocks Status (Did the Installer Write ... X?):\n - Swap Block?: $wroteSwapBlock\n - BIOS Block?: ${wroteBiosBlock}\n - Filesystems?: $isFilesystemWritten\n - Services?: $areServicesWritten\n - Desktops?: $areDesktopsWritten\n - Keyboard?: $wroteKeyboardBlock (Found?: $foundKeyboardBlock)\n\nOther:\n - Pulled Channels?: $channelReport\n - Copied Home?: $homeStatus\n - Home-Get Method?: $homeGetMethod\n - Formatted Disks?: $formattedDisksStatus\n - Installation Path: '${geexMount}'\n\nFinish Installation?")"
                     finishedNotice=$(dialog --backtitle "Geex Installer" --title "Finalization" --yesno "$finishedMessage" 40 124 \
                                             3>&1 1>&2 2>&3)
                     FINISHED_NOTICE_RESPONSE_CODE=$?
@@ -2733,7 +2749,7 @@ installerHook() {
                         echo -e "[ Status ]: Success! Geex (GNU Guix) was installed to your '$disk' Drive, and mounted at '${geexMount}'.\n[ Result ]: Here are your Files\n  - 'config.scm' -> ${geexMount}/etc/guix/config.scm (and) /tmp/geex.config.${stager}.scm\n - 'home.scm' -> ${geexMount}/etc/guix/home.scm\n[ Info ]: You may want to know about these useful Commands:\n - Rebuild System\n   - guix system reconfigure /etc/guix/config.scm\n - Rebuild Home\n   - guix home reconfigure /etc/guix/home.scm\n - Describe Generation\n   - guix describe\n - Pull Channels\n   - guix pull\n\nThank you for using Geex!"
                     fi
                 elif [ "$systemFinished" == 2 ]; then
-                    export finishedMessage="$(echo -e "Final Report\n============\n(Use Arrow Keys to Scroll)\n\nInformation:\n - Username: $username\n - $username Password Set?: $areAllPasswordsSet\n - Root Password Set?: $areAllPasswordsSet\n - Root and $username Password Match?: $wasPasswordReUsed\n - Hostname: $hostname\n - Timezone: $TIMEZONE\n - Disk: $disk\n - Disk Parts: $diskPrefixedPartNameTextblock\n - BIOS: $bios\n - Auto-Detected BIOS: $detectedBios\n - Keyboard: $keyboardInfo\n - Services: $serviceSelection\n - Desktops: $deSelection\n\nInternal Statistics:\n - Systemchoice: $systemchoice\n - Stager: $stager\n - Stagerfile: '/tmp/geex.config.${stager}.dd'\n\nWrote Blocks Status (Did the Installer Write ... X?):\n - BIOS Block?: ${wroteBiosBlock}\n - Filesystems?: $isFilesystemWritten\n - Services?: $areServicesWritten\n - Desktops?: $areDesktopsWritten\n - Keyboard?: $wroteKeyboardBlock (Found?: $foundKeyboardBlock)\n\nOther:\n - Pulled Channels?: $channelReport\n - Copied Home?: $homeStatus\n - Home-Get Method?: $homeGetMethod\n - Formatted Disks?: $formattedDisksStatus\n - Installation Path: '${geexMount}'\n\nFinish Installation?")"
+                    export finishedMessage="$(echo -e "Final Report\n============\n(Use Arrow Keys to Scroll)\n\nInformation:\n - Username: $username\n - $username Password Set?: $areAllPasswordsSet\n - Root Password Set?: $areAllPasswordsSet\n - Root and $username Password Match?: $wasPasswordReUsed\n - Hostname: $hostname\n - Timezone: $TIMEZONE\n - Disk: $disk\n - Disk Parts: $diskPrefixedPartNameTextblock\n - Swap?: $formattedWithSwap\n - BIOS: $bios\n - Auto-Detected BIOS: $detectedBios\n - Keyboard: $keyboardInfo\n - Services: $serviceSelection\n - Desktops: $deSelection\n\nInternal Statistics:\n - Systemchoice: $systemchoice\n - Stager: $stager\n - Stagerfile: '/tmp/geex.config.${stager}.dd'\n\nWrote Blocks Status (Did the Installer Write ... X?):\n - Swap Block?: $wroteSwapBlock\n - BIOS Block?: ${wroteBiosBlock}\n - Filesystems?: $isFilesystemWritten\n - Services?: $areServicesWritten\n - Desktops?: $areDesktopsWritten\n - Keyboard?: $wroteKeyboardBlock (Found?: $foundKeyboardBlock)\n\nOther:\n - Pulled Channels?: $channelReport\n - Copied Home?: $homeStatus\n - Home-Get Method?: $homeGetMethod\n - Formatted Disks?: $formattedDisksStatus\n - Installation Path: '${geexMount}'\n\nFinish Installation?")"
                     finishedNotice=$(dialog --backtitle "Geex Installer" --title "Finalization" --yesno "$finishedMessage" 40 124 \
                                             3>&1 1>&2 2>&3)
                     FINISHED_NOTICE_RESPONSE_CODE=$?
