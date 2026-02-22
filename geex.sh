@@ -2594,6 +2594,14 @@ installerHook() {
                         dialog --clear
                         clear
                         echo -e "[ Status ]: Success! Geex (GNU Guix) was installed to your '$disk' Drive, and mounted at '${geexMount}'.\n[ Result ]: Here are your Files\n  - 'config.scm' -> ${geexMount}/etc/guix/config.scm (and) /tmp/geex.config.${stager}.scm\n - 'home.scm' -> ${geexMount}/etc/guix/home.scm\n[ Info ]: You may want to know about these useful Commands:\n - Rebuild System\n   - guix system reconfigure /etc/guix/config.scm\n - Rebuild Home\n   - guix home reconfigure /etc/guix/home.scm\n - Describe Generation\n   - guix describe\n - Pull Channels\n   - guix pull\n\nThank you for using Geex!"
+                        if [[ ! -n "$GEEX_DEBUG_MODE" ]] || [[ "$GEEX_DEBUG_MODE" != 1 ]]; then
+                            if mountpoint -q ${geexMount}; then
+                                umount ${geexMount}
+                                if [[ "$geexMount" != "/mnt" ]] && [[ "$geexMount" != "/Mount" ]]; then
+                                    rm -rf $geexMount
+                                fi
+                            fi
+                        fi
                     fi
                 elif [ "$systemFinished" == 0 ]; then
                     if [[ -n "$GEEX_DEBUG" ]] || [[ -n "$GEEX_DEBUG_MODE" ]]; then
