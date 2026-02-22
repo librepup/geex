@@ -126,6 +126,9 @@ done
 for arg in "$@"; do
     case "$arg" in
         c|-c|--c|clean|-clean|--clean)
+            if [ -f "/tmp/geex.swap.block.dd" ]; then
+                rm /tmp/geex.swap.block.dd
+            fi
             if [ -f "/tmp/config.scm" ]; then
                 rm /tmp/config.scm
             fi
@@ -2740,9 +2743,17 @@ installerHook() {
                         clear
                         if [[ ! -f "/tmp/config.scm" ]]; then
                             cp /tmp/geex.config.${stager}.dd /tmp/config.scm
+                            if command -v guix; then
+                                guix style -f /tmp/config.scm
+                                echo -e "\n[ Style Notice ]: Styled '/tmp/config.scm'"
+                            fi
                             echo -e "[ Notice ]: Copied your '/tmp/geex.config.${stager}.dd' to '/tmp/config.scm'."
                         else
                             rm /tmp/config.scm
+                            if command -v guix; then
+                                guix style -f /tmp/config.scm
+                                echo -e "\n[ Style Notice ]: Styled '/tmp/config.scm'"
+                            fi
                             cp /tmp/geex.config.${stager}.dd /tmp/config.scm
                             echo -e "[ Notice ]: Copied your '/tmp/geex.config.${stager}.dd' to '/tmp/config.scm'."
                         fi
@@ -2767,11 +2778,19 @@ installerHook() {
                         echo -e "[ Status ]: Success! Geex (GNU Guix) was installed to your '$disk' Drive, and mounted at '${geexMount}'.\n[ Result ]: Here are your Files\n  - 'config.scm' -> ${geexMount}/etc/guix/config.scm (and) /tmp/geex.config.${stager}.scm\n - 'home.scm' -> ${geexMount}/etc/guix/home.scm\n[ Info ]: You may want to know about these useful Commands:\n - Rebuild System\n   - guix system reconfigure /etc/guix/config.scm\n - Rebuild Home\n   - guix home reconfigure /etc/guix/home.scm\n - Describe Generation\n   - guix describe\n - Pull Channels\n   - guix pull\n\nThank you for using Geex!"
                         if [[ ! -f "/tmp/config.scm" ]]; then
                             cp /tmp/geex.config.${stager}.dd /tmp/config.scm
+                            if command -v guix; then
+                                guix style -f /tmp/config.scm
+                                echo -e "\n[ Style Notice ]: Styled '/tmp/config.scm'"
+                            fi
                             echo -e "[ Notice ]: Copied your '/tmp/geex.config.${stager}.dd' to '/tmp/config.scm'."
                         else
                             rm /tmp/config.scm
                             cp /tmp/geex.config.${stager}.dd /tmp/config.scm
-                            echo -e "[ Notice ]: Copied your '/tmp/geex.config.${stager}.dd' to '/tmp/config.scm'."
+                            if command -v guix; then
+                                guix style -f /tmp/config.scm
+                                echo -e "\n[ Style Notice ]: Styled '/tmp/config.scm'"
+                            fi
+                            echo -e "\n\n[ Notice ]: Copied your '/tmp/geex.config.${stager}.dd' to '/tmp/config.scm'.\n\n"
                         fi
                         if [[ ! -n "$GEEX_DEBUG_MODE" ]] || [[ "$GEEX_DEBUG_MODE" != 1 ]]; then
                             if mountpoint -q ${geexMount}; then
