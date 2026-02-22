@@ -468,6 +468,16 @@ for cmd in cp awk dialog git grep parted lsblk find tzselect ps; do
     fi
 done
 
+if command -v herd >/dev/null; then
+    echo "[ Status ]: 'herd' found, continuing."
+elif [ "$GEEX_IGNORE_FORCED_DEBUG" == 1 ] || [ -n "$GEEX_IGNORE_FORCED_DEBUG" ]; then
+    echo "[ Status ]: Ignoring forced debug mode..."
+else
+    export GEEX_DEBUG=1
+    export GEEX_DEBUG_MODE=1
+    export GEEX_FORCED_DEBUG=1
+fi
+
 # If Missing Command Debug is Enabled, pretend to be Missing Commands
 if [ -n "$GEEX_DEBUG_MISSING_ENABLE" ]; then
     if [ ! -n "$GEEX_IGNORE_MISSING" ]; then
@@ -2310,7 +2320,11 @@ installerHook() {
         fi
     fi
     if [ -n "$GEEX_DEBUG" ] || [ -n "$GEEX_DEBUG_MODE" ]; then
-        debugNotice=$(dialog --backtitle "Geex Installer" --title "Debug Notice" --msgbox "The Installer has detected that you are running in Debug Mode!\n\nCommands will now not actually install anything, copy anything, make changes to your disks, or initialize the GNU Guix System." 24 40 3>&1 1>&2 2>&3)
+        if [ -n "$GEEX_FORCED_DEBUG" ] || [ "$GEEX_FORCED_DEBUG" == 1 ]; then
+            debugNotice=$(dialog --backtitle "Geex Installer" --title "Debug Notice" --msgbox "The Installer has detected that you are running in Debug Mode!\n\nThis Debug Mode has been FORCEFULLY activated since 'herd' was not detected on your device, thus assuming you are not running on a system that intends to actually install GNU Guix.\n\nCommands will now not actually install anything, copy anything, make changes to your disks, or initialize the GNU Guix System." 24 40 3>&1 1>&2 2>&3)
+        else
+            debugNotice=$(dialog --backtitle "Geex Installer" --title "Debug Notice" --msgbox "The Installer has detected that you are running in Debug Mode!\n\nCommands will now not actually install anything, copy anything, make changes to your disks, or initialize the GNU Guix System." 24 40 3>&1 1>&2 2>&3)
+        fi
     fi
     if [ -n "$GEEX_VERBOSE_MODE" ] || [ "$GEEX_VERBOSE_MODE" == 1 ]; then
         if [ -f "/tmp/geex.channels.dd" ]; then
