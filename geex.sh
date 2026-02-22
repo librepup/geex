@@ -1612,6 +1612,31 @@ disksSetup() {
                 export formattedWithSwap="No"
                 export formattedDisksStatus=1
             fi
+            if [ "$GEEX_THE_HURD" == 1 ]; then
+                if [ "$userWantsSwap" == 1 ]; then
+                    sudo parted $disk --script \
+                         mklabel msdos \
+                         mkpart primary linux-swap 1MiB 4096MiB \
+                         mkpart primary ext2 4096 100% \
+                         set 2 boot on
+                    sudo mkswap -L guix-swap ${diskPrefixed}1
+                    sudo swapon ${diskPrefixed}1
+                    sudo mkfs.ext2 -L guix-root ${diskPrefixed}2
+                    sudo mount ${diskPrefixed}2 ${geexMount}
+                    export formattedWithSwap="Yes"
+                    export formattedDisksStatus=1
+                else
+                    sudo parted $disk --script \
+                         mklabel msdos \
+                         mkpart primary ext2 1MiB 100% \
+                         set 1 boot on
+                    sudo mkfs.ext2 -L guix-root ${diskPrefixed}1
+                    sudo mount ${diskPrefixed}1 ${geexMount}
+                    export formattedWithSwap="No"
+                    export formattedDisksStatus=1
+                fi
+                export formattedHurd=1
+            fi
         else
             # UEFI Logic
             if [ "$userWantsSwap" == 1 ]; then
@@ -1644,11 +1669,49 @@ disksSetup() {
                 sudo mkfs.fat -F32 -n guix-efi ${diskPrefixed}1
                 sudo mkfs.ext4 -L guix-root ${diskPrefixed}2
                 sudo mount ${diskPrefixed}2 ${geexMount}
-                sudo mkdir -p ${geexMount}/boot
-                sudo mount ${diskPrefixed}1 ${geexMount}/boot
+                sudo mkdir -p ${geexMount}/boot/efi
+                sudo mount ${diskPrefixed}1 ${geexMount}/boot/efi
                 echo -e "\nFinished (U)EFI Formatting and Mounting\n"
                 export formattedDisksStatus=1
                 export formattedWithSwap="No"
+            fi
+            if [ "$GEEX_THE_HURD" == 1 ]; then
+                if [ "$userWantsSwap" == 1 ]; then
+                    sudo parted $disk --script \
+                         mklabel gpt \
+                         mkpart primary linux-swap 1MiB 4096MiB \
+                         name 1 guix-swap \
+                         mkpart ESP fat32 4096MiB 6144MiB \
+                         name 2 guix-efi \
+                         set 2 esp on \
+                         mkpart primary ext2 6144MiB 100% \
+                         name 3 guix-root
+                    sudo mkswap -L guix-swap ${diskPrefixed}1
+                    sudo swapon ${diskPrefixed}1
+                    sudo mkfs.fat -F32 -n guix-efi ${diskPrefixed}2
+                    sudo mkfs.ext2 -L guix-root ${diskPrefixed}3
+                    sudo mount ${diskPrefixed}3 ${geexMount}
+                    sudo mkdir -p ${geexMount}/boot/efi
+                    sudo mount ${diskPrefixed}2 ${geexMount}/boot/efi
+                    export formattedWithSwap="Yes"
+                    export formattedDisksStatus=1
+                else
+                    sudo parted $disk --script \
+                         mklabel gpt \
+                         mkpart ESP fat32 1MiB 2048MiB \
+                         name 1 guix-efi \
+                         set 1 esp on \
+                         mkpart primary ext2 2048MiB 100% \
+                         name 2 guix-root
+                    sudo mkfs.fat -F32 -n guix-efi ${diskPrefixed}1
+                    sudo mkfs.ext2 -L guix-root ${diskPrefixed}2
+                    sudo mount ${diskPrefixed}2 ${geexMount}
+                    sudo mkdir -p ${geexMount}/boot/efi
+                    sudo mount ${diskPrefixed}1 ${geexMount}/boot/efi
+                    export formattedDisksStatus=1
+                    export formattedWithSwap="No"
+                fi
+                export formattedHurd=1
             fi
         fi
         if [[ "$formattedDisksStatus" != 1 ]]; then
@@ -2718,6 +2781,7 @@ installerHook() {
         sed -i "s|GEEX_KERNEL_OPTIONAL|$hurdBlock|g" /tmp/geex.config.${stager}.dd
         sed -i "s|GEEX_INITRD_OPTIONAL||g" /tmp/geex.config.${stager}.dd
         sed -i "s|GEEX_FIRMWARE_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+        sed -i "s|ext4|ext2|g" /tmp/geex.config.${stager}.dd
     else
         if [ "$systemchoice" == "libre" ] || [ "$stager" == "libre" ]; then
             sed -i "s|GEEX_KERNEL_OPTIONAL||g" /tmp/geex.config.${stager}.dd
@@ -2790,6 +2854,10 @@ installerHook() {
                 else
                     desktopsExist="Yes"
                 fi
+                if [ "$formattedHurd" == 1 ]; then
+                    hurdNotice=$(dialog --backtitle "Geex Installer" --title "GNU Hurd" --msgbox "Warning: Your disks have been formatted to be compatible with GNU Hurd 'the hurd'. This is not intended, not recommended, and most likely not even supported by your device. It is very likely that, if you GENUINELY set your system up to use GNU Hurd as its Kernel, your system WILL NOT BOOT!\n\nPlease consider this a Warning, exit the installer by pressing 'Ctrl+c' (or selecting 'Abort'/'No' at the next possible opportunity), and try again without variables like 'GEEX_THE_HURD' set." 32 0 3>&1 1>&2 2>&3)
+                    export formattedDisksStatus="Hurd"
+                fi
                 if [ "$systemFinished" == 1 ]; then
                     export finishedMessage="$(echo -e "Final Report\n============\n(Use Arrow Keys to Scroll)\n\nInformation:\n - Username: $username\n - $username Password Set?: $areAllPasswordsSet\n - Root Password Set?: $areAllPasswordsSet\n - Root and $username Password Match?: $wasPasswordReUsed\n - Hostname: $hostname\n - Timezone: $TIMEZONE\n - Disk: $disk\n - Disk Parts: $diskPrefixedPartNameTextblock\n - BIOS: $bios\n - Auto-Detected BIOS: $detectedBios\n - Swap?: $formattedWithSwap\n - Keyboard: $keyboardInfo\n - Services: $serviceSelection\n - Desktops: $deSelection\n\nInternal Statistics:\n - Systemchoice: $systemchoice\n - Stager: $stager\n - Stagerfile: '/tmp/geex.config.${stager}.dd'\n\nWrote Blocks Status (Did the Installer Write ... X?):\n - Swap Block?: $wroteSwapBlock\n - BIOS Block?: ${wroteBiosBlock}\n - Filesystems?: $isFilesystemWritten\n - Services?: $areServicesWritten\n - Desktops?: $areDesktopsWritten\n - Keyboard?: $wroteKeyboardBlock (Found?: $foundKeyboardBlock)\n\nOther:\n - Pulled Channels?: $channelReport\n - Copied Home?: $homeStatus\n - Home-Get Method?: $homeGetMethod\n - Formatted Disks?: $formattedDisksStatus\n - Installation Path: '${geexMount}'\n\nFinish Installation?")"
                     finishedNotice=$(dialog --backtitle "Geex Installer" --title "Finalization" --yesno "$finishedMessage" 40 124 \
@@ -2826,6 +2894,10 @@ installerHook() {
                         echo -e "[ Status ]: Success! Geex (GNU Guix) was installed to your '$disk' Drive, and mounted at '${geexMount}'.\n[ Result ]: Here are your Files\n  - 'config.scm' -> ${geexMount}/etc/guix/config.scm (and) /tmp/geex.config.${stager}.scm\n - 'home.scm' -> ${geexMount}/etc/guix/home.scm\n[ Info ]: You may want to know about these useful Commands:\n - Rebuild System\n   - guix system reconfigure /etc/guix/config.scm\n - Rebuild Home\n   - guix home reconfigure /etc/guix/home.scm\n - Describe Generation\n   - guix describe\n - Pull Channels\n   - guix pull\n\nThank you for using Geex!"
                     fi
                 elif [ "$systemFinished" == 2 ]; then
+                    if [ "$formattedHurd" == 1 ]; then
+                        hurdNotice=$(dialog --backtitle "Geex Installer" --title "GNU Hurd" --msgbox "Warning: Your disks have been formatted to be compatible with GNU Hurd 'the hurd'. This is not intended, not recommended, and most likely not even supported by your device. It is very likely that, if you GENUINELY set your system up to use GNU Hurd as its Kernel, your system WILL NOT BOOT!\n\nPlease consider this a Warning, exit the installer by pressing 'Ctrl+c' (or selecting 'Abort'/'No' at the next possible opportunity), and try again without variables like 'GEEX_THE_HURD' set." 32 0 3>&1 1>&2 2>&3)
+                        export formattedDisksStatus="Hurd"
+                    fi
                     export finishedMessage="$(echo -e "Final Report\n============\n(Use Arrow Keys to Scroll)\n\nInformation:\n - Username: $username\n - $username Password Set?: $areAllPasswordsSet\n - Root Password Set?: $areAllPasswordsSet\n - Root and $username Password Match?: $wasPasswordReUsed\n - Hostname: $hostname\n - Timezone: $TIMEZONE\n - Disk: $disk\n - Disk Parts: $diskPrefixedPartNameTextblock\n - Swap?: $formattedWithSwap\n - BIOS: $bios\n - Auto-Detected BIOS: $detectedBios\n - Keyboard: $keyboardInfo\n - Services: $serviceSelection\n - Desktops: $deSelection\n\nInternal Statistics:\n - Systemchoice: $systemchoice\n - Stager: $stager\n - Stagerfile: '/tmp/geex.config.${stager}.dd'\n\nWrote Blocks Status (Did the Installer Write ... X?):\n - Swap Block?: $wroteSwapBlock\n - BIOS Block?: ${wroteBiosBlock}\n - Filesystems?: $isFilesystemWritten\n - Services?: $areServicesWritten\n - Desktops?: $areDesktopsWritten\n - Keyboard?: $wroteKeyboardBlock (Found?: $foundKeyboardBlock)\n\nOther:\n - Pulled Channels?: $channelReport\n - Copied Home?: $homeStatus\n - Home-Get Method?: $homeGetMethod\n - Formatted Disks?: $formattedDisksStatus\n - Installation Path: '${geexMount}'\n\nFinish Installation?")"
                     finishedNotice=$(dialog --backtitle "Geex Installer" --title "Finalization" --yesno "$finishedMessage" 40 124 \
                                             3>&1 1>&2 2>&3)
