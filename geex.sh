@@ -26,6 +26,7 @@ ENVIRONMENT can be one of the environment variables listed below:
     GEEX_LIVE_MODE               enable live preview mode for the installer
     GEEX_DEBUG_MISSING_ENABLE    pretend as if packages were missing
     GEEX_PRETEND_FATAL           pretend to have encountered a fatal error
+    GEEX_IGNORE_FORCED_DEBUG     ignore forced debug mode if herd was not found
 
 EXAMPLES that you may consider running yourself listed below:
 
@@ -247,6 +248,7 @@ ENVIRONMENT can be one of the environment variables listed below:
     GEEX_LIVE_MODE               enable live preview mode for the installer
     GEEX_DEBUG_MISSING_ENABLE    pretend as if packages were missing
     GEEX_PRETEND_FATAL           pretend to have encountered a fatal error
+    GEEX_IGNORE_FORCED_DEBUG     ignore forced debug mode if herd was not found
 
 EXAMPLES that you may consider running yourself listed below:
 
