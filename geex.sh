@@ -502,7 +502,7 @@ done
 
 # Check if Commands are Missing
 export missingCommandCount=0
-for cmd in cp awk dialog git grep parted lsblk find tzselect ps; do
+for cmd in cp awk dialog git grep parted lsblk find tzselect ps mke2fs; do
     if ! command -v "$cmd" >/dev/null 2>&1; then
         echo "[ Warning ]: Missing required binary: $cmd" >&2
         export missingCommandCount=$(($missingCommandCount + 1))
@@ -532,15 +532,15 @@ fi
 
 # If Commands are Missing, Open a Guix Shell with them Present
 if [[ "$missingCommandCount" != 0 ]]; then
-  if [ -z "$GUIX_ENVIRONMENT" ] && echo "[ Status ]: Checking for Guix, then running shell exec hook..." && command -v guix >/dev/null 2>&1 && guix shell coreutils bash gawk grep parted findutils util-linux git-minimal dialog tzdata procps -- true >/dev/null 2>&1; then
+  if [ -z "$GUIX_ENVIRONMENT" ] && echo "[ Status ]: Checking for Guix, then running shell exec hook..." && command -v guix >/dev/null 2>&1 && guix shell coreutils bash gawk grep parted findutils util-linux git-minimal dialog tzdata procps e2fsprogs -- true >/dev/null 2>&1; then
       echo "[ Guix ]: Found Guix, running guix shell exec hook..."
       export IN_GUIX_SHELL=1
       export GEEX_RUNNING_IN="guix"
-      exec guix shell coreutils bash gawk grep parted findutils util-linux git-minimal dialog tzdata procps -- bash "$0" "$@"
-  elif [ -z "$IN_NIX_SHELL" ] && echo "[ Warning ]: Guix not found, checking for Nix, then running shell exec hook..." && command -v nix-shell >/dev/null 2>&1 && nix-shell -p coreutils gawk bash gnugrep parted findutils util-linux git dialog tzdata procps --run true >/dev/null 2>&1; then
+      exec guix shell coreutils bash gawk grep parted findutils util-linux git-minimal dialog tzdata procps e2fsprogs -- bash "$0" "$@"
+  elif [ -z "$IN_NIX_SHELL" ] && echo "[ Warning ]: Guix not found, checking for Nix, then running shell exec hook..." && command -v nix-shell >/dev/null 2>&1 && nix-shell -p coreutils gawk bash gnugrep parted findutils util-linux git dialog tzdata procps e2fsprogs --run true >/dev/null 2>&1; then
       echo "[ Nix ]: Found Nix, running nix shell exec hook..."
       export GEEX_RUNNING_IN="nix"
-      exec nix-shell -p coreutils bash gawk gnugrep parted findutils util-linux git dialog tzdata procps --run "bash "$0" "$@""
+      exec nix-shell -p coreutils bash gawk gnugrep parted findutils util-linux git dialog tzdata procps e2fsprogs --run "bash "$0" "$@""
   else
       echo -e "[ Warning ]: Commands missing, but found no way to retrieve them temporarily.\nAborting unless Variable 'GEEX_IGNORE_MISSING' is set."
       if [ ! -n "$GEEX_IGNORE_MISSING" ]; then
