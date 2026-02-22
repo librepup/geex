@@ -1588,6 +1588,9 @@ disksSetup() {
         else
             export formattedWithSwap="Mock No"
         fi
+        if [ "$GEEX_THE_HURD" == 1 ]; then
+            export formattedHurd=1
+        fi
     else
         if [ "$bios" == "legacy" ]; then
             if [ "$userWantsSwap" == 1 ]; then
