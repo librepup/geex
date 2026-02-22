@@ -1118,6 +1118,9 @@ checkMountPointHook() {
         fi
         export geexMount=/mnt
     fi
+    if [ -n "$GEEX_VERBOSE_MODE" ] || [ "$GEEX_VERBOSE_MODE" == 1 ]; then
+        verboseNotice=$(dialog --backtitle "Geex Installer" --title "Verbose Notice" --msgbox "The Installer has analized your systems mount-points and determined that:\n\n$geexMount\n\nis the appropriate, free mount-point to use for systems initialization.\n\nThe Installer tested '/mnt', '/Mount', '/Geex', '/UniqueMountPointFromGeex', and '/mnt${randomMountNum}' for available mount-points." 34 68 3>&1 1>&2 2>&3)
+    fi
 }
 channelPullHook() {
     if [ -f "/tmp/geex.channels.dd" ]; then
