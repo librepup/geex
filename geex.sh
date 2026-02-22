@@ -2261,15 +2261,15 @@ addCustomPackageHook() {
 
 # Installer Hooks
 installerHook() {
+    if [ -n "$GEEX_VERBOSE_MODE" ]; then
+        verboseNotice=$(dialog --backtitle "Geex Installer" --title "Verbose Notice" --msgbox "The Installer has detected that you are running in Verbose Mode!\n\nYou will now see more popups and status messages as is the default, for the sake of debugging." 24 40 3>&1 1>&2 2>&3)
+    fi
     checkMountPointHook
     if [ "$GEEX_MOVER_MODE" == 1 ]; then
         echo "[ Mover ]: Running Mover inside Installer Hook"
         moverFunction
         exit 1
     fi
-    #if [ "$GEEX_PKG_TEST_MODE" == 1 ]; then
-    #    addCustomPackageHook
-    #fi
     if [ "$GEEX_LIVE_MODE" == 1 ]; then
         liveMessage="$(echo -e "The Installer has detected that you are running in Live Mode, thus, once you have made a system choice, two live windows will open automatically, one display the entire configuration file while the installer is working on it (in full length), and one displaying the same file, but exclusive to the last 50 lines.\n\nIf you want to disable this, do not use the 'l', 'live', or '--live' flags. If you did not use those flags and Live Mode was still activated, make sure to unset the GEEX_LIVE_MODE variable before running the Geex Installer again.\n\nDo you want to continue using Live Mode, then select the 'Yes' option. If you did not want to or intend to use Live Mode, please select the 'No' option.")"
         livePopup=$(dialog --backtitle "Geex Installer" --title "Live Notice" --yesno "$liveMessage" 24 60 \
@@ -2291,9 +2291,6 @@ installerHook() {
     fi
     if [ -n "$GEEX_DEBUG" ] || [ -n "$GEEX_DEBUG_MODE" ]; then
         debugNotice=$(dialog --backtitle "Geex Installer" --title "Debug Notice" --msgbox "The Installer has detected that you are running in Debug Mode!\n\nCommands will now not actually install anything, copy anything, make changes to your disks, or initialize the GNU Guix System." 24 40 3>&1 1>&2 2>&3)
-    fi
-    if [ -n "$GEEX_VERBOSE_MODE" ]; then
-        verboseNotice=$(dialog --backtitle "Geex Installer" --title "Verbose Notice" --msgbox "The Installer has detected that you are running in Verbose Mode!\n\nYou will now see more popups and status messages as is the default, for the sake of debugging." 24 40 3>&1 1>&2 2>&3)
     fi
     if [ -n "$GEEX_VERBOSE_MODE" ] || [ "$GEEX_VERBOSE_MODE" == 1 ]; then
         if [ -f "/tmp/geex.channels.dd" ]; then
