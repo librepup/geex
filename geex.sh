@@ -29,6 +29,13 @@ ENVIRONMENT can be one of the environment variables listed below:
     GEEX_PRETEND_FATAL           pretend to have encountered a fatal error
     GEEX_IGNORE_FORCED_DEBUG     ignore forced debug mode if herd was not found
 
+  experimental environment variables
+    GEEX_THE_HURD                force the installer to set your system up with GNU Hurd
+    GEEX_THE_HURD_ALLOW          force installer to install with GNU Hurd, warning: this is
+                                 a joke variable, do not install GNU Hurd as your systems
+                                 main kernel - it will likely not boot, nor support your
+                                 hardware
+
 EXAMPLES that you may consider running yourself listed below:
 
   main examples
@@ -288,6 +295,13 @@ ENVIRONMENT can be one of the environment variables listed below:
     GEEX_DEBUG_MISSING_ENABLE    pretend as if packages were missing
     GEEX_PRETEND_FATAL           pretend to have encountered a fatal error
     GEEX_IGNORE_FORCED_DEBUG     ignore forced debug mode if herd was not found
+
+  experimental environment variables
+    GEEX_THE_HURD                force the installer to set your system up with GNU Hurd
+    GEEX_THE_HURD_ALLOW          force installer to install with GNU Hurd, warning: this is
+                                 a joke variable, do not install GNU Hurd as your systems
+                                 main kernel - it will likely not boot, nor support your
+                                 hardware
 
 EXAMPLES that you may consider running yourself listed below:
 
