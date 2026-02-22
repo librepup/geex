@@ -2196,7 +2196,7 @@ addCustomPackageHook() {
         export pkgListWasConfirmed=0
     fi
     if [ "$pkgListWasConfirmed" == 1 ]; then
-        export extraPackageList="$(echo -e "$finalCustomPkgList")"
+        export extraPackageList="$(echo -e "$finalCustomPkgList\"")"
         echo -e "[ Status ]: List was Confirmed, full List:\n'$extraPackageList'"
         if [[ "$extraPackageList" != "" ]] || [[ -n "$extraPackageList" ]]; then
             export extraPackageListInsertable="$(echo -e "\nUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWU\"$extraPackageList" | sed "s/ /\"\n                             \"/g" | sed "s/UWU/ /g")"
