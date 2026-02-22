@@ -1085,11 +1085,11 @@ EOF
 
 # Setup Hooks
 checkMountPointHook() {
+    export randomMountNum=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 12)
     if mountpoint -q /mnt; then
         if mountpoint -q /Mount; then
             if mountpoint -q /Geex; then
                 if mountpoint -q /UniqueMountPointFromGeex; then
-                    export randomMountNum=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 12)
                     export geexMount="$(echo -e "/mnt${randomMountNum}")"
                     if [[ ! -d "$geexMount" ]]; then
                         mkdir -p $geexMount
