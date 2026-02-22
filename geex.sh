@@ -660,6 +660,8 @@ cat > /tmp/geex.config.desktop.template.dd <<'EOF'
 
     GEEX_FILESYSTEM_OPTIONAL
 
+    GEEX_SWAP_OPTIONAL
+
     ;; Users
     (users (cons (user-account
                    (name "GEEX_USERNAME")
@@ -797,6 +799,8 @@ cat > /tmp/geex.config.minimal.template.dd <<'EOF'
 
     GEEX_FILESYSTEM_OPTIONAL
 
+    GEEX_SWAP_OPTIONAL
+
     ;; Users
     (users (cons (user-account
                    (name "GEEX_USERNAME")
@@ -911,6 +915,8 @@ cat > /tmp/geex.config.libre.template.dd <<'EOF'
     GEEX_BIOS_OPTIONAL
 
     GEEX_FILESYSTEM_OPTIONAL
+
+    GEEX_SWAP_OPTIONAL
 
     ;; Users
     (users (cons (user-account
@@ -1045,6 +1051,8 @@ cat > /tmp/geex.config.laptop.template.dd <<'EOF'
     GEEX_BIOS_OPTIONAL
 
     GEEX_FILESYSTEM_OPTIONAL
+
+    GEEX_SWAP_OPTIONAL
 
     ;; Users
     (users (cons (user-account
@@ -1570,33 +1578,66 @@ disksHook() {
 disksSetup() {
     echo "Formatting disks ($disk)..."
     if [ -n "$GEEX_DEBUG" ] || [ -n "$GEEX_DEBUG_MODE" ]; then
-        echo "[ Status ]: Debug Mode Detected, pretending to format and mount disks..."
+        echo "[ Status ]: Debug Mode Detected..."
         export formattedDisksStatus=2
     else
         if [ "$bios" == "legacy" ]; then
-            sudo parted $disk --script \
-              mklabel msdos \
-              mkpart primary ext4 1MiB 100% \
-              set 1 boot on
-            sudo mkfs.ext4 -L guix-root ${diskPrefixed}1
-            sudo mount ${diskPrefixed}1 ${geexMount}
-            echo -e "\nFinished Legacy Formatting and Mounting\n"
-            export formattedDisksStatus=1
+            if [ "$userWantsSwap" == 1 ]; then
+                sudo parted $disk --script \
+                     mklabel msdos \
+                     mkpart primary linux-swap 1MiB 4096MiB \
+                     mkpart primary ext4 4096MiB 100% \
+                     set 2 boot on
+                sudo mkswap -L guix-swap ${diskPrefixed}1
+                sudo swapon ${diskPrefixed}1
+                sudo mkfs.ext4 -L guix-root ${diskPrefixed}2
+                sudo mount ${diskPrefixed}2 ${geexMount}
+            else
+                sudo parted $disk --script \
+                  mklabel msdos \
+                  mkpart primary ext4 1MiB 100% \
+                  set 1 boot on
+                sudo mkfs.ext4 -L guix-root ${diskPrefixed}1
+                sudo mount ${diskPrefixed}1 ${geexMount}
+            fi
         else
-            sudo parted $disk --script \
-              mklabel gpt \
-              mkpart ESP fat32 1MiB 2048MiB \
-              name 1 guix-efi \
-              set 1 esp on \
-              mkpart primary ext4 2048MiB 100% \
-              name 2 guix-root
-            sudo mkfs.fat -F32 -n guix-efi ${diskPrefixed}1
-            sudo mkfs.ext4 -L guix-root ${diskPrefixed}2
-            sudo mount ${diskPrefixed}2 ${geexMount}
-            sudo mkdir -p ${geexMount}/boot
-            sudo mount ${diskPrefixed}1 ${geexMount}/boot
-            echo -e "\nFinished (U)EFI Formatting and Mounting\n"
-            export formattedDisksStatus=1
+            # UEFI Logic
+            if [ "$userWantsSwap" == 1 ]; then
+                sudo parted $disk --script \
+                     mklabel gpt \
+                     mkpart primary linux-swap 1MiB 4096MiB \
+                     name 1 guix-swap \
+                     mkpart ESP fat32 4096MiB 6144MiB \
+                     name 2 guix-efi \
+                     set 2 esp on \
+                     mkpart primary ext4 6144MiB 100% \
+                     name 3 guix-root
+                sudo mkswap -L guix-swap ${diskPrefixed}1
+                sudo swapon ${diskPrefixed}1
+                sudo mkfs.fat -F32 -n guix-efi ${diskPrefixed}2
+                sudo mkfs.ext4 -L guix-root ${diskPrefixed}3
+                sudo mount ${diskPrefixed}3 ${geexMount}
+                sudo mkdir -p ${geexMount}/boot/efi
+                sudo mount ${diskPrefixed}2 ${geexMount}/boot/efi
+            else
+              sudo parted $disk --script \
+                  mklabel gpt \
+                  mkpart ESP fat32 1MiB 2048MiB \
+                  name 1 guix-efi \
+                  set 1 esp on \
+                  mkpart primary ext4 2048MiB 100% \
+                  name 2 guix-root
+                sudo mkfs.fat -F32 -n guix-efi ${diskPrefixed}1
+                sudo mkfs.ext4 -L guix-root ${diskPrefixed}2
+                sudo mount ${diskPrefixed}2 ${geexMount}
+                sudo mkdir -p ${geexMount}/boot
+                sudo mount ${diskPrefixed}1 ${geexMount}/boot
+                echo -e "\nFinished (U)EFI Formatting and Mounting\n"
+                export formattedDisksStatus=1
+            fi
+        fi
+        if [[ "$formattedDisksStatus" != 1 ]]; then
+            export formattedDisksStatus=0
         fi
     fi
 }
@@ -1606,6 +1647,21 @@ customStage2() {
     exit 1
 }
 filesystemHook() {
+    local swapBlock=""
+    if [ "$userWantsSwap" == 1 ]; then
+        export swapBlock="    (swap-devices (list (swap-space (target (file-system-label \"guix-swap\")))))"
+        if [ -f "/tmp/geex.swap.block.dd" ]; then
+            rm /tmp/geex.swap.block.dd
+        fi
+        echo "$swapBlock" >> /tmp/geex.swap.block.dd
+        sed -i "/GEEX_SWAP_OPTIONAL/{
+               r /tmp/geex.swap.block.dd
+               d
+               }" /tmp/geex.config.${stager}.dd
+    else
+        unset swapBlock
+        sed -i "s|GEEX_SWAP_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+    fi
     export rootPartName=$(ls /dev/disk/by-label/ | grep -x -e 'guix-root' -e 'GUIX-ROOT')
     if [[ "$rootPartName" == "" ]]; then
         export rootPartName="guix-root"
@@ -1641,6 +1697,18 @@ filesystemHook() {
         fi
         export wroteFilesystemBlock=0
     fi
+    if [ -n "$swapBlock" ] || [ "$userWantsSwap" == 1 ]; then
+        if [ -f "/tmp/geex.swap.block.dd" ]; then
+            rm /tmp/geex.swap.block.dd
+        fi
+        echo "$swapBlock" >> /tmp/geex.swap.block.dd
+        sed -i "/GEEX_SWAP_OPTIONAL/{
+               r /tmp/geex.swap.block.dd
+               d
+               }" /tmp/gex.config.${stager}.dd
+    else
+        sed -i "s|GEEX_SWAP_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+    fi
     if [ -n "$GEEX_VERBOSE_MODE" ] || [ "$GEEX_VERBOSE_MODE" == 1 ]; then
         if [ "$wroteFilesystemBlock" == 1 ]; then
             verboseWasFilesystemBlockWritten="Yes"
@@ -1656,7 +1724,11 @@ filesystemHook() {
 }
 biosLegacyEditHook() {
     export diskPrefixed=$diskPrefixed
-    legacyBlock="$(echo -e "    (bootloader (bootloader-configuration\n              (keyboard-layout keyboard-layout)\n              (bootloader grub-bootloader)\n              (targets '(\"${diskPrefixed}1\"))))\n")"
+    export diskChoice=${diskPrefixed}1
+    if [ "$userWantsSwap" == 1 ]; then
+        export diskChoice=${diskPrefixed}2
+    fi
+    legacyBlock="$(echo -e "    (bootloader (bootloader-configuration\n              (keyboard-layout keyboard-layout)\n              (bootloader grub-bootloader)\n              (targets '(\"${diskChoice}\"))))\n")"
     legacyBlockVerify=$(dialog --backtitle "Geex Installer" --title "Verify BIOS Block" --menu "Please verify that the BIOS Block below is correct and can be written:\n\n\`\`\`\n$legacyBlock\n\`\`\`\n\n\n  " 28 50 10 \
                                continue "Continue" \
                                abort "Abort" \
@@ -2326,6 +2398,17 @@ addCustomPackageHook() {
         sed -i "s/GEEX_EXTRA_PACKAGE_LIST_OPTIONAL//g" /tmp/geex.config.${stager}.dd
     fi
 }
+swapQuestion() {
+    userSwapQuestion=$(dialog --backtitle "Geex Installer" --title "Swap Partition" --menu "Do you want to set up a 4GiB Swap Partition for your System?" 32 50 10 \
+                           yes "Yes" \
+                           no "No" \
+                           3>&1 1>&2 2>&3) || exit 1
+    if [ "$userSwapQuestion" == "yes" ] || [[ "$userSwapQuestion" != "no" ]]; then
+        export userWantsSwap=1
+    else
+        export userWantsSwap=0
+    fi
+}
 
 # Installer Hooks
 installerHook() {
@@ -2504,6 +2587,7 @@ installerHook() {
             exit 1
         fi
     fi
+    swapQuestion
     disksHook
     biosHook
     if [ "$bios" == "legacy" ]; then
