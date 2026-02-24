@@ -5,75 +5,45 @@
 ** Installation
 *** Installation Process
 **** Partitioning and System Init
-***** General
-1. `mount /dev/sda1 /mnt`
-2. `mkdir -p /mnt/boot/efi`
-3. `mount /dev/sda2 /mnt/boot/efi`
-4. `herd start cow-store /mnt`
-5. `guix system init /path/to/config.scm /mnt`
-6. `mkdir -o /mnt/etc/guix`
-7. `mv /path/to/geex/* /mnt/etc/guix/`
-
-***** Legacy/BIOS
-Basic Legacy/BIOS Partition Layout anc Creation Process:
-****** Partition
-#+BEGIN_SRC sh
-sudo parted /dev/sda --script \
-  mklabel msdos \
-  mkpart primary ext4 1MiB 100% \
-  set 1 boot on
-
-sudo mkfs.ext4 /dev/sda1
-****** Mount
-#+BEGIN_SRC sh
-sudo mount /dev/sda1 /mnt
-#+END_SRC
-****** Cow-Store and System Init
-#+BEGIN_SRC sh
-mkdir -o /mnt/etc/guix
-mv /path/to/geex/* /mnt/etc/guix/
-herd start cow-store /mnt
-guix system init /path/to/config.scm /mnt
-#+END_SRC
-****** Bootloader and Filesystem Configuration for Legacy/BIOS Setup
-#+BEGIN_SRC guile
-(bootloader (bootloader-configuration
-              (bootloader grub-bootloader)
-              (keyboard-layout keyboard-layout)
-              (targets '("/dev/sdb1"))))
-
-(file-systems (cons* (file-system
-                       (mount-point "/")
-                       (device (file-system-label "guix-root"))
-                       (type "ext4")) %base-file-systems))
-#+END_SRC
 ***** (U)EFI
 Basic (U)EFI Partition Layout and Creation Process:
 ****** Partition
+If you want a swap partition, format and partition disks like this:
+#+BEGIN_SRC sh
+sudo parted /dev/sda --script \
+     mklabel gpt \
+     mkpart primary linux-swap 1MiB 4096MiB \
+     name 1 guix-swap \
+     mkpart ESP fat32 4096MiB 6144MiB \
+     name 2 guix-efi \
+     set 2 esp on \
+     mkpart primary ext4 6144MiB 100% \
+     name 3 guix-root
+
+sudo mkswap -L guix-swap /de/sda1
+sudo swapon /dev/sda1
+sudo mkfs.fat -F32 -n guix-efi /dev/sda2
+sudo mkfs.ext4 -L guix-root /dev/sda3
+sudo mount /dev/sda3 /mnt
+sudo mkdir -p /mnt/boot/efi
+sudo mount /dev/sda2 /mnt/boot/efi
+#+END_SRC
+
+Otherwise, partition like this:
 #+BEGIN_SRC sh
 sudo parted /dev/sda --script \
   mklabel gpt \
   mkpart ESP fat32 1MiB 2048MiB \
+  name 1 guix-efi \
   set 1 esp on \
-  mkpart primary ext4 2048MiB 100%
+  mkpart primary ext4 2048MiB 100% \
+  name 2 guix-root
 
-mkfs.fat -F32 /dev/sda1
-mkfs.ext4 /dev/sda2
-#+END_SRC
-
-****** Mount
-#+BEGIN_SRC sh
-mount /dev/sda2 /mnt
-mkdir -p /mnt/boot/efi
-mount /dev/sda1 /mnt/boot/efi
-#+END_SRC
-
-****** Cow-Store and System Init
-#+BEGIN_SRC sh
-mkdir -o /mnt/etc/guix
-mv /path/to/geex/* /mnt/etc/guix/
-herd start cow-store /mnt
-guix system init /path/to/config.scm /mnt
+sudo mkfs.fat -F32 -n guix-efi /dev/sda1
+sudo mkfs.ext4 -L guix-root /dev/sda2
+sudo mount /dev/sda2 /mnt
+sudo mkdir -p /mnt/boot/efi
+sudo mount /dev/sda1 /mnt/boot/efi
 #+END_SRC
 ****** Bootloader and Filesystem Configuration for (U)EFI Setup
 #+BEGIN_SRC guile
@@ -83,14 +53,79 @@ guix system init /path/to/config.scm /mnt
   (keyboard-layout keyboard-layout)))
 
 (file-systems (cons* (file-system
-                      (device (uuid "root-part-uuid"))
+                      (device (file-system-label "guix-root"))
                       (mount-point "/")
                       (type "ext4"))
                      (file-system
-                      (device (uuid "efi-part-uuid"))
+                      (device (file-system-label "guix-efi"))
                       (mount-point "/boot/efi")
                       (type "vfat"))
                      %base-file-systems))
+
+;; If you enabled Swap, add this:
+(swap-devices (list
+               (swap-space
+                (target (file-system-label "guix-swap")))))
+#+END_SRC
+
+***** Legacy/BIOS
+Basic Legacy/BIOS Partition Layout anc Creation Process:
+****** Partition and Mount
+#+BEGIN_SRC sh
+sudo parted /dev/sda --script \
+  mklabel msdos \
+  mkpart primary ext4 1MiB 100% \
+  set 1 boot on
+
+sudo mkfs.ext4 -L guix-root /dev/sda1
+sudo mount /dev/sda1 /mnt
+#+END_SRC
+
+If you want a swap partition, do this instead:
+#+BEGIN_SRC sh
+sudo parted /dev/sda -- script \
+     mklabel msdos \
+     mkpart primary linux-swap 1MiB 4096MiB \
+     mkpart primary ext4 4096MiB 100% \
+     set 2 boot on
+
+
+sudo mkswap -L guix-swap /dev/sda1
+sudo swapon /dev/sda1
+sudo mkfs.ext4 -L guix-root /dev/sda2
+sudo mount /dev/sda2 /mnt
+#+END_SRC
+
+****** Bootloader and Filesystem
+#+BEGIN_SRC guile
+(bootloader (bootloader-configuration
+              (bootloader grub-bootloader)
+              (keyboard-layout keyboard-layout)
+              (targets '("/dev/sdb")))) ; or other '/dev/sdX'-drive with root partition.
+
+(file-systems (cons* (file-system
+                       (mount-point "/")
+                       (device (file-system-label "guix-root"))
+                       (type "ext4")) %base-file-systems))
+
+;; If you enabled Swap, add this:
+(swap-devices (list
+               (swap-space
+                (target (file-system-label "guix-swap")))))
+#+END_SRC
+
+***** System Initialization
+To initialize the Guix System, run `guix system init /path/to/config.scm /mnt`, e.g.:
+#+BEGIN_SRC sh
+mkdir -p /mnt/etc/guix
+mv /path/to/geex/* /mnt/etc/guix/
+guix system init /mnt/etc/guix/config.scm /mnt
+#+END_SRC
+
+****** Cow-Store
+This is an old/outdated command you had to run pre-2020 Guix System:
+#+BEGIN_SRC sh
+herd start cow-store /mnt
 #+END_SRC
 
 ***** Passwords
@@ -109,6 +144,7 @@ mkdir -p /mnt/geex
 mkdir -p ~/.config/guix
 cp ./geex/channels.scm ~/.config/guix/channels.scm
 guix archive --authorize < ./geex/files/keys/nonguix.pub
+; Optional, define channels file: 'guix pull --channels=/path/to/channels.scm'
 guix pull
 #+END_SRC
 

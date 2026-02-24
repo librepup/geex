@@ -43,7 +43,7 @@
     (bootloader (bootloader-configuration
                   (bootloader grub-bootloader)
                   (keyboard-layout keyboard-layout)
-                  (targets '("/dev/sdb1"))))
+                  (targets '("/dev/sdb"))))
 
     ;; File Systems
     (file-systems (cons* (file-system

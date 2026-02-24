@@ -49,7 +49,7 @@
     ;; (bootloader (bootloader-configuration
     ;; (keyboard-layout keyboard-layout)
     ;; (bootloader grub-bootloader)
-    ;; (targets '("/dev/sda1"))))
+    ;; (targets '("/dev/sda"))))
 
     ;; File Systems
     ;; - Regular
