@@ -71,6 +71,11 @@
                            ;; or: (device (uuid "PARTITION_UUID" 'fat32))
                            (type "vfat")) %base-file-systems))
 
+    ;; Swap
+    (swap-devices (list
+                   (swap-space
+                    (target (file-system-label "guix-swap")))))
+
     ;; Users
     (users (cons (user-account
                    (name "puppy")

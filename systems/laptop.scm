@@ -54,13 +54,18 @@
     (bootloader (bootloader-configuration
                   (bootloader grub-bootloader)
                   (keyboard-layout keyboard-layout)
-                  (targets '("/dev/sdb"))))
+                  (targets '("/dev/sda"))))
 
     ;; File Systems
     (file-systems (cons* (file-system
                            (mount-point "/")
                            (device (file-system-label "guix-root"))
                            (type "ext4")) %base-file-systems))
+
+    ;; Swap
+    (swap-devices (list
+                   (swap-space
+                    (target (file-system-label "guix-swap")))))
 
     ;; Users
     (users (cons (user-account
