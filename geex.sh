@@ -790,546 +790,6 @@ cat > /tmp/geex.config.custom.template.dd <<'EOF'
 GEEX_OS_END_CALL_BLOCK
 EOF
 
-cat > /tmp/geex.config.desktop.template.dd <<'EOF'
-(use-modules (gnu)
-             (gnu system)
-             (gnu system nss)
-             (gnu packages)
-             (gnu packages xorg)
-             (gnu packages certs)
-             (gnu packages shells)
-             (gnu packages admin)
-             (gnu packages base)
-             (gnu services)
-             (gnu services xorg)
-             (gnu services desktop)
-             (gnu services nix)
-             (gnu services sound)
-             (gnu services audio)
-             (gnu services networking)
-             (gnu services virtualization)
-             (guix)
-             (guix utils)
-             ;; Nongnu & Nonguix
-             (nongnu packages linux)
-             (nongnu packages nvidia)
-             (nongnu services nvidia)
-             (nongnu system linux-initrd)
-             (nonguix transformations)
-             ;; Jonabron
-             (jonabron packages wm)
-             (jonabron packages fonts)
-             (jonabron packages games)
-             (jonabron packages communication))
-
-(use-service-modules desktop
-                     sound
-                     audio
-                     networking
-                     ssh
-                     xorg
-                     dbus)
-(use-package-modules wm
-                     bootloaders
-                     certs
-                     shells
-                     version-control
-                     xorg)
-
-(define %guix-os
-  (operating-system
-    GEEX_KERNEL_OPTIONAL
-    GEEX_INITRD_OPTIONAL
-    GEEX_FIRMWARE_OPTIONAL
-    (host-name "GEEX_HOSTNAME")
-    (timezone "GEEX_TIMEZONE")
-    (locale "en_US.utf8")
-    (keyboard-layout (keyboard-layout GEEX_KEYBOARD_LAYOUT))
-
-    ;; Bootloader
-    GEEX_BIOS_OPTIONAL
-
-    GEEX_FILESYSTEM_OPTIONAL
-
-    GEEX_SWAP_OPTIONAL
-
-    ;; Users
-    (users (cons (user-account
-                   (name "GEEX_USERNAME")
-                   (comment "GEEX_USERNAME User")
-                   (group "users")
-                   (home-directory "/home/GEEX_USERNAME")
-                   (supplementary-groups '("wheel" "netdev"
-                                           "audio"
-                                           "video"
-                                           "input"
-                                           GEEX_NIX_GROUP_OPTIONAL
-                                           "tty"))
-                   (shell (file-append zsh "/bin/zsh"))) %base-user-accounts))
-
-    ;; Packages
-    (packages (append (map specification->package
-                           '("eza" "bat"
-                             "zoxide"
-                             GEEX_DOAS_PACKAGE_OPTIONAL
-                             GEEX_I3_PACKAGE_OPTIONAL
-                             GEEX_NAITRE_PACKAGE_OPTIONAL
-                             GEEX_XMONAD_PACKAGE_OPTIONAL
-                             "ripgrep"
-                             "grep"
-                             "coreutils"
-                             "file"
-                             "glibc-locales"
-                             "ncurses"
-                             "zsh"
-                             "git-minimal"
-                             "emacs-no-x"
-                             "usbutils"
-                             "pciutils"
-                             "wpa-supplicant"
-                             "dhcpcd"
-                             "naitre"
-                             "procps"
-                             "wget"
-                             "curl"
-                             "nss-certs"
-                             "bash"
-                             "sed"
-                             GEEX_EXTRA_PACKAGE_LIST_OPTIONAL
-                             "kitty"))))
-
-    ;; Services
-    (services
-     (append (list (service alsa-service-type)
-                   GEEX_NIX_SERVICE_OPTIONAL
-                   GEEX_HURD_SERVICE_OPTIONAL
-                   GEEX_GNOME_SERVICE_OPTIONAL
-                   GEEX_DOAS_SERVICE_OPTIONAL
-                   (set-xorg-configuration
-                    (xorg-configuration (keyboard-layout keyboard-layout)
-                                        (modules (cons nvidia-driver
-                                                       %default-xorg-modules))
-                                        (drivers '("nvidia")))))
-
-             (modify-services %desktop-services
-               (gdm-service-type config =>
-                                 (gdm-configuration (inherit config)
-                                                    (wayland? #t)))
-               (guix-service-type config =>
-                                  (guix-configuration (inherit config)
-                                                      (substitute-urls (append
-                                                                        (list
-                                                                         "https://ci.guix.gnu.org"
-                                                                         "https://berlin.guix.gnu.org"
-                                                                         "https://bordeaux.guix.gnu.org"
-                                                                         "https://substitutes.nonguix.org"
-                                                                         "https://hydra-guix-129.guix.gnu.org"
-                                                                         "https://substitutes.guix.gofranz.com")
-                                                                        %default-substitute-urls))
-                                                      (authorized-keys (append
-                                                                        (list (local-file
-                                                                               "/etc/guix/files/keys/nonguix.pub"))
-                                                                        %default-authorized-guix-keys))))
-               (mingetty-service-type config =>
-                                      (mingetty-configuration (inherit config)
-                                                              (auto-login
-                                                               "GEEX_USERNAME"))))))))
-
-((compose (nonguix-transformation-nvidia))
- %guix-os)
-EOF
-
-cat > /tmp/geex.config.minimal.template.dd <<'EOF'
-(use-modules (gnu)
-             (gnu system)
-             (gnu system nss)
-             (gnu packages)
-             (gnu packages xorg)
-             (gnu packages certs)
-             (gnu packages shells)
-             (gnu packages admin)
-             (gnu packages base)
-             (gnu services)
-             (gnu services xorg)
-             (gnu services desktop)
-             (gnu services nix)
-             (gnu services sound)
-             (gnu services audio)
-             (gnu services networking)
-             (guix)
-             (guix utils)
-             ;; Jonabron
-             (jonabrok packages wm)
-             ;; Nongnu & Nonguix
-             (nongnu packages linux)
-             (nongnu system linux-initrd))
-
-(use-service-modules desktop
-                     sound
-                     audio
-                     networking
-                     ssh
-                     xorg
-                     dbus)
-(use-package-modules wm bootloaders certs shells version-control)
-
-(define %guix-os
-  (operating-system
-    GEEX_KERNEL_OPTIONAL
-    GEEX_INITRD_OPTIONAL
-    GEEX_FIRMWARE_OPTIONAL
-    (host-name "GEEX_HOSTNAME")
-    (timezone "GEEX_TIMEZONE")
-    (locale "en_US.utf8")
-    (keyboard-layout (keyboard-layout GEEX_KEYBOARD_LAYOUT))
-
-    ;; Bootloader
-    GEEX_BIOS_OPTIONAL
-
-    GEEX_FILESYSTEM_OPTIONAL
-
-    GEEX_SWAP_OPTIONAL
-
-    ;; Users
-    (users (cons (user-account
-                   (name "GEEX_USERNAME")
-                   (comment "GEEX_USERNAME User")
-                   (group "users")
-                   (home-directory "/home/GEEX_USERNAME")
-                   (supplementary-groups '("wheel" "netdev"
-                                           "audio"
-                                           "video"
-                                           GEEX_NIX_GROUP_OPTIONAL
-                                           "input"
-                                           "tty"))
-                   (shell (file-append zsh "/bin/zsh"))) %base-user-accounts))
-
-    ;; Packages
-    (packages (append (map specification->package
-                           '("grep" "coreutils"
-                             "glibc-locales"
-                             "ncurses"
-                             "zsh"
-                             "git-minimal"
-                             "emacs-no-x"
-                             "usbutils"
-                             GEEX_I3_PACKAGE_OPTIONAL
-                             GEEX_NAITRE_PACKAGE_OPTIONAL
-                             GEEX_DOAS_PACKAGE_OPTIONAL
-                             GEEX_XMONAD_PACKAGE_OPTIONAL
-                             "pciutils"
-                             "wpa-supplicant"
-                             "procps"
-                             "wget"
-                             "curl"
-                             "nss-certs"
-                             "bash"
-                             "sed"
-                             GEEX_EXTRA_PACKAGE_LIST_OPTIONAL
-                             "dhcpcd"))))
-
-    ;; Services
-    (services
-     (append (list (service alsa-service-type)
-                   GEEX_DOAS_SERVICE_OPTIONAL
-                   GEEX_NIX_SERVICE_OPTIONAL
-                   GEEX_HURD_SERVICE_OPTIONAL
-                   GEEX_GNOME_SERVICE_OPTIONAL
-              )
-
-                   (modify-services %desktop-services
-                     (guix-service-type config =>
-                                        (guix-configuration (inherit config)
-                                                            (substitute-urls (append
-                                                                              (list
-                                                                               "https://ci.guix.gnu.org"
-                                                                               "https://berlin.guix.gnu.org"
-                                                                               "https://bordeaux.guix.gnu.org"
-                                                                               "https://substitutes.nonguix.org"
-                                                                               "https://hydra-guix-129.guix.gnu.org"
-                                                                               "https://substitutes.guix.gofranz.com")
-                                                                              %default-substitute-urls))
-                                                            (authorized-keys (append
-                                                                              (list
-                                                                               (local-file
-                                                                                "/etc/guix/files/keys/nonguix.pub"))
-                                                                              %default-authorized-guix-keys))))))))))
-
-%guix-os
-EOF
-
-cat > /tmp/geex.config.libre.template.dd <<'EOF'
-(use-modules (gnu)
-             (gnu system)
-             (gnu system nss)
-             (gnu packages)
-             (gnu packages xorg)
-             (gnu packages certs)
-             (gnu packages shells)
-             (gnu packages admin)
-             (gnu packages base)
-             (gnu services)
-             (gnu services xorg)
-             (gnu services desktop)
-             (gnu services nix)
-             (gnu services sound)
-             (gnu services audio)
-             (gnu services networking)
-             (guix)
-             (guix utils)
-             (jonabron packages wm))
-
-(use-service-modules desktop
-                     sound
-                     audio
-                     networking
-                     ssh
-                     xorg
-                     dbus)
-(use-package-modules wm
-                     bootloaders
-                     certs
-                     shells
-                     version-control
-                     xorg)
-
-(define %guix-os
-  (operating-system
-    (host-name "GEEX_HOSTNAME")
-    (timezone "GEEX_TIMEZONE")
-    (locale "en_US.utf8")
-    (keyboard-layout (keyboard-layout GEEX_KEYBOARD_LAYOUT))
-
-    ;; Bootloader
-    GEEX_BIOS_OPTIONAL
-
-    GEEX_FILESYSTEM_OPTIONAL
-
-    GEEX_SWAP_OPTIONAL
-
-    ;; Users
-    (users (cons (user-account
-                   (name "GEEX_USERNAME")
-                   (comment "GEEX_USERNAME User")
-                   (group "users")
-                   (home-directory "/home/GEEX_USERNAME")
-                   (supplementary-groups '("wheel" "netdev"
-                                           "audio"
-                                           "video"
-                                           "input"
-                                           GEEX_NIX_GROUP_OPTIONAL
-                                           "tty"))
-                   (shell (file-append zsh "/bin/zsh"))) %base-user-accounts))
-
-    ;; Packages
-    (packages (append (map specification->package
-                           '("eza" "bat"
-                             "zoxide"
-                             "ripgrep"
-                             "grep"
-                             "file"
-                             "coreutils"
-                             "glibc-locales"
-                             "ncurses"
-                             "zsh"
-                             "git-minimal"
-                             "emacs-no-x"
-                             "usbutils"
-                             "pciutils"
-                             "wpa-supplicant"
-                             "dhcpcd"
-                             GEEX_I3_PACKAGE_OPTIONAL
-                             GEEX_XMONAD_PACKAGE_OPTIONAL
-                             GEEX_NAITRE_PACKAGE_OPTIONAL
-                             GEEX_DOAS_PACKAGE_OPTIONAL
-                             "procps"
-                             "wget"
-                             "curl"
-                             "nss-certs"
-                             "bash"
-                             GEEX_EXTRA_PACKAGE_LIST_OPTIONAL
-                             "sed"
-                             "kitty"))))
-
-    ;; Services
-    (services
-     (append (list (set-xorg-configuration
-                    (xorg-configuration (keyboard-layout keyboard-layout)))
-                   GEEX_GNOME_SERVICE_OPTIONAL
-                   GEEX_NIX_SERVICE_OPTIONAL
-                   GEEX_DOAS_SERVICE_OPTIONAL
-                   GEEX_HURD_SERVICE_OPTIONAL
-             )
-             (modify-services %desktop-services
-               (gdm-service-type config =>
-                                 (gdm-configuration (inherit config)
-                                                    (wayland? #t)))
-               (delete pulseaudio-service-type)
-               (guix-service-type config =>
-                                  (guix-configuration (inherit config)
-                                                      (substitute-urls (append
-                                                                        (list
-                                                                         "https://ci.guix.gnu.org"
-                                                                         "https://berlin.guix.gnu.org"
-                                                                         "https://bordeaux.guix.gnu.org"
-                                                                         "https://hydra-guix-129.guix.gnu.org"
-                                                                         "https://substitutes.guix.gofranz.com")
-                                                                        %default-substitute-urls))))
-               (mingetty-service-type config =>
-                                      (mingetty-configuration (inherit config)
-                                                              (auto-login
-                                                               "GEEX_USERNAME"))))))))
-
-%guix-os
-EOF
-
-cat > /tmp/geex.config.laptop.template.dd <<'EOF'
-(use-modules (gnu)
-             (gnu system)
-             (gnu system nss)
-             (gnu packages)
-             (gnu packages xorg)
-             (gnu packages certs)
-             (gnu packages shells)
-             (gnu packages admin)
-             (gnu packages base)
-             (gnu services)
-             (gnu services xorg)
-             (gnu services desktop)
-             (gnu services nix)
-             (gnu services sound)
-             (gnu services audio)
-             (gnu services networking)
-             (guix)
-             (guix utils)
-             ;; Nongnu & Nonguix
-             (nongnu packages linux)
-             (nongnu system linux-initrd)
-             ;; Jonabron
-             (jonabron packages wm)
-             (jonabron packages fonts)
-             (jonabron packages communication)
-             (jonabron packages games))
-
-(use-service-modules desktop
-                     sound
-                     audio
-                     networking
-                     ssh
-                     xorg
-                     dbus
-                     pm)
-(use-package-modules wm
-                     bootloaders
-                     certs
-                     shells
-                     version-control
-                     xorg)
-
-(define %guix-os
-  (operating-system
-    GEEX_KERNEL_OPTIONAL
-    GEEX_INITRD_OPTIONAL
-    GEEX_FIRMWARE_OPTIONAL
-    (host-name "GEEX_HOSTNAME")
-    (timezone "GEEX_TIMEZONE")
-    (locale "en_US.utf8")
-    (keyboard-layout (keyboard-layout GEEX_KEYBOARD_LAYOUT))
-
-    ;; Bootloader
-    GEEX_BIOS_OPTIONAL
-
-    GEEX_FILESYSTEM_OPTIONAL
-
-    GEEX_SWAP_OPTIONAL
-
-    ;; Users
-    (users (cons (user-account
-                   (name "GEEX_USERNAME")
-                   (comment "GEEX_USERNAME User")
-                   (group "users")
-                   (home-directory "/home/GEEX_USERNAME")
-                   (supplementary-groups '("wheel" "netdev"
-                                           "audio"
-                                           "video"
-                                           "input"
-                                           GEEX_NIX_GROUP_OPTIONAL
-                                           "tty"))
-                   (shell (file-append zsh "/bin/zsh"))) %base-user-accounts))
-
-    ;; Packages
-    (packages (append (map specification->package
-                           '("eza" "bat"
-                             "zoxide"
-                             GEEX_DOAS_PACKAGE_OPTIONAL
-                             GEEX_I3_PACKAGE_OPTIONAL
-                             GEEX_NAITRE_PACKAGE_OPTIONAL
-                             GEEX_XMONAD_PACKAGE_OPTIONAL
-                             "ripgrep"
-                             "grep"
-                             "coreutils"
-                             "file"
-                             "glibc-locales"
-                             "ncurses"
-                             "zsh"
-                             "git-minimal"
-                             "emacs-no-x"
-                             "usbutils"
-                             "pciutils"
-                             "wpa-supplicant"
-                             "dhcpcd"
-                             "naitre"
-                             GEEX_EXTRA_PACKAGE_LIST_OPTIONAL
-                             "procps"
-                             "wget"
-                             "curl"
-                             "nss-certs"
-                             "bash"
-                             "sed"
-                             "kitty"))))
-
-    ;; Services
-    (services
-     (append (list (service alsa-service-type)
-                   (service tlp-service-type
-                            (tlp-configuration (cpu-scaling-governor-on-ac '("performace"))
-                                               (cpu-scaling-governor-on-bat '("powersave"))
-                                               (sched-powersave-on-bat? #t)))
-                   GEEX_NIX_SERVICE_OPTIONAL
-                   GEEX_HURD_SERVICE_OPTIONAL
-                   GEEX_GNOME_SERVICE_OPTIONAL
-                   GEEX_DOAS_SERVICE_OPTIONAL
-                   (set-xorg-configuration
-                    (xorg-configuration (keyboard-layout keyboard-layout))))
-
-             (modify-services %desktop-services
-               (gdm-service-type config =>
-                                 (gdm-configuration (inherit config)
-                                                    (wayland? #t)))
-               (guix-service-type config =>
-                                  (guix-configuration (inherit config)
-                                                      (substitute-urls (append
-                                                                        (list
-                                                                         "https://ci.guix.gnu.org"
-                                                                         "https://berlin.guix.gnu.org"
-                                                                         "https://bordeaux.guix.gnu.org"
-                                                                         "https://substitutes.nonguix.org"
-                                                                         "https://hydra-guix-129.guix.gnu.org"
-                                                                         "https://substitutes.guix.gofranz.com")
-                                                                        %default-substitute-urls))
-                                                      (authorized-keys (append
-                                                                        (list (local-file
-                                                                               "/etc/guix/files/keys/nonguix.pub"))
-                                                                        %default-authorized-guix-keys))))
-               (mingetty-service-type config =>
-                                      (mingetty-configuration (inherit config)
-                                                              (auto-login
-                                                               "GEEX_USERNAME"))))))))
-
-%guix-os
-EOF
-
-
 
 # Setup Hooks
 checkMountPointHook() {
@@ -1520,10 +980,10 @@ kernelHook() {
     if [[ -n "$GEEX_THE_HURD" ]] || [[ "$GEEX_THE_HURD" == 1 ]]; then
         export hurdBlock="(kernel hurd)\n    (hurd hurd)\n    (server-services %base-services-hurd)\n"
         sed -i "s|GEEX_KERNEL_OPTIONAL|$hurdBlock|g" /tmp/geex.config.${stager}.dd
-        sed -i "s|GEEX_INITRD_OPTIONAL||g" /tmp/geex.config.${stager}.dd
-        sed -i "s|GEEX_FIRMWARE_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+        sed -i "/GEEX_INITRD_OPTIONAL/d" /tmp/geex.config.${stager}.dd
+        sed -i "/GEEX_FIRMWARE_OPTIONAL/d" /tmp/geex.config.${stager}.dd
+        sed -i "/GEEX_NONFREE_MODULES_OPTIONAL/d" /tmp/geex.config.${stager}.dd
         sed -i "s|ext4|ext2|g" /tmp/geex.config.${stager}.dd
-        sed -i "s|GEEX_NONFREE_MODULES_OPTIONAL||g" /tmp/geex.config.${stager}.dd
         return 0
     fi
     if lspci | grep -i intel | grep -i "wireless" >/dev/null; then
@@ -1574,11 +1034,7 @@ kernelHook() {
             sed -i "/GEEX_NONFREE_MODULES_OPTIONAL/d" /tmp/geex.config.${stager}.dd
             sed -i "/GEEX_INITRD_OPTIONAL/d" /tmp/geex.config.${stager}.dd
             sed -i "/GEEX_FIRMWARE_OPTIONAL/d" /tmp/geex.config.${stager}.dd
-            #sed -i "s|GEEX_KERNEL_OPTIONAL||g" /tmp/geex.config.${stager}.dd
-            #sed -i "s|GEEX_NONFREE_MODULES_OPTIONAL||g" /tmp/geex.config.${stager}.dd
             export wroteKernelBlock="Yes (Free)"
-            #sed -i "s|GEEX_INITRD_OPTIONAL||g" /tmp/geex.config.${stager}.dd
-            #sed -i "s|GEEX_FIRMWARE_OPTIONAL||g" /tmp/geex.config.${stager}.dd
         elif [[ "$userWantsNonfreeKernel" != "yes" ]] && [[ "$userWantsNonfreeKernel" != "no" ]]; then
             echo -e "    (kernel linux)" >> /tmp/geex.kernel.block.dd
             sed -i "/GEEX_KERNEL_OPTIONAL/{
@@ -1627,8 +1083,6 @@ xorgHook() {
     if [[ "$GEEX_THE_HURD" == 1 ]] || [[ -n "$GEEX_THE_HURD" ]]; then
         sed -i "/GEEX_NVIDIA_MODULES_OPTIONAL/d" /tmp/geex.config.${stager}.dd
         sed -i "/GEEX_XORG_SERVICE_OPTIONAL/d" /tmp/geex.config.${stager}.dd
-        #sed -i "s|GEEX_NVIDIA_MODULES_OPTIONAL||g" /tmp/geex.config.${stager}.dd
-        #sed -i "s|GEEX_XORG_SERVICE_OPTIONAL||g" /tmp/geex.config.${stager}.dd
         return 0
     fi
     if lspci | grep -i nvidia >/dev/null; then
@@ -1681,7 +1135,6 @@ xorgHook() {
         fi
         echo -e "                   (set-xorg-configuration\n                    (xorg-configuration (keyboard-layout keyboard-layout)))\n" >> /tmp/geex.xorg.optional.dd
         sed -i "/GEEX_NVIDIA_MODULES_OPTIONAL/d" /tmp/geex.config.${stager}.dd
-        #sed -i "s|GEEX_NVIDIA_MODULES_OPTIONAL||g" /tmp/geex.config.${stager}.dd
         if [[ -f "/tmp/geex.xorg.nvidia.modules.optional.dd" ]]; then
             rm /tmp/geex.xorg.nvidia.modules.optional.dd
         fi
@@ -1811,7 +1264,6 @@ desktopEnvironmentsHook() {
             export installedDesktopi3=1
         else
             sed -i "/GEEX_I3_PACKAGE_OPTIONAL/d" /tmp/geex.config.${stager}.dd
-            #sed -i 's/GEEX_I3_PACKAGE_OPTIONAL//g' /tmp/geex.config.${stager}.dd
             export installedDesktopi3=0
         fi
         if [[ "$deSelection" == *gnome* ]]; then
@@ -1822,7 +1274,6 @@ desktopEnvironmentsHook() {
             export installedDesktopGnome=1
         else
             sed -i "/GEEX_GNOME_SERVICE_OPTIONAL/d" /tmp/geex.config.${stager}.dd
-            #sed -i 's/GEEX_GNOME_SERVICE_OPTIONAL//g' /tmp/geex.config.${stager}.dd
             export installedDesktopGnome=0
         fi
         if [[ "$deSelection" == *naitre* ]]; then
@@ -1833,7 +1284,6 @@ desktopEnvironmentsHook() {
             export installedDesktopNaitre=1
         else
             sed -i "/GEEX_NAITRE_PACKAGE_OPTIONAL/d" /tmp/geex.config.${stager}.dd
-            #sed -i 's/GEEX_NAITRE_PACKAGE_OPTIONAL//g' /tmp/geex.config.${stager}.dd
             export installedDesktopNaitre=0
         fi
         if [[ "$deSelection" == *xmonad* ]]; then
@@ -1844,7 +1294,6 @@ desktopEnvironmentsHook() {
             export installedDesktopXmonad=1
         else
             sed -i "/GEEX_XMONAD_PACKAGE_OPTIONAL/d" /tmp/geex.config.${stager}.dd
-            #sed -i 's/GEEX_XMONAD_PACKAGE_OPTIONAL//g' /tmp/geex.config.${stager}.dd
             export installedDesktopXmonad=0
         fi
         export finishedDesktopSetup=1
@@ -1911,8 +1360,6 @@ serviceSetupHook() {
         else
             sed -i "/GEEX_DOAS_SERVICE_OPTIONAL/d" /tmp/geex.config.${stager}.dd
             sed -i "/GEEX_DOAS_PACKAGE_OPTIONAL/d" /tmp/geex.config.${stager}.dd
-            #sed -i 's/GEEX_DOAS_SERVICE_OPTIONAL//g' /tmp/geex.config.${stager}.dd
-            #sed -i 's/GEEX_DOAS_PACKAGE_OPTIONAL//g' /tmp/geex.config.${stager}.dd
             export installedServiceDoas=0
         fi
         if [[ "$serviceSelection" == *tlp* ]]; then
@@ -1923,7 +1370,6 @@ serviceSetupHook() {
             export installedServiceTlp=1
         else
             sed -i "/GEEX_TLP_SERVICE_OPTIONAL/d" /tmp/geex.config.${stager}.dd
-            #sed -i "s|GEEX_TLP_SERVICE_OPTIONAL||g" /tmp/geex.config.${stager}.dd
             export installedServiceTlp=0
         fi
         if [[ "$serviceSelection" == *nix* ]]; then
@@ -1939,8 +1385,6 @@ serviceSetupHook() {
         else
             sed -i "/GEEX_NIX_SERVICE_OPTIONAL/d" /tmp/geex.config.${stager}.dd
             sed -i "/GEEX_NIX_GROUP_OPTIONAL/d" /tmp/geex.config.${stager}.dd
-            #sed -i 's/GEEX_NIX_SERVICE_OPTIONAL//g' /tmp/geex.config.${stager}.dd
-            #sed -i 's/GEEX_NIX_GROUP_OPTIONAL//g' /tmp/geex.config.${stager}.dd
             export installedServiceNix=0
         fi
         if [[ "$serviceSelection" == *hurd* ]]; then
@@ -1951,23 +1395,12 @@ serviceSetupHook() {
             export installedServiceHurd=1
         else
             sed -i "/GEEX_HURD_SERVICE_OPTIONAL/d" /tmp/geex.config.${stager}.dd
-            #sed -i 's/GEEX_HURD_SERVICE_OPTIONAL//g' /tmp/geex.config.${stager}.dd
             export installedServiceHurd=0
         fi
         export finishedServiceSetup=1
     else
         export finishedServiceSetup=0
     fi
-}
-systemsSelection() {
-    systemchoice=$(dialog --backtitle "Geex Installer" --title "Systemchoice" --menu "Please choose one of the following available pre-made Systems Configurations, or select 'Custom' to create your own Configuration.\n\nOptions:\n  - desktop -> Nvidia-Enabled Desktop Configuration\n  - laptop -> Portable (No Nvidia) Configuration\n  - libre -> Fully Libre (Linux-Libre Kernel) Configuration\n  - minimal -> Minimalistic Server Configuration" 32 50 10 \
-                          desktop "Desktop" \
-                          laptop "Laptop" \
-                          libre "Libre" \
-                          minimal "Minimal" \
-                          custom "Custom" \
-                          3>&1 1>&2 2>&3) || exit
-    export systemchoice=$systemchoice
 }
 biosHook() {
     if [[ -d /sys/firmware/efi ]]; then
@@ -2187,11 +1620,6 @@ disksSetup() {
         fi
     fi
 }
-customStage2() {
-    echo "[ Status ]: Entered Custom System Setup Stage 2"
-    echo "[ Info ]: The complete customization stage is not yet finished, please use one of the existing configuration templates."
-    exit 1
-}
 filesystemHook() {
     local swapBlock=""
     if [ "$userWantsSwap" == 1 ]; then
@@ -2207,7 +1635,7 @@ filesystemHook() {
         export wroteSwapBlock="Yes"
     else
         unset swapBlock
-        sed -i "s|GEEX_SWAP_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+        sed -i "/GEEX_SWAP_OPTIONAL/d" /tmp/geex.config.${stager}.dd
         export wroteSwapBlock="No"
     fi
     export rootPartName=$(ls /dev/disk/by-label/ | grep -x -e 'guix-root' -e 'GUIX-ROOT')
@@ -2256,7 +1684,7 @@ filesystemHook() {
                }" /tmp/gex.config.${stager}.dd
         export wroteSwapBlock="Yes"
     else
-        sed -i "s|GEEX_SWAP_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+        sed -i "/GEEX_SWAP_OPTIONAL/d" /tmp/geex.config.${stager}.dd
         export wroteSwapBlock="No"
     fi
     if [ -n "$GEEX_VERBOSE_MODE" ] || [ "$GEEX_VERBOSE_MODE" == 1 ]; then
@@ -2626,57 +2054,6 @@ passwordApplyHook() {
         verbosePopup=$(dialog --backtitle "Geex Installer" --title "Password Setup" --msgbox "Verbose Mode Detected, informing you that the installer has successfully applied your password settings and configuration to your GNU Guix System installation." 24 40 3>&1 1>&2 2>&3) || exit 1
     fi
 }
-# Old Password Hook
-passwordHookOld() {
-    export passwordTryAgain=0
-    if [ -n "$GEEX_DEBUG" ] || [ -n "$GEEX_DEBUG_MODE" ]; then
-        echo "[ Debug ]: Pretending to set passwords..."
-        export CONFIGURED_PASSWORDS=2
-    else
-        export passwordTryAgain=0
-        passwordInputBoxHook
-        if [[ -z "$password" ]]; then
-            errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --menu "You either did not provide a password, or the password you provided was un-parseable. Do you want to skip the password setup section, or do you want to try again?\n\nWarning: If you skip the password setup stage, you have to either manually set the password yourself, or risk booting into a system that has no users that you can actually log in to.)" 32 50 10 \
-                                  again "Try Again" \
-                                  skip "Skip Password Setup" \
-                                  3>&1 1>&2 2>&3) || exit 1
-            if [ "$errorMessage" == "again" ]; then
-                export passwordTryAgain=1
-            else
-                export passwordTryAgain=0
-            fi
-        fi
-        if [[ -z "$password" ]]; then
-            export passwordTryAgain=1
-        else
-            export passwordTryAgain=0
-        fi
-        while [[ -z "$password" ]] || [ "$password" == "" ] || [ "$passwordTryAgain" == 1 ]; do
-            passwordInputBoxHook
-        done
-        export password=$password
-        export userPasswordTryAgain=0
-        userPassQuestion=$(dialog --backtitle "Geex Installer" --title "User Password" --menu "Do you want to use the same password for the '$username' account?" 32 50 10 \
-                                  yes "Yes" \
-                                  no "No" \
-                                  3>&1 1>&2 2>&3) || exit 1
-        if [ "$userPassQuestion" == "no" ]; then
-            userPasswordInputBoxHook
-            if [[ -z "$userPassword" ]]; then
-                export userPasswordTryAgain=1
-            else
-                export userPasswordTryAgain=0
-            fi
-            while [[ -z "$userPassword" ]] || [ "$userPassword" == "" ] || [ "$userPasswordTryAgain" == 1 ]; do
-                export userPasswordTryAgain=1
-                userPasswordInputBoxHook
-            done
-            export userPassword=$userPassword
-        else
-            export userPassword=$password
-        fi
-    fi
-}
 homeHook() {
     homeQuestion=$(dialog --backtitle "Geex Installer" --title "Home Setup" --menu "The Geex Installer offers the option to copy the generic Geex GNU Guix Home Configuration (home.scm) to your newly installed System.\n\nDo you want to copy the Geex GNU Guix Home Configuration to your system?\n\n(You can edit the '${geexMount}/etc/guix/home.scm' before or after rebooting to make changes.)" 32 50 10 \
                           yes "Yes, Copy the Files" \
@@ -2797,7 +2174,7 @@ timezoneHook() {
         REGION=$(find "$ZONEINFO_DIR" -maxdepth 1 -type d -printf "%f\n" | \
                      grep -E 'Africa|America|Antarctica|Arctic|Asia|Atlantic|Australia|Europe|Indian|Pacific' | \
                      sort | xargs -I {} echo {} {} | \
-                     xargs dialog --menu "Select Region" 15 50 10 3>&1 1>&2 2>&3 >/dev/tty)
+                     xargs dialog --menu "Select Region" 15 50 10 3>&1 1>&2 2>&3 >/dev/tty) || exit 1
         export REGION=$REGION
         if [[ -z "$REGION" ]]; then
             export REGION="Europe"
@@ -2807,7 +2184,7 @@ timezoneHook() {
         fi
         ZONE=$(find "$ZONEINFO_DIR/$REGION" -type f -printf "%P\n" | \
                    sort | xargs -I {} echo {} {} | \
-                   xargs dialog --menu "Select Timezone in $REGION" 15 50 10 3>&1 1>&2 2>&3 >/dev/tty)
+                   xargs dialog --menu "Select Timezone in $REGION" 15 50 10 3>&1 1>&2 2>&3 >/dev/tty) || exit 1
         export ZONE=$ZONE
         if [[ -z "$ZONE" ]]; then
             export ZONE="Berlin"
@@ -2881,7 +2258,7 @@ keyboardSelectVariantHook() {
 keyboardSelectLayoutHook() {
     while true; do
         SELECTED_KEYBOARD_LAYOUT=$(dialog --menu "Select Layout" 20 60 12 \
-                     $LAYOUT_LIST \
+                                          $LAYOUT_LIST \
                      3>&1 1>&2 2>&3) || exit 1
         if [[ -n "$SELECTED_KEYBOARD_LAYOUT" ]]; then
             export selectedLayout=$SELECTED_KEYBOARD_LAYOUT
@@ -3058,7 +2435,7 @@ packageBundlesHook() {
                    }" /tmp/geex.config.${stager}.dd
             export wroteBundles="Yes"
         else
-            sed -i "s|GEEX_BUNDLE_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+            sed -i "/GEEX_BUNDLE_OPTIONAL/d" /tmp/geex.config.${stager}.dd
             export wroteBundles="No"
         fi
     else
@@ -3109,17 +2486,13 @@ addCustomPackageHook() {
                    }" /tmp/geex.config.${stager}.dd
         else
             sed -i "/GEEX_EXTRA_PACKAGE_LIST_OPTIONAL/d" /tmp/geex.config.${stager}.dd
-            #sed -i "s/GEEX_EXTRA_PACKAGE_LIST_OPTIONAL//g" /tmp/geex.config.${stager}.dd
         fi
-        #sed "s|GEEX_EXTRA_PACKAGE_LIST_OPTIONAL|$extraPackageListInsertable|g" /tmp/geex.config.${stager}.dd
     else
         echo -e "[ Error ]: Error with List Confirmation"
         sed -i "/GEEX_EXTRA_PACKAGE_LIST_OPTIONAL/d" /tmp/geex.config.${stager}.dd
-        #sed "s|GEEX_EXTRA_PACKAGE_LIST_OPTIONAL||g" /tmp/geex.config.${stager}.dd
     fi
     if [ "$extraPackageListInsertable" == "" ] || [ -z "$extraPackageListInsertable" ]; then
         sed -i "/GEEX_EXTRA_PACKAGE_LIST_OPTIONAL/d" /tmp/geex.config.${stager}.dd
-        #sed -i "s/GEEX_EXTRA_PACKAGE_LIST_OPTIONAL//g" /tmp/geex.config.${stager}.dd
     fi
 }
 swapQuestion() {
@@ -3239,7 +2612,6 @@ installerHook() {
     if [ -f "/tmp/geex.detectedbios.dd" ]; then
         rm /tmp/geex.detectedbios.dd
     fi
-    # New and Experimental Full Customization Setup
     export systemchoice="custom"
     export stager="custom"
     if [ -f "/tmp/geex.config.${stager}.dd" ]; then
@@ -3263,35 +2635,6 @@ installerHook() {
     if [ -n "$GEEX_THE_HURD_ALLOW" ] || [ "$GEEX_THE_HURD_ALLOW" == 1 ]; then
         hurdNoticeImportant=$(dialog --backtitle "Geex Installer" --title "GNU Hurd" --msgbox "THIS IS YOUR LAST WARNING - TURN BACK NOW!\n\nYou have enable the environment variable 'GEEX_THE_HURD_ALLOW', this option ONLY exists, because I, the creator of this installer, want to give users FULL CONTROL, even if it is AGAINST THEIR OWN BEST INTEREST!\n\nDO NOT INSTALL GNU HURD AS YOUR MAIN SYSTEMS KERNEL!" 32 50 3>&1 1>&2 2>&3)
     fi
-    #
-    # Old/Legacy Systemchoice Block
-    #
-    #systemsSelection
-    #if [[ "$systemchoice" == "custom" ]]; then
-    #    export stager="custom"
-    #    if [ -f "/tmp/geex.config.${stager}.dd" ]; then
-    #        rm /tmp/geex.config.${stager}.dd
-    #    fi
-    #    if [ -f "/tmp/geex.config.${stager}.template.dd" ]; then
-    #        cp /tmp/geex.config.${stager}.template.dd /tmp/geex.config.${stager}.dd
-    #        echo "[ Status ]: Created writeable Stager Config"
-    #    else
-    #        echo "[ Warning ]: Stager Template not found."
-    #    fi
-    #    customStage2
-    #else
-    #    export stager="$systemchoice"
-    #    if [ -f "/tmp/geex.config.${stager}.dd" ]; then
-    #        rm /tmp/geex.config.${stager}.dd
-    #    fi
-    #    if [ -f "/tmp/geex.config.${stager}.template.dd" ]; then
-    #        cp /tmp/geex.config.${stager}.template.dd /tmp/geex.config.${stager}.dd
-    #        echo "[ Status ]: Created writeable Stager Config"
-    #    else
-    #        echo "[ Warning ]: Stager Template not found."
-    #    fi
-    #    "${systemchoice}Stage2"
-    #fi
     if [ "$GEEX_LIVE_MODE" == 1 ] && [ -z "$GEEX_LIVE_OVERRIDE" ]; then
         livePreviewHook
     fi
@@ -3415,7 +2758,6 @@ installerHook() {
     packageBundlesHook
     addCustomPackageHook
     summaryTextContents="$(echo -e "(1) Information\nUsername: $username\nHostname: $hostname\nTimezone: $TIMEZONE\nPasswords Set?: $areAllPasswordsSet (Re-Used?: $wasPasswordReUsed)\nDisk: $disk (Parts: $diskPrefixedPartNameTextblock)\nSwap: $formattedWithSwap\nBIOS: $bios (Detected: $detectedBios)\nKeyboard: $keyboardInfo\n\nServices: $serviceSelection\nDesktops: $deSelection\n\n(2) The Installer Wrote:\nSwap Block?: $wroteSwapBlock\nBIOS Block?: $wroteBiosBlock\nFilesystem Block?: $isFilesystemWritten\nServices Block?: $areServicesWritten\nDesktop Block?: $areDesktopsWritten\nKeyboard Block?: $wroteKeyboardBlock")"
-    #summaryTextContents="$(echo -e "Please verify all the information below is accurate and exactly as you selected/want it:\n - Username: $username\n - $username Password Set?: $areAllPasswordsSet\n - Root Password Set?: $areAllPasswordsSet\n - Root and $username Password Match?: $wasPasswordReUsed\n - Hostname: $hostname\n - Timezone: $TIMEZONE\n - Disk: $disk\n - Disk Parts: $diskPrefixedPartNameTextblock\n - Formatted Swap?: $formattedWithSwap\n - Wrote Swap?: $wroteSwapBlock\n - BIOS: $bios\n - Auto-Detected BIOS: $detectedBios\n - Keyboard: $keyboardInfo\n - Services: $serviceSelection\n - Desktops: $deSelection\n\nInternal Statistics:\n - Systemchoice: $systemchoice\n - Stager: $stager\n - Stagerfile: '/tmp/geex.config.${stager}.dd'\n\nWrote Blocks Status (Did the Installer Write ... X?):\n - BIOS Block?: ${wroteBiosBlock}\n - Filesystems?: $isFilesystemWritten\n - Services?: $areServicesWritten\n - Desktops?: $areDesktopsWritten\n - Keyboard?: $wroteKeyboardBlock (Found?: $foundKeyboardBlock)")"
     if [ -f "/tmp/geex.summary.dd" ]; then
         rm /tmp/geex.summary.dd
     fi
