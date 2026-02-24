@@ -83,7 +83,7 @@ sudo mount /dev/sda1 /mnt
 
 If you want a swap partition, do this instead:
 #+BEGIN_SRC sh
-sudo parted /dev/sda -- script \
+sudo parted /dev/sda --script \
      mklabel msdos \
      mkpart primary linux-swap 1MiB 4096MiB \
      mkpart primary ext4 4096MiB 100% \
