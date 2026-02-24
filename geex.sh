@@ -134,6 +134,33 @@ done
 for arg in "$@"; do
     case "$arg" in
         c|-c|--c|clean|-clean|--clean)
+            if [ -f "/tmp/geex.config.scm" ]; then
+                rm /tmp/geex.config.scm
+            fi
+            if [ -f "/tmp/geex.config.custom.template.dd" ]; then
+                rm /tmp/geex.config.custom.template.dd
+            fi
+            if [ -f "/tmp/geex.config.custom.dd" ]; then
+                rm /tmp/geex.config.custom.dd
+            fi
+            if [ -f "/tmp/geex.xorg.optional.dd" ]; then
+               rm /tmp/geex.xorg.optional.dd
+            fi
+            if [ -f "/tmp/geex.compose.block.dd" ]; then
+                rm /tmp/geex.compose.block.dd
+            fi
+            if [ -f "/tmp/geex.xorg.optional.dd" ]; then
+                rm /tmp/geex.xorg.optional.dd
+            fi
+            if [ -f "/tmp/geex.xorg.nvidia.modules.optional.dd" ]; then
+                rm /tmp/geex.xorg.nvidia.modules.optional.dd
+            fi
+            if [ -f "/tmp/geex.kernel.modules.block.dd" ]; then
+                rm /tmp/geex.kernel.modules.block.dd
+            fi
+            if [ -f "/tmp/geex.kernel.block.dd" ]; then
+                rm /tmp/geex.kernel.block.dd
+            fi
             if [ -f "/tmp/geex.swap.block.dd" ]; then
                 rm /tmp/geex.swap.block.dd
             fi
@@ -518,7 +545,7 @@ done
 
 # Check if Commands are Missing
 export missingCommandCount=0
-for cmd in cp awk dialog git grep parted lsblk find tzselect ps mke2fs; do
+for cmd in cp awk dialog git grep parted lsblk find tzselect ps mke2fs lspci; do
     if ! command -v "$cmd" >/dev/null 2>&1; then
         echo "[ Warning ]: Missing required binary: $cmd" >&2
         export missingCommandCount=$(($missingCommandCount + 1))
@@ -527,7 +554,7 @@ done
 
 if command -v herd >/dev/null; then
     echo "[ Status ]: 'herd' found, continuing."
-elif [ "$GEEX_IGNORE_FORCED_DEBUG" == 1 ] || [ -n "$GEEX_IGNORE_FORCED_DEBUG" ]; then
+elif [[ "$GEEX_IGNORE_FORCED_DEBUG" == 1 ]] || [[ -n "$GEEX_IGNORE_FORCED_DEBUG" ]]; then
     echo "[ Status ]: Ignoring forced debug mode..."
 else
     export GEEX_DEBUG=1
@@ -548,15 +575,15 @@ fi
 
 # If Commands are Missing, Open a Guix Shell with them Present
 if [[ "$missingCommandCount" != 0 ]]; then
-  if [ -z "$GUIX_ENVIRONMENT" ] && echo "[ Status ]: Checking for Guix, then running shell exec hook..." && command -v guix >/dev/null 2>&1 && guix shell coreutils bash gawk grep parted findutils util-linux git-minimal dialog tzdata procps e2fsprogs -- true >/dev/null 2>&1; then
+  if [ -z "$GUIX_ENVIRONMENT" ] && echo "[ Status ]: Checking for Guix, then running shell exec hook..." && command -v guix >/dev/null 2>&1 && guix shell coreutils bash gawk grep parted findutils util-linux git-minimal dialog tzdata procps e2fsprogs pciutils -- true >/dev/null 2>&1; then
       echo "[ Guix ]: Found Guix, running guix shell exec hook..."
       export IN_GUIX_SHELL=1
       export GEEX_RUNNING_IN="guix"
-      exec guix shell coreutils bash gawk grep parted findutils util-linux git-minimal dialog tzdata procps e2fsprogs -- bash "$0" "$@"
-  elif [ -z "$IN_NIX_SHELL" ] && echo "[ Warning ]: Guix not found, checking for Nix, then running shell exec hook..." && command -v nix-shell >/dev/null 2>&1 && nix-shell -p coreutils gawk bash gnugrep parted findutils util-linux git dialog tzdata procps e2fsprogs --run true >/dev/null 2>&1; then
+      exec guix shell coreutils bash gawk grep parted findutils util-linux git-minimal dialog tzdata procps e2fsprogs pciutils -- bash "$0" "$@"
+  elif [ -z "$IN_NIX_SHELL" ] && echo "[ Warning ]: Guix not found, checking for Nix, then running shell exec hook..." && command -v nix-shell >/dev/null 2>&1 && nix-shell -p coreutils gawk bash gnugrep parted findutils util-linux git dialog tzdata procps e2fsprogs pciutils --run true >/dev/null 2>&1; then
       echo "[ Nix ]: Found Nix, running nix shell exec hook..."
       export GEEX_RUNNING_IN="nix"
-      exec nix-shell -p coreutils bash gawk gnugrep parted findutils util-linux git dialog tzdata procps e2fsprogs --run "bash "$0" "$@""
+      exec nix-shell -p coreutils bash gawk gnugrep parted findutils util-linux git dialog tzdata procps e2fsprogs pciutils --run "bash "$0" "$@""
   else
       echo -e "[ Warning ]: Commands missing, but found no way to retrieve them temporarily.\nAborting unless Variable 'GEEX_IGNORE_MISSING' is set."
       if [ ! -n "$GEEX_IGNORE_MISSING" ]; then
@@ -616,6 +643,146 @@ cat > /tmp/geex.channels.dd <<'EOF'
             (openpgp-fingerprint
              "2DDF 9601 2828 6172 F10C  51A4 E80D 3600 684C 71BA")))))
         %default-channels)
+EOF
+
+cat > /tmp/geex.config.custom.template.dd <<'EOF'
+(use-modules (gnu)
+             (gnu system)
+             (gnu system nss)
+             (gnu packages)
+             (gnu packages xorg)
+             (gnu packages certs)
+             (gnu packages shells)
+             (gnu packages admin)
+             (gnu packages base)
+             (gnu services)
+             (gnu services xorg)
+             (gnu services desktop)
+             (gnu services nix)
+             (gnu services sound)
+             (gnu services audio)
+             (gnu services networking)
+             (gnu services virtualization)
+             (guix)
+             (guix utils)
+             GEEX_NONFREE_MODULES_OPTIONAL
+             GEEX_NVIDIA_MODULES_OPTIONAL
+             (jonabron packages wm)
+             (jonabron packages fonts)
+             (jonabron packages games)
+             (jonabron packages communication))
+
+(use-service-modules desktop
+                     sound
+                     audio
+                     networking
+                     ssh
+                     xorg
+                     dbus)
+(use-package-modules wm
+                     bootloaders
+                     certs
+                     shells
+                     version-control
+                     xorg)
+
+(define %guix-os
+  (operating-system
+    GEEX_KERNEL_OPTIONAL
+    GEEX_INITRD_OPTIONAL
+    GEEX_FIRMWARE_OPTIONAL
+    (host-name "GEEX_HOSTNAME")
+    (timezone "GEEX_TIMEZONE")
+    (locale "en_US.utf8")
+    (keyboard-layout (keyboard-layout GEEX_KEYBOARD_LAYOUT))
+
+    ;; Bootloader
+    GEEX_BIOS_OPTIONAL
+
+    GEEX_FILESYSTEM_OPTIONAL
+
+    GEEX_SWAP_OPTIONAL
+
+    ;; Users
+    (users (cons (user-account
+                   (name "GEEX_USERNAME")
+                   (comment "GEEX_USERNAME User")
+                   (group "users")
+                   (home-directory "/home/GEEX_USERNAME")
+                   (supplementary-groups '("wheel" "netdev"
+                                           "audio"
+                                           "video"
+                                           "input"
+                                           GEEX_NIX_GROUP_OPTIONAL
+                                           "tty"))
+                   (shell (file-append zsh "/bin/zsh"))) %base-user-accounts))
+
+    ;; Packages
+    (packages (append (map specification->package
+                           '("eza" "bat"
+                             "zoxide"
+                             GEEX_DOAS_PACKAGE_OPTIONAL
+                             GEEX_I3_PACKAGE_OPTIONAL
+                             GEEX_NAITRE_PACKAGE_OPTIONAL
+                             GEEX_XMONAD_PACKAGE_OPTIONAL
+                             "ripgrep"
+                             "grep"
+                             "coreutils"
+                             "file"
+                             "glibc-locales"
+                             "ncurses"
+                             "zsh"
+                             "git-minimal"
+                             "emacs-no-x"
+                             "usbutils"
+                             "pciutils"
+                             "wpa-supplicant"
+                             "dhcpcd"
+                             "naitre"
+                             "procps"
+                             "wget"
+                             "curl"
+                             "nss-certs"
+                             "bash"
+                             "sed"
+                             GEEX_EXTRA_PACKAGE_LIST_OPTIONAL
+                             "kitty"))))
+
+    ;; Services
+    (services
+     (append (list
+              GEEX_NIX_SERVICE_OPTIONAL
+              GEEX_HURD_SERVICE_OPTIONAL
+              GEEX_GNOME_SERVICE_OPTIONAL
+              GEEX_DOAS_SERVICE_OPTIONAL
+              GEEX_XORG_SERVICE_OPTIONAL
+             )
+
+             (modify-services %desktop-services
+               (gdm-service-type config =>
+                                 (gdm-configuration (inherit config)
+                                                    (wayland? #t)))
+               (guix-service-type config =>
+                                  (guix-configuration (inherit config)
+                                                      (substitute-urls (append
+                                                                        (list
+                                                                         "https://ci.guix.gnu.org"
+                                                                         "https://berlin.guix.gnu.org"
+                                                                         "https://bordeaux.guix.gnu.org"
+                                                                         "https://substitutes.nonguix.org"
+                                                                         "https://hydra-guix-129.guix.gnu.org"
+                                                                         "https://substitutes.guix.gofranz.com")
+                                                                        %default-substitute-urls))
+                                                      (authorized-keys (append
+                                                                        (list (local-file
+                                                                               "/etc/guix/files/keys/nonguix.pub"))
+                                                                        %default-authorized-guix-keys))))
+               (mingetty-service-type config =>
+                                      (mingetty-configuration (inherit config)
+                                                              (auto-login
+                                                               "GEEX_USERNAME"))))))))
+
+GEEX_OS_END_CALL_BLOCK
 EOF
 
 cat > /tmp/geex.config.desktop.template.dd <<'EOF'
@@ -717,8 +884,6 @@ cat > /tmp/geex.config.desktop.template.dd <<'EOF'
                              "wpa-supplicant"
                              "dhcpcd"
                              "naitre"
-                             "xmonad"
-                             "ghc-xmonad-contrib"
                              "procps"
                              "wget"
                              "curl"
@@ -1109,9 +1274,7 @@ cat > /tmp/geex.config.laptop.template.dd <<'EOF'
                              "wpa-supplicant"
                              "dhcpcd"
                              "naitre"
-                             "xmonad"
                              GEEX_EXTRA_PACKAGE_LIST_OPTIONAL
-                             "ghc-xmonad-contrib"
                              "procps"
                              "wget"
                              "curl"
@@ -1346,6 +1509,263 @@ channelPullHook() {
             exit 1
         fi
         export channelReport="Yes"
+    fi
+}
+kernelHook() {
+    if [[ -n "$GEEX_THE_HURD" ]] || [[ "$GEEX_THE_HURD" == 1 ]]; then
+        export hurdBlock="(kernel hurd)\n    (hurd hurd)\n    (server-services %base-services-hurd)\n"
+        sed -i "s|GEEX_KERNEL_OPTIONAL|$hurdBlock|g" /tmp/geex.config.${stager}.dd
+        sed -i "s|GEEX_INITRD_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+        sed -i "s|GEEX_FIRMWARE_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+        sed -i "s|ext4|ext2|g" /tmp/geex.config.${stager}.dd
+        sed -i "s|GEEX_NONFREE_MODULES_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+        return 0
+    fi
+    if lspci | grep -i intel | grep -i "wireless" >/dev/null; then
+        userWantsNonfreeKernel=$(dialog --backtitle "Geex Installer" --title "Kernel" --menu "Do you want to enable and install the non-free Linux Kernel, instead of the default Linux-Libre Kernel offered by GNU Guix?\n\nInfo: The installer detected an Intel Wireless or Ethernet Device in your machine, you may want to say 'Yes'." 20 50 10 \
+                                        yes "Yes (Recommended)" \
+                                        no "No" \
+                                        3>&1 1>&2 2>&3) || exit 1
+    else
+        userWantsNonfreeKernel=$(dialog --backtitle "Geex Installer" --title "Kernel" --menu "Do you want to enable and install the non-free Linux Kernel, instead of the default Linux-Libre Kernel offered by GNU Guix?\n\nInfo: The installer did not detect any proprietary Intel Wireless or Ethernet Device in your machine, however, it is still recommended to use the full Linux Kernel." 20 50 10 \
+                                        no "No" \
+                                        yes "Yes (Recommended)" \
+                                        3>&1 1>&2 2>&3) || exit 1
+    fi
+    if [[ "$userWantsNonfreeKernel" == "yes" ]]; then
+        export userWantsNonfreeKernel="yes"
+    elif [[ "$userWantsNonfreeKernel" == "no" ]]; then
+        export userWantsNonfreeKernel="no"
+    else
+        export userWantsNonfreeKernel="yes"
+    fi
+    if [[ -f "/tmp/geex.config.${stager}.dd" ]]; then
+        modulesNonfreeBlock="$(echo -e "             (nongnu packages linux)\n             (nongnu system linux-initrd)\n")"
+        kernelNonfreeBlock="$(echo -e "(kernel linux)")"
+        if [[ -f "/tmp/geex.kernel.block.dd" ]]; then
+            rm /tmp/geex.kernel.block.dd
+        fi
+        if [[ -f "/tmp/geex.kernel.modules.block.dd" ]]; then
+            rm /tmp/geex.kernel.modules.block.dd
+        fi
+        if [[ "$userWantsNonfreeKernel" == "yes" ]]; then
+            echo -e "    (kernel linux)" >> /tmp/geex.kernel.block.dd
+            #echo -e $kernelNonfreeBlock >> /tmp/geex.kernel.block.dd
+            sed -i "/GEEX_KERNEL_OPTIONAL/{
+                   r /tmp/geex.kernel.block.dd
+                   d
+                   }" /tmp/geex.config.${stager}.dd
+            export wroteKernelBlock="Yes (Non-Free)"
+            echo -e "             (nongnu packages linux)\n             (nongnu system linux-initrd)" >> /tmp/geex.kernel.modules.block.dd
+            #echo -e $modulesNonfreeBlock >> /tmp/geex.kernel.modules.block.dd
+            sed -i "/GEEX_NONFREE_MODULES_OPTIONAL/{
+                   r /tmp/geex.kernel.modules.block.dd
+                   d
+                   }" /tmp/geex.config.${stager}.dd
+            export initrd="(initrd microcode-initrd)"
+            export firmware="(firmware (append (list intel-microcode linux-firmware) %base-firmware))"
+            sed -i "s|GEEX_INITRD_OPTIONAL|$initrd|g" /tmp/geex.config.${stager}.dd
+            sed -i "s|GEEX_FIRMWARE_OPTIONAL|$firmware|g" /tmp/geex.config.${stager}.dd
+        elif [[ "$userWantsNonfreeKernel" == "no" ]]; then
+            sed -i "s|GEEX_KERNEL_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+            sed -i "s|GEEX_NONFREE_MODULES_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+            export wroteKernelBlock="Yes (Free)"
+            sed -i "s|GEEX_INITRD_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+            sed -i "s|GEEX_FIRMWARE_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+        elif [[ "$userWantsNonfreeKernel" != "yes" ]] && [[ "$userWantsNonfreeKernel" != "no" ]]; then
+            echo -e "    (kernel linux)" >> /tmp/geex.kernel.block.dd
+            #echo -e $kernelNonfreeBlock >> /tmp/geex.kernel.block.dd
+            sed -i "/GEEX_KERNEL_OPTIONAL/{
+                   r /tmp/geex.kernel.block.dd
+                   d
+                   }" /tmp/geex.config.${stager}.dd
+            export wroteKernelBlock="Yes (Fallback Non-Free)"
+            echo -e "             (nongnu packages linux)\n             (nongnu system linux-initrd)" >> /tmp/geex.kernel.modules.block.dd
+            #echo -e $modulesNonfreeBlock >> /tmp/geex.kernel.modules.block.dd
+            sed -i "/GEEX_NONFREE_MODULES_OPTIONAL/{
+                   r /tmp/geex.kernel.modules.block.dd
+                   d
+                   }" /tmp/geex.config.${stager}.dd
+            export initrd="(initrd microcode-initrd)"
+            export firmware="(firmware (append (list intel-microcode linux-firmware) %base-firmware))"
+            sed -i "s|GEEX_INITRD_OPTIONAL|$initrd|g" /tmp/geex.config.${stager}.dd
+            sed -i "s|GEEX_FIRMWARE_OPTIONAL|$firmware|g" /tmp/geex.config.${stager}.dd
+        else
+            errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "The Installer has encountered an error while trying to write the Kernel Block into your '/tmp/geex.config.${stager}.dd' configuration file. This error is not supposed to be possible to occur, so it is more than likely that you or someone else has tampered with this installers code before executing it, please make sure you are running the official Geex Installer." 34 75 3>&1 1>&2 2>&3)
+            export wroteKernelBlock="No"
+        fi
+    else
+        export wroteKernelBlock="No"
+        errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "The Installer has encountered an error while trying to write the Kernel Block into your '/tmp/geex.config.${stager}.dd' configuration file. This error is not supposed to be possible to occur, so it is more than likely that you or someone else has tampered with this installers code before executing it, please make sure you are running the official Geex Installer." 34 75 3>&1 1>&2 2>&3)
+    fi
+}
+xorgHook() {
+    if [[ "$userWantsNonfreeKernel" == "no" ]]; then
+        if [[ -f "/tmp/geex.xorg.optional.dd" ]]; then
+            rm /tmp/geex.xorg.optional.dd
+        fi
+        if [[ -n "$wroteXorgBlock" ]]; then
+            unset wroteXorgBlock
+        fi
+        echo -e "                   (set-xorg-configuration\n                    (xorg-configuration (keyboard-layout keyboard-layout)))\n" >> /tmp/geex.xorg.optional.dd
+        #echo -e $xorgBlockRegular >> /tmp/geex.xorg.optional.dd
+        sed -i "s|GEEX_NVIDIA_MODULES_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+        if [[ -f "/tmp/geex.xorg.nvidia.modules.optional.dd" ]]; then
+            rm /tmp/geex.xorg.nvidia.modules.optional.dd
+        fi
+        sed -i "/GEEX_XORG_SERVICE_OPTIONAL/{
+               r /tmp/geex.xorg.optional.dd
+               d
+               }" /tmp/geex.config.${stager}.dd
+        export wroteXorgBlock="Yes${wroteXorgBlock}"
+        return 0
+    fi
+    if [[ "$GEEX_THE_HURD" == 1 ]] || [[ -n "$GEEX_THE_HURD" ]]; then
+        sed -i "s|GEEX_NVIDIA_MODULES_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+        sed -i "s|GEEX_XORG_SERVICE_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+        return 0
+    fi
+    if lspci | grep -i nvidia >/dev/null; then
+        userWantsNvidia=$(dialog --backtitle "Geex Installer" --title "Nvidia" --menu "Do you want to enable and install proprietary Nvidia Drivers?" 14 50 10 \
+                                 yes "Yes" \
+                                 no "No" \
+                                 3>&1 1>&2 2>&3) || exit 1
+    else
+        userWantsNvidia=$(dialog --backtitle "Geex Installer" --title "Nvidia" --menu "Do you want to enable and install proprietary Nvidia Drivers?" 14 50 10 \
+                                 no "No" \
+                                 yes "Yes" \
+                                 3>&1 1>&2 2>&3) || exit 1
+    fi
+    if [[ "$userWantsNvidia" == "yes" ]]; then
+        export userWantsNvidia="yes"
+    elif [[ "$userWantsNvidia" == "no" ]]; then
+        export userWantsNvidia="no"
+    else
+        export userWantsNvidia="no"
+    fi
+    if [ -f "/tmp/geex.xorg.optional.dd" ]; then
+        rm /tmp/geex.xorg.optional.dd
+    fi
+    if [ -f "/tmp/geex.xorg.nvidia.modules.optional.dd" ]; then
+        rm /tmp/geex.xorg.nvidia.modules.optional.dd
+    fi
+    modulesBlockNvidia="$(echo -e "             (nongnu packages nvidia)\n             (nongnu services nvidia)\n             (nonguix transformations)\n")"
+    xorgBlockNvidia="$(echo -e "                   (set-xorg-configuration\n                    (xorg-configuration (keyboard-layout keyboard-layout)\n                                        (modules (cons nvidia-driver\n                                                       %default-xorg-modules))\n                                        (drivers '("nvidia"))))\n")"
+    xorgBlockRegular="$(echo -e "                   (set-xorg-configuration\n                    (xorg-configuration (keyboard-layout keyboard-layout)))\n")"
+    if [[ "$userWantsNvidia" == "yes" ]]; then
+        echo -e "             (nongnu packages nvidia)\n             (nongnu services nvidia)\n             (nonguix transformations)\n" >> /tmp/geex.xorg.nvidia.modules.optional.dd
+        echo -e "                   (set-xorg-configuration\n                    (xorg-configuration (keyboard-layout keyboard-layout)\n                                        (modules (cons nvidia-driver\n                                                       %default-xorg-modules))\n                                        (drivers '(\"nvidia\"))))\n" >> /tmp/geex.xorg.optional.dd
+        #echo $xorgBlockNvidia >> /tmp/geex.xorg.optional.dd
+        #echo $modulesBlockNvidia >> /tmp/geex.xorg.nvidia.modules.optional.dd
+        if [[ -n "$wroteXorgBlock" ]]; then
+            unset wroteXorgBlock
+        fi
+        export wroteXorgBlock=" (Nvidia)"
+        if [[ -f "/tmp/geex.config.${stager}.dd" ]]; then
+            sed -i "/GEEX_NVIDIA_MODULES_OPTIONAL/{
+                   r /tmp/geex.xorg.nvidia.modules.optional.dd
+                   d
+                   }" /tmp/geex.config.${stager}.dd
+        else
+            errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "The Installer has encountered a fatal Error:\n\nIt cannot find the '/tmp/geex.config.${stager}.dd' file to work with and insert the optional Nvidia Modules block. The Installer will now quit forcefully." 34 75 3>&1 1>&2 2>&3) || exit 1
+            echo "[ Error ]: Aborting..."
+            exit 1
+        fi
+    else
+        if [[ -n "$wroteXorgBlock" ]]; then
+            unset wroteXorgBlock
+        fi
+        echo -e "                   (set-xorg-configuration\n                    (xorg-configuration (keyboard-layout keyboard-layout)))\n" >> /tmp/geex.xorg.optional.dd
+        #echo -e $xorgBlockRegular >> /tmp/geex.xorg.optional.dd
+        sed -i "s|GEEX_NVIDIA_MODULES_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+        if [[ -f "/tmp/geex.xorg.nvidia.modules.optional.dd" ]]; then
+            rm /tmp/geex.xorg.nvidia.modules.optional.dd
+        fi
+    fi
+    if [[ -f "/tmp/geex.xorg.optional.dd" ]]; then
+        sed -i "/GEEX_XORG_SERVICE_OPTIONAL/{
+               r /tmp/geex.xorg.optional.dd
+               d
+               }" /tmp/geex.config.${stager}.dd
+        export wroteXorgBlock="Yes${wroteXorgBlock}"
+    elif [[ ! -f "/tmp/geex.xorg.optional.dd" ]]; then
+        export xorgBlockFallback="$(echo -e "                   (set-xorg-configuration\n                    (xorg-configuration (keyboard-layout keyboard-layout)))\n")"
+        if [ -f "/tmp/geex.xorg.optional.dd" ]; then
+            rm /tmp/geex.xorg.optional.dd
+        fi
+        echo -e "                   (set-xorg-configuration\n                    (xorg-configuration (keyboard-layout keyboard-layout)))\n" >> /tmp/geex.xorg.optional.dd
+        #echo -e $xorgBlockFallback >> /tmp/geex.xorg.optional.dd
+        sed -i "/GEEX_XORG_SERVICE_OPTIONAL/{
+               r /tmp/geex.xorg.optional.dd
+               d
+               }" /tmp/geex.config.${stager}.dd
+        if [ -f "/tmp/geex.xorg.optional.dd" ]; then
+            rm /tmp/geex.xorg.optional.dd
+        fi
+        export wroteXorgBlock="Yes (Fallback)"
+    else
+        export wroteXorgBlock="No"
+        errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "The Installer has encountered an error while trying to write the Xorg Block into your '/tmp/geex.config.${stager}.dd' configuration file. This error is not supposed to be possible to occur, so it is more than likely that you or someone else has tampered with this installers code before executing it, please make sure you are running the official Geex Installer." 34 75 3>&1 1>&2 2>&3)
+    fi
+}
+transformationsHook() {
+    if [[ "$userWantsNonfreeKernel" == "no" ]]; then
+        if [[ -f "/tmp/geex.compose.block.dd" ]]; then
+            rm /tmp/geex.compose.block.dd
+        fi
+        export composeBlock="$(echo -e "%guix-os")"
+        echo -e $composeBlock >> /tmp/geex.compose.block.dd
+        sed -i "/GEEX_OS_END_CALL_BLOCK/{
+               r /tmp/geex.compose.block.dd
+               d
+               }" /tmp/geex.config.${stager}.dd
+        export wroteOSEndBlock="Yes"
+        export wroteComposeBlock="No"
+        return 0
+    fi
+    if [[ "$GEEX_THE_HURD" == 1 ]] || [[ -n "$GEEX_THE_HURD" ]]; then
+        if [[ -f "/tmp/geex.compose.block.dd" ]]; then
+            rm /tmp/geex.compose.block.dd
+        fi
+        export composeBlock="$(echo -e "%guix-os")"
+        echo -e $composeBlock >> /tmp/geex.compose.block.dd
+        sed -i "/GEEX_OS_END_CALL_BLOCK/{
+               r /tmp/geex.compose.block.dd
+               d
+               }" /tmp/geex.config.${stager}.dd
+        export wroteOSEndBlock="Yes"
+        export wroteComposeBlock="No"
+        return 0
+    fi
+    if [[ "$userWantsNvidia" == "yes" ]]; then
+        if [[ -f "/tmp/geex.compose.block.dd" ]]; then
+            rm /tmp/geex.compose.block.dd
+        fi
+        export composeBlock="$(echo -e "((compose (nonguix-transformation-nvidia))\n %guix-os)")"
+        echo -e "((compose (nonguix-transformation-nvidia))\n %guix-os)" >> /tmp/geex.compose.block.dd
+        #echo -e $composeBlock >> /tmp/geex.compose.block.dd
+        sed -i "/GEEX_OS_END_CALL_BLOCK/{
+               r /tmp/geex.compose.block.dd
+               d
+               }" /tmp/geex.config.${stager}.dd
+        export wroteOSEndBlock="Yes"
+        export wroteComposeBlock="Yes"
+    elif [[ "$userWantsNvidia" == "no" ]]; then
+        if [[ -f "/tmp/geex.compose.block.dd" ]]; then
+            rm /tmp/geex.compose.block.dd
+        fi
+        export composeBlock="$(echo -e "%guix-os")"
+        echo -e $composeBlock >> /tmp/geex.compose.block.dd
+        sed -i "/GEEX_OS_END_CALL_BLOCK/{
+               r /tmp/geex.compose.block.dd
+               d
+               }" /tmp/geex.config.${stager}.dd
+        export wroteOSEndBlock="Yes"
+        export wroteComposeBlock="No"
+    else
+        errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "The Installer has encountered a fatal Error:\n\nIt cannot write the compose/os-end block to '/tmp/geex.config.${stager}.dd'. This could be because '/tmp' is read-only, doesn't exist, or someone tinkered with the code of this installer.\n\nPlease verify you can write to '/tmp', and that you are using the official Geex Installer. The installer will now forcefully quit." 34 75 3>&1 1>&2 2>&3) || exit 1
+        echo "[ Error ]: Aborting..."
+        exit 1
     fi
 }
 desktopEnvironmentsHook() {
@@ -2725,37 +3145,21 @@ installerHook() {
     if [ -f "/tmp/geex.detectedbios.dd" ]; then
         rm /tmp/geex.detectedbios.dd
     fi
-    systemsSelection
-    if [[ "$systemchoice" == "custom" ]]; then
-        export stager="custom"
-        if [ -f "/tmp/geex.config.${stager}.dd" ]; then
-            rm /tmp/geex.config.${stager}.dd
-        fi
-        if [ -f "/tmp/geex.config.${stager}.template.dd" ]; then
-            cp /tmp/geex.config.${stager}.template.dd /tmp/geex.config.${stager}.dd
-            echo "[ Status ]: Created writeable Stager Config"
-        else
-            echo "[ Warning ]: Stager Template not found."
-        fi
-        customStage2
-    else
-        export stager="$systemchoice"
-        if [ -f "/tmp/geex.config.${stager}.dd" ]; then
-            rm /tmp/geex.config.${stager}.dd
-        fi
-        if [ -f "/tmp/geex.config.${stager}.template.dd" ]; then
-            cp /tmp/geex.config.${stager}.template.dd /tmp/geex.config.${stager}.dd
-            echo "[ Status ]: Created writeable Stager Config"
-        else
-            echo "[ Warning ]: Stager Template not found."
-        fi
-        "${systemchoice}Stage2"
+    # New and Experimental Full Customization Setup
+    export systemchoice="custom"
+    export stager="custom"
+    if [ -f "/tmp/geex.config.${stager}.dd" ]; then
+        rm /tmp/geex.config.${stager}.dd
     fi
-    if [ "$GEEX_LIVE_MODE" == 1 ] && [ -z "$GEEX_LIVE_OVERRIDE" ]; then
-        livePreviewHook
+    if [ -f "/tmp/geex.config.${stager}.template.dd" ]; then
+        cp /tmp/geex.config.${stager}.template.dd /tmp/geex.config.${stager}.dd
+    else
+        errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "The Installer has encountered a fatal Error:\n\nThe '/tmp/geex.config.${stager}.template.dd' file was not found. This means the installer failed to generate/write the file at initialization, which is only possible if the '/tmp' filesystem is read-only or otherwise inaccessible. Please fix this before trying again!" 34 75 3>&1 1>&2 2>&3) || exit 1
+        echo "[ Error ]: Aborting..."
+        exit 1
     fi
     if [[ -n "$GEEX_THE_HURD" ]] || [[ "$GEEX_THE_HURD" == 1 ]]; then
-        kernelExists=$(cat /tmp/geex.config.${stager}.dd | grep "\(kernel linux\)")
+        kernelExists=$(cat /tmp/geex.config.${stager}.dd | grep "GEEX_KERNEL_OPTIONAL")
         if [[ "$kernelExists" != "" ]]; then
             export hurdBlock="(kernel hurd)\n    (hurd hurd)\n    (server-services %base-services-hurd)\n"
             sed -i "s|$kernelExists|$hurdBlock|g"
@@ -2764,6 +3168,38 @@ installerHook() {
     fi
     if [ -n "$GEEX_THE_HURD_ALLOW" ] || [ "$GEEX_THE_HURD_ALLOW" == 1 ]; then
         hurdNoticeImportant=$(dialog --backtitle "Geex Installer" --title "GNU Hurd" --msgbox "THIS IS YOUR LAST WARNING - TURN BACK NOW!\n\nYou have enable the environment variable 'GEEX_THE_HURD_ALLOW', this option ONLY exists, because I, the creator of this installer, want to give users FULL CONTROL, even if it is AGAINST THEIR OWN BEST INTEREST!\n\nDO NOT INSTALL GNU HURD AS YOUR MAIN SYSTEMS KERNEL!" 32 50 3>&1 1>&2 2>&3)
+    fi
+    #
+    # Old/Legacy Systemchoice Block
+    #
+    #systemsSelection
+    #if [[ "$systemchoice" == "custom" ]]; then
+    #    export stager="custom"
+    #    if [ -f "/tmp/geex.config.${stager}.dd" ]; then
+    #        rm /tmp/geex.config.${stager}.dd
+    #    fi
+    #    if [ -f "/tmp/geex.config.${stager}.template.dd" ]; then
+    #        cp /tmp/geex.config.${stager}.template.dd /tmp/geex.config.${stager}.dd
+    #        echo "[ Status ]: Created writeable Stager Config"
+    #    else
+    #        echo "[ Warning ]: Stager Template not found."
+    #    fi
+    #    customStage2
+    #else
+    #    export stager="$systemchoice"
+    #    if [ -f "/tmp/geex.config.${stager}.dd" ]; then
+    #        rm /tmp/geex.config.${stager}.dd
+    #    fi
+    #    if [ -f "/tmp/geex.config.${stager}.template.dd" ]; then
+    #        cp /tmp/geex.config.${stager}.template.dd /tmp/geex.config.${stager}.dd
+    #        echo "[ Status ]: Created writeable Stager Config"
+    #    else
+    #        echo "[ Warning ]: Stager Template not found."
+    #    fi
+    #    "${systemchoice}Stage2"
+    #fi
+    if [ "$GEEX_LIVE_MODE" == 1 ] && [ -z "$GEEX_LIVE_OVERRIDE" ]; then
+        livePreviewHook
     fi
     username=$(dialog --backtitle "Geex Installer" --title "Username" --inputbox "Enter your Username:" 8 40 \
                       3>&1 1>&2 2>&3) || exit 1
@@ -2827,6 +3263,9 @@ installerHook() {
             exit 1
         fi
     fi
+    kernelHook
+    xorgHook
+    transformationsHook
     swapQuestion
     disksHook
     biosHook
@@ -2880,35 +3319,26 @@ installerHook() {
         export diskPrefixedPartNameTextblock="${diskPrefixed}1 (guix-efi), ${diskPrefixed}2 (guix-root)"
     fi
     addCustomPackageHook
-    summaryTextContents="$(echo -e "Please verify all the information below is accurate and exactly as you selected/want it:\n - Username: $username\n - $username Password Set?: $areAllPasswordsSet\n - Root Password Set?: $areAllPasswordsSet\n - Root and $username Password Match?: $wasPasswordReUsed\n - Hostname: $hostname\n - Timezone: $TIMEZONE\n - Disk: $disk\n - Disk Parts: $diskPrefixedPartNameTextblock\n - Formatted Swap?: $formattedWithSwap\n - Wrote Swap?: $wroteSwapBlock\n - BIOS: $bios\n - Auto-Detected BIOS: $detectedBios\n - Keyboard: $keyboardInfo\n - Services: $serviceSelection\n - Desktops: $deSelection\n\nInternal Statistics:\n - Systemchoice: $systemchoice\n - Stager: $stager\n - Stagerfile: '/tmp/geex.config.${stager}.dd'\n\nWrote Blocks Status (Did the Installer Write ... X?):\n - BIOS Block?: ${wroteBiosBlock}\n - Filesystems?: $isFilesystemWritten\n - Services?: $areServicesWritten\n - Desktops?: $areDesktopsWritten\n - Keyboard?: $wroteKeyboardBlock (Found?: $foundKeyboardBlock)")"
+    summaryTextContents="$(echo -e "(1) Information\nUsername: $username\nHostname: $hostname\nTimezone: $TIMEZONE\nPasswords Set?: $areAllPasswordsSet (Re-Used?: $wasPasswordReUsed)\nDisk: $disk (Parts: $diskPrefixedPartNameTextblock)\nSwap: $formattedWithSwap\nBIOS: $bios (Detected: $detectedBios)\nKeyboard: $keyboardInfo\n\nServices: $serviceSelection\nDesktops: $deSelection\n\n(2) The Installer Wrote:\nSwap Block?: $wroteSwapBlock\nBIOS Block?: $wroteBiosBlock\nFilesystem Block?: $isFilesystemWritten\nServices Block?: $areServicesWritten\nDesktop Block?: $areDesktopsWritten\nKeyboard Block?: $wroteKeyboardBlock")"
+    #summaryTextContents="$(echo -e "Please verify all the information below is accurate and exactly as you selected/want it:\n - Username: $username\n - $username Password Set?: $areAllPasswordsSet\n - Root Password Set?: $areAllPasswordsSet\n - Root and $username Password Match?: $wasPasswordReUsed\n - Hostname: $hostname\n - Timezone: $TIMEZONE\n - Disk: $disk\n - Disk Parts: $diskPrefixedPartNameTextblock\n - Formatted Swap?: $formattedWithSwap\n - Wrote Swap?: $wroteSwapBlock\n - BIOS: $bios\n - Auto-Detected BIOS: $detectedBios\n - Keyboard: $keyboardInfo\n - Services: $serviceSelection\n - Desktops: $deSelection\n\nInternal Statistics:\n - Systemchoice: $systemchoice\n - Stager: $stager\n - Stagerfile: '/tmp/geex.config.${stager}.dd'\n\nWrote Blocks Status (Did the Installer Write ... X?):\n - BIOS Block?: ${wroteBiosBlock}\n - Filesystems?: $isFilesystemWritten\n - Services?: $areServicesWritten\n - Desktops?: $areDesktopsWritten\n - Keyboard?: $wroteKeyboardBlock (Found?: $foundKeyboardBlock)")"
     if [ -f "/tmp/geex.summary.dd" ]; then
         rm /tmp/geex.summary.dd
     fi
-    if [[ -n "$GEEX_THE_HURD" ]] || [[ "$GEEX_THE_HURD" == 1 ]]; then
-        export hurdBlock="(kernel hurd)\n    (hurd hurd)\n    (server-services %base-services-hurd)\n"
-        sed -i "s|GEEX_KERNEL_OPTIONAL|$hurdBlock|g"
-    fi
     echo "$summaryTextContents" >> /tmp/geex.summary.dd
-    summary=$(dialog --backtitle "Geex Installer" --title "Summary" --msgbox "$summaryTextContents" 34 75 3>&1 1>&2 2>&3) || exit 1
+    summary=$(dialog --backtitle "Geex Installer" --title "Summary" --msgbox "$summaryTextContents" 34 75 3>&1 1>&2 2>&3)
     if [ "$GEEX_THE_HURD" == 1 ]; then
-        sed -i "s|GEEX_KERNEL_OPTIONAL|$hurdBlock|g" /tmp/geex.config.${stager}.dd
-        sed -i "s|GEEX_INITRD_OPTIONAL||g" /tmp/geex.config.${stager}.dd
-        sed -i "s|GEEX_FIRMWARE_OPTIONAL||g" /tmp/geex.config.${stager}.dd
         sed -i "s|ext4|ext2|g" /tmp/geex.config.${stager}.dd
-    else
-        if [ "$systemchoice" == "libre" ] || [ "$stager" == "libre" ]; then
-            sed -i "s|GEEX_KERNEL_OPTIONAL||g" /tmp/geex.config.${stager}.dd
-            sed -i "s|GEEX_INITRD_OPTIONAL||g" /tmp/geex.config.${stager}.dd
-            sed -i "s|GEEX_FIRMWARE_OPTIONAL||g" /tmp/geex.config.${stager}.dd
-        else
-            export initrd="(initrd microcode-initrd)"
-            export firmware="(firmware (append (list intel-microcode linux-firmware) %base-firmware))"
-            sed -i "s|GEEX_KERNEL_OPTIONAL|\(kernel linux\)|g" /tmp/geex.config.${stager}.dd
-            sed -i "s|GEEX_INITRD_OPTIONAL|$initrd|g" /tmp/geex.config.${stager}.dd
-            sed -i "s|GEEX_FIRMWARE_OPTIONAL|$firmware|g" /tmp/geex.config.${stager}.dd
+    fi
+    if [[ -f "/tmp/geex.config.scm" ]]; then
+        rm /tmp/geex.config.scm
+    fi
+    if [[ -f "/tmp/geex.config.${stager}.dd" ]]; then
+        cp /tmp/geex.config.${stager}.dd /tmp/geex.config.scm
+        if command -v guix >/dev/null; then
+            guix style -f /tmp/geex.config.scm
         fi
     fi
-    configDisplay=$(dialog --backtitle "Geex Installer" --title "Written Configuration" --textbox "/tmp/geex.config.${stager}.dd" 34 75 3>&1 1>&2 2>&3) || exit 1
+    configDisplay=$(dialog --backtitle "Geex Installer" --title "Written Configuration (/tmp/geex.config.scm)" --textbox "/tmp/geex.config.scm" 34 75 3>&1 1>&2 2>&3) || exit 1
     if [ "$GEEX_LIVE_MODE" == 1 ]; then
         liveNotice=$(dialog --backtitle "Geex Installer" --title "Live Notice" --msgbox "You have been using Live Mode for the duration of this installation process. However, the install process is nearing its end, the Live Preview Windows will now be selectively killed, and the installation procedure will continue." 34 75 3>&1 1>&2 2>&3) || exit 1
         liveKillHook
