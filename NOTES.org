@@ -342,13 +342,26 @@ Use this to pin nonguix & guix channel to linux kernel 6.18.7 commit, so that no
               (first (lookup-inferior-packages inferior "linux" "6.18.7"))))
 )
 #+END_SRC
+*** PantherX Channel
+#+BEGIN_SRC guile
+(append (list
+         (channel
+          (name 'pantherx)
+          (url "https://codeberg.org/gofranz/panther.git")
+          (introduction
+           (make-channel-introduction
+            "54b4056ac571611892c743b65f4c47dc298c49da"
+            (openpgp-fingerprint
+             "A36A D41E ECC7 A871 1003  5D24 524F EB1A 9D33 C9CB")))))
+        %default-channels)
+#+END_SRC
 *** Bootloader
 **** Legacy/BIOS
 #+BEGIN_SRC emacs-lisp
 (bootloader (bootloader-configuration
              (keyboard-layout keyboard-layout)
              (bootloader grub-bootloader)
-             (targets '("/dev/sda1"))))
+             (targets '("/dev/sda"))))
 #+END_SRC
 **** (U)EFI
 #+BEGIN_SRC emacs-lisp
@@ -369,7 +382,8 @@ Labels can be attached afterwards via 'sudo e2label /dev/sda1 guix-root' or 'sud
                       (type "ext4")
                       (dependencies mapped-devices))
                      (file-system
-                      (device (uuid "PARTITION_1_UUID" 'fat32))
+                      (device (file-system-label "guix-efi"))
+                      ; or: (device (uuid "boot-partition-uuid" 'fat32))
                       (mount-point "/boot/efi")
                       (type "vfat")))
                %base-file-systems))
