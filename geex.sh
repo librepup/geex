@@ -2464,6 +2464,10 @@ addCustomPackageHook() {
     export finalCustomPkgListCleanup=$(echo "$finalCustomPkgListWithoutCommas" | tr ' ' '\n' | sort -u | xargs)
     export finalCustomPkgList=$(echo ${finalCustomPkgListCleanup//$'\n'/ })
     pkgListConfirmationText="$(echo -e "Please confirm that the list below contains all of the custom packages you selected (filtered through a 'guix search' to determine whether each package exists or not):\n\n$finalCustomPkgList\n\nNote that at this stage, the installer does not check whether a package you defined is already present in your system configuration file, please make sure you do not add duplicate packages.")"
+    if [[ "$finalCustomPkgList" == "" ]]; then
+        sed -i "/GEEX_EXTRA_PACKAGE_LIST_OPTIONAL/d" /tmp/geex.config.${stager}.dd
+        return 0
+    fi
     pkgListConfirmation=$(dialog --backtitle "Geex Installer" --title "Confirm Packages" --yesno "$pkgListConfirmationText" 34 75 3>&1 1>&2 2>&3)
     pkgListConfirmation_RESPONSE_CODE=$?
     if [ "$pkgListConfirmation_RESPONSE_CODE" -eq 0 ]; then
@@ -2475,7 +2479,7 @@ addCustomPackageHook() {
         export extraPackageList="$(echo -e "$finalCustomPkgList")"
         echo -e "[ Status ]: List was Confirmed, full List:\n'$extraPackageList'"
         if [[ "$extraPackageList" != "" ]] || [[ -n "$extraPackageList" ]]; then
-            export extraPackageListInsertable="$(echo -e "\nUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWU\"$extraPackageList\"" | sed "s/ /\"\n                             \"/g" | sed "s/UWU/ /g")"
+            export extraPackageListInsertable="$(echo -e "UWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWUUWU\"$extraPackageList\"" | sed "s/ /\"\n                             \"/g" | sed "s/UWU/ /g")"
             if [ -f "/tmp/geex.extra.packages.insertable.dd" ]; then
                 rm /tmp/geex.extra.packages.insertable.dd
             fi
@@ -2751,13 +2755,21 @@ installerHook() {
         export wasPasswordReUsed="No"
     fi
     if [ "$bios" == "legacy" ]; then
-        export diskPrefixedPartNameTextblock="${diskPrefixed}1 (guix-root)"
+        if [ "$userWantsSwap" == 1 ]; then
+            export diskPrefixedPartNameTextblock="${diskPrefixed}2 (guix-root)"
+        else
+            export diskPrefixedPartNameTextblock="${diskPrefixed}1 (guix-root)"
+        fi
     else
-        export diskPrefixedPartNameTextblock="${diskPrefixed}1 (guix-efi), ${diskPrefixed}2 (guix-root)"
+        if [ "$userWantsSwap" == 1 ]; then
+            export diskPrefixedPartNameTextblock="${diskPrefixed}2 (guix-efi), ${diskPrefixed}3 (guix-root)"
+        else
+            export diskPrefixedPartNameTextblock="${diskPrefixed}1 (guix-efi), ${diskPrefixed}2 (guix-root)"
+        fi
     fi
     packageBundlesHook
     addCustomPackageHook
-    summaryTextContents="$(echo -e "(1) Information\nUsername: $username\nHostname: $hostname\nTimezone: $TIMEZONE\nPasswords Set?: $areAllPasswordsSet (Re-Used?: $wasPasswordReUsed)\nDisk: $disk (Parts: $diskPrefixedPartNameTextblock)\nSwap: $formattedWithSwap\nBIOS: $bios (Detected: $detectedBios)\nKeyboard: $keyboardInfo\n\nServices: $serviceSelection\nDesktops: $deSelection\n\n(2) The Installer Wrote:\nSwap Block?: $wroteSwapBlock\nBIOS Block?: $wroteBiosBlock\nFilesystem Block?: $isFilesystemWritten\nServices Block?: $areServicesWritten\nDesktop Block?: $areDesktopsWritten\nKeyboard Block?: $wroteKeyboardBlock")"
+    summaryTextContents="$(echo -e "(1) Information\nUsername: $username\nHostname: $hostname\nTimezone: $TIMEZONE\nPasswords Set?: $areAllPasswordsSet (Re-Used?: $wasPasswordReUsed)\nDisk: $disk (Parts: $diskPrefixedPartNameTextblock)\nSwap: $formattedWithSwap\nBIOS: $bios (Detected: $detectedBios)\nKeyboard: $keyboardInfo\n\nServices: $serviceSelection\nDesktops: $deSelection\n\n(2) The Installer Wrote:\nSwap Block?: $wroteSwapBlock\nBIOS Block?: $wroteBiosBlock\nFilesystem Block?: $isFilesystemWritten\nServices Block?: $areServicesWritten\nDesktop Block?: $areDesktopsWritten\nKeyboard Block?: $wroteKeyboardBlock\nTimezone Block?: $wroteTimezoneBlock\nBundles Block?: $wroteBundles\nXorg Block?: $wroteXorgBlock\nClosing OS Block?: $wroteOSEndBlock (Compose?: $wroteComposeBlock)")"
     if [ -f "/tmp/geex.summary.dd" ]; then
         rm /tmp/geex.summary.dd
     fi
@@ -2838,8 +2850,8 @@ installerHook() {
                     hurdNotice=$(dialog --backtitle "Geex Installer" --title "GNU Hurd" --msgbox "Warning: Your disks have been formatted to be compatible with GNU Hurd 'the hurd'. This is not intended, not recommended, and most likely not even supported by your device. It is very likely that, if you GENUINELY set your system up to use GNU Hurd as its Kernel, your system WILL NOT BOOT!\n\nPlease consider this a Warning, exit the installer by pressing 'Ctrl+c' (or selecting 'Abort'/'No' at the next possible opportunity), and try again without variables like 'GEEX_THE_HURD' set." 32 0 3>&1 1>&2 2>&3)
                     export formattedDisksStatus="Hurd"
                 fi
+                export finishedMessage="$(echo -e "Final Report\n============\n(Use Arrow Keys to Scroll)\n\n(1) Information\nUsername: $username\nPasswords Set?: $areAllPasswordsSet (Re-Used?: $wasPasswordReUsed)\nHostname: $hostname\nTimezone: $TIMEZONE\nDisk: $disk (Parts: $diskPrefixedPartNameTextblock)\nBIOS: $bios (Detected: $detectedBios)\nSwap: $formattedWithSwap\nKeyboard: $keyboardInfo\nServices: $serviceSelection\nDesktops: $deSelection\n\n(2) The Installer Wrote\nSwap Block?: $wroteSwapBlock\nBIOS Block?: ${wroteBiosBlock}\nFilesystem Block?: $isFilesystemWritten\nService Block?: $areServicesWritten\nDesktop Block?: $areDesktopsWritten\nKeyboard Block?: $wroteKeyboardBlock\nTimezone Block?: $wroteTimezoneBlock\nBundles Block?: $wroteBundles\nXorg Block?: $wroteXorgBlock\nClosing OS Block?: $wroteOSEndBlock (Compose?: $wroteComposeBlock)\n\n(3) Other\nPulled Channels?: $channelReport\nCopied Home?: $homeStatus\nHome-Get Method?: $homeGetMethod\nFormatted Disks?: $formattedDisksStatus\nInstallation Path: '${geexMount}'\n\nFinish Installation?")"
                 if [ "$systemFinished" == 1 ]; then
-                    export finishedMessage="$(echo -e "Final Report\n============\n(Use Arrow Keys to Scroll)\n\nInformation:\n - Username: $username\n - $username Password Set?: $areAllPasswordsSet\n - Root Password Set?: $areAllPasswordsSet\n - Root and $username Password Match?: $wasPasswordReUsed\n - Hostname: $hostname\n - Timezone: $TIMEZONE\n - Disk: $disk\n - Disk Parts: $diskPrefixedPartNameTextblock\n - BIOS: $bios\n - Auto-Detected BIOS: $detectedBios\n - Swap?: $formattedWithSwap\n - Keyboard: $keyboardInfo\n - Services: $serviceSelection\n - Desktops: $deSelection\n\nInternal Statistics:\n - Systemchoice: $systemchoice\n - Stager: $stager\n - Stagerfile: '/tmp/geex.config.${stager}.dd'\n\nWrote Blocks Status (Did the Installer Write ... X?):\n - Swap Block?: $wroteSwapBlock\n - BIOS Block?: ${wroteBiosBlock}\n - Filesystems?: $isFilesystemWritten\n - Services?: $areServicesWritten\n - Desktops?: $areDesktopsWritten\n - Keyboard?: $wroteKeyboardBlock (Found?: $foundKeyboardBlock)\n\nOther:\n - Pulled Channels?: $channelReport\n - Copied Home?: $homeStatus\n - Home-Get Method?: $homeGetMethod\n - Formatted Disks?: $formattedDisksStatus\n - Installation Path: '${geexMount}'\n\nFinish Installation?")"
                     finishedNotice=$(dialog --backtitle "Geex Installer" --title "Finalization" --yesno "$finishedMessage" 40 124 \
                                             3>&1 1>&2 2>&3)
                     FINISHED_NOTICE_RESPONSE_CODE=$?
@@ -2857,14 +2869,14 @@ installerHook() {
                         clear
                         if [[ ! -f "/tmp/config.scm" ]]; then
                             cp /tmp/geex.config.${stager}.dd /tmp/config.scm
-                            if command -v guix; then
+                            if command -v guix >/dev/null; then
                                 guix style -f /tmp/config.scm
                                 echo -e "\n[ Style Notice ]: Styled '/tmp/config.scm'"
                             fi
                             echo -e "[ Notice ]: Copied your '/tmp/geex.config.${stager}.dd' to '/tmp/config.scm'."
                         else
                             rm /tmp/config.scm
-                            if command -v guix; then
+                            if command -v guix >/dev/null; then
                                 guix style -f /tmp/config.scm
                                 echo -e "\n[ Style Notice ]: Styled '/tmp/config.scm'"
                             fi
@@ -2878,7 +2890,6 @@ installerHook() {
                         hurdNotice=$(dialog --backtitle "Geex Installer" --title "GNU Hurd" --msgbox "Warning: Your disks have been formatted to be compatible with GNU Hurd 'the hurd'. This is not intended, not recommended, and most likely not even supported by your device. It is very likely that, if you GENUINELY set your system up to use GNU Hurd as its Kernel, your system WILL NOT BOOT!\n\nPlease consider this a Warning, exit the installer by pressing 'Ctrl+c' (or selecting 'Abort'/'No' at the next possible opportunity), and try again without variables like 'GEEX_THE_HURD' set." 32 0 3>&1 1>&2 2>&3)
                         export formattedDisksStatus="Hurd"
                     fi
-                    export finishedMessage="$(echo -e "Final Report\n============\n(Use Arrow Keys to Scroll)\n\nInformation:\n - Username: $username\n - $username Password Set?: $areAllPasswordsSet\n - Root Password Set?: $areAllPasswordsSet\n - Root and $username Password Match?: $wasPasswordReUsed\n - Hostname: $hostname\n - Timezone: $TIMEZONE\n - Disk: $disk\n - Disk Parts: $diskPrefixedPartNameTextblock\n - Swap?: $formattedWithSwap\n - BIOS: $bios\n - Auto-Detected BIOS: $detectedBios\n - Keyboard: $keyboardInfo\n - Services: $serviceSelection\n - Desktops: $deSelection\n\nInternal Statistics:\n - Systemchoice: $systemchoice\n - Stager: $stager\n - Stagerfile: '/tmp/geex.config.${stager}.dd'\n\nWrote Blocks Status (Did the Installer Write ... X?):\n - Swap Block?: $wroteSwapBlock\n - BIOS Block?: ${wroteBiosBlock}\n - Filesystems?: $isFilesystemWritten\n - Services?: $areServicesWritten\n - Desktops?: $areDesktopsWritten\n - Keyboard?: $wroteKeyboardBlock (Found?: $foundKeyboardBlock)\n\nOther:\n - Pulled Channels?: $channelReport\n - Copied Home?: $homeStatus\n - Home-Get Method?: $homeGetMethod\n - Formatted Disks?: $formattedDisksStatus\n - Installation Path: '${geexMount}'\n\nFinish Installation?")"
                     finishedNotice=$(dialog --backtitle "Geex Installer" --title "Finalization" --yesno "$finishedMessage" 40 124 \
                                             3>&1 1>&2 2>&3)
                     FINISHED_NOTICE_RESPONSE_CODE=$?
