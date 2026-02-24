@@ -83,7 +83,7 @@ done
 
 for arg in "$@"; do
     case "$arg" in
-        f|-f|--f|feat|-feat|--feat|features|-features|--features)
+        feat|-feat|--feat|features|-features|--features)
             echo -e \
                  "Geex FEATURES:
 
@@ -105,6 +105,7 @@ FEATURES provided by the Geex Installer:
     firmware
     services
     desktops
+    package bundles
     custom packages
     system initialization
     system installation
@@ -792,6 +793,37 @@ EOF
 
 
 # Setup Hooks
+escalationUtilHook() {
+    if [[ "$USER" == "root" ]]; then
+        export escalationUtil="none"
+        return 0
+    fi
+    if command -v doas >/dev/null; then
+        export escalationUtil="doas"
+    elif command -v sudo >/dev/null; then
+        export escalationUtil="sudo"
+    elif command -v su >/dev/null; then
+        export escalationUtil="su"
+    else
+        export escalationUtil="none"
+    fi
+}
+runWithEscalationUtil() {
+    case "$escalationUtil" in
+        "sudo"|"doas")
+            $escalationUtil "$@"
+            ;;
+        "su")
+            su root -c "$*"
+            ;;
+        "none")
+            "$@"
+            ;;
+        *)
+            "$@"
+            ;;
+    esac
+}
 checkMountPointHook() {
     export randomMountNum=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 12)
     export longRandomString=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 64)
@@ -839,6 +871,8 @@ checkMountPointHook() {
     fi
     if [ "$geexLastMountCheckResult" == "fatal" ] || [ "$GEEX_PRETEND_FATAL" == 1 ]; then
         errorMessage=$(dialog --backtitle "Geex Installer" --title "Fatal Error" --msgbox "The installer has encountered a fatal, un-recoverable error:\n - Every single possible mount-point (including ones with 64-symbol long randomly generated name) are already marked as used.\n\nThis is most certainly a problem with your system, filesystem permissions, or the result of someone having tampered with the code of this installer.\n\nPlease FIX THIS YOURSELF before trying again. The installer will now forcefully exit." 34 68 3>&1 1>&2 2>&3)
+        dialog --clear
+        clear
         exit 1
     fi
     if [ -n "$GEEX_VERBOSE_MODE" ] || [ "$GEEX_VERBOSE_MODE" == 1 ]; then
@@ -879,6 +913,8 @@ channelPullHook() {
                                       ignore "Ignore and Continue Anyways" \
                                       3>&1 1>&2 2>&3) || exit 1
                 if [ "$errorMessage" == "abort" ]; then
+                    dialog --clear
+                    clear
                     echo "[ Status ]: Aborting..."
                     exit 1
                 else
@@ -899,6 +935,8 @@ channelPullHook() {
                                       ignore "Ignore and Continue Anyways" \
                                       3>&1 1>&2 2>&3) || exit 1
                 if [ "$errorMessage" == "abort" ]; then
+                    dialog --clear
+                    clear
                     echo "[ Status ]: Aborting..."
                     exit 1
                 else
@@ -934,6 +972,8 @@ channelPullHook() {
                                   ignore "Ignore and Continue Anyways" \
                                   3>&1 1>&2 2>&3) || exit 1
             if [ "$errorMessage" == "abort" ]; then
+                dialog --clear
+                clear
                 echo "[ Status ]: Aborting..."
                 exit 1
             else
@@ -947,6 +987,8 @@ channelPullHook() {
                               continue "Continue Anyways" \
                               3>&1 1>&2 2>&3) || exit 1
         if [ "$errorMessage" == "abort" ]; then
+            dialog --clear
+            clear
             echo "[ Status ]: Aborting..."
             exit 1
         else
@@ -959,6 +1001,8 @@ channelPullHook() {
                             abort "Abort" \
                             3>&1 1>&2 2>&3) || exit 1
             if [ "$successMessage" == "abort" ]; then
+                dialog --clear
+                clear
                 echo "[ Status ]: Aborting..."
                 exit 1
             fi
@@ -970,6 +1014,8 @@ channelPullHook() {
                                 abort "Abort" \
                                 3>&1 1>&2 2>&3) || exit 1
         if [ "$successMessage" == "abort" ]; then
+            dialog --clear
+            clear
             echo "[ Status ]: Aborting..."
             exit 1
         fi
@@ -1126,6 +1172,8 @@ xorgHook() {
                    }" /tmp/geex.config.${stager}.dd
         else
             errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "The Installer has encountered a fatal Error:\n\nIt cannot find the '/tmp/geex.config.${stager}.dd' file to work with and insert the optional Nvidia Modules block. The Installer will now quit forcefully." 34 75 3>&1 1>&2 2>&3) || exit 1
+            dialog --clear
+            clear
             echo "[ Error ]: Aborting..."
             exit 1
         fi
@@ -1219,6 +1267,8 @@ transformationsHook() {
         export wroteComposeBlock="No"
     else
         errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "The Installer has encountered a fatal Error:\n\nIt cannot write the compose/os-end block to '/tmp/geex.config.${stager}.dd'. This could be because '/tmp' is read-only, doesn't exist, or someone tinkered with the code of this installer.\n\nPlease verify you can write to '/tmp', and that you are using the official Geex Installer. The installer will now forcefully quit." 34 75 3>&1 1>&2 2>&3) || exit 1
+        dialog --clear
+        clear
         echo "[ Error ]: Aborting..."
         exit 1
     fi
@@ -1299,6 +1349,12 @@ desktopEnvironmentsHook() {
         export finishedDesktopSetup=1
     else
         export finishedDesktopSetup=0
+    fi
+    if [ "$finishedDesktopSetup" == 0 ]; then
+        export areDesktopsWritten="No"
+        export deSelection="None"
+    else
+        export areDesktopsWritten="Yes"
     fi
 }
 serviceSetupHook() {
@@ -1401,6 +1457,12 @@ serviceSetupHook() {
     else
         export finishedServiceSetup=0
     fi
+    if [ "$finishedServiceSetup" == 0 ]; then
+        export areServicesWritten="No"
+        export serviceSelection="None"
+    else
+        export areServicesWritten="Yes"
+    fi
 }
 biosHook() {
     if [[ -d /sys/firmware/efi ]]; then
@@ -1408,21 +1470,18 @@ biosHook() {
     else
         export detectedBios="Legacy"
     fi
-    detectBiosNotice=$(dialog --backtitle "Geex Installer" --title "BIOS Auto-Detection" --menu "The Installer has detected that you are using '$detectedBios' as your BIOS type. You may want to select this option/BIOS type at the next questionnaire/menu selection." 32 50 10 \
-                              okay "Okay" \
-                    3>&1 1>&2 2>&3) || exit 1
+    detectBiosNotice=$(dialog --backtitle "Geex Installer" --title "BIOS Auto-Detection" --msgbox "The Installer has detected that you are using '$detectedBios' as your BIOS type. You may want to select this option/BIOS type at the next questionnaire/menu selection." 10 50 3>&1 1>&2 2>&3)
     if [ -f "/tmp/geex.detectedbios.dd" ]; then
         rm /tmp/geex.detectedbios.dd
     fi
-    #detectedBiosNotice=$(dialog --backtitle "Geex Installer" --title "BIOS Auto-Detection" --textbox "/tmp/geex.detectedbios.dd" 22 75 3>&1 1>&2 2>&3) || exit 1
     if [ "$detectedBios" == "Legacy" ]; then
-        bios=$(dialog --backtitle "Geex Installer" --title "BIOS" --menu "Select BIOS Type" 32 50 10 \
+        bios=$(dialog --backtitle "Geex Installer" --title "BIOS" --menu "Select BIOS Type" 10 60 10 \
                   legacy "Legacy" \
                   uefi "(U)EFI" \
                   3>&1 1>&2 2>&3) || exit 1
         export bios=$bios
     else
-        bios=$(dialog --backtitle "Geex Installer" --title "BIOS" --menu "Select BIOS Type" 32 50 10 \
+        bios=$(dialog --backtitle "Geex Installer" --title "BIOS" --menu "Select BIOS Type" 10 60 10 \
                   uefi "(U)EFI" \
                   legacy "Legacy" \
                   3>&1 1>&2 2>&3) || exit 1
@@ -1438,6 +1497,8 @@ disksHook() {
         disk=$(dialog --backtitle "Geex Installer" --title "Disk" --inputbox "Enter your Disk Name (e.g. '/dev/sda', '/dev/sdb', '/dev/nvme0n1'):" 8 40 \
                       3>&1 1>&2 2>&3) || exit 1
         if [ "$disk" == "" ]; then
+            dialog --clear
+            clear
             echo "[ Error ]: No Disk provided, aborting..."
             exit 1
         fi
@@ -1461,9 +1522,13 @@ disksHook() {
                                   okay "Okay" \
                                   3>&1 1>&2 2>&3) || exit 1
             if [ "$errorMessage" == "okay" ]; then
+                dialog --clear
+                clear
                 echo "[ Status ]: Aborting..."
                 exit 1
             else
+                dialog --clear
+                clear
                 echo "[ Status ]: You have somehow selected a non-existent option in the error message, this is not intended - please verify that the Geex installer's code has not been tampered with.\n[ Status ]: Aborting..."
                 exit 1
             fi
@@ -1491,57 +1556,42 @@ disksSetup() {
         fi
     else
         if [ "$bios" == "legacy" ]; then
-            if [ "$userWantsSwap" == 1 ]; then
-                sudo parted $disk --script \
+            if [[ "$userWantsSwap" == 1 ]] && [[ "$GEEX_THE_HURD" != 1 ]]; then
+                runWithEscalationUtil parted $disk --script \
                      mklabel msdos \
                      mkpart primary linux-swap 1MiB 4096MiB \
                      mkpart primary ext4 4096MiB 100% \
                      set 2 boot on
-                sudo mkswap -L guix-swap ${diskPrefixed}1
-                sudo swapon ${diskPrefixed}1
-                sudo mkfs.ext4 -L guix-root ${diskPrefixed}2
-                sudo mount ${diskPrefixed}2 ${geexMount}
+                runWithEscalationUtil mkswap -L guix-swap ${diskPrefixed}1
+                runWithEscalationUtil swapon ${diskPrefixed}1
+                runWithEscalationUtil mkfs.ext4 -L guix-root ${diskPrefixed}2
+                runWithEscalationUtil mount ${diskPrefixed}2 ${geexMount}
                 export formattedWithSwap="Yes"
                 export formattedDisksStatus=1
-            else
-                sudo parted $disk --script \
+            elif [[ "$userWantsSwap" != 1 ]] && [[ "$GEEX_THE_HURD" != 1 ]]; then
+                runWithEscalationUtil parted $disk --script \
                   mklabel msdos \
                   mkpart primary ext4 1MiB 100% \
                   set 1 boot on
-                sudo mkfs.ext4 -L guix-root ${diskPrefixed}1
-                sudo mount ${diskPrefixed}1 ${geexMount}
+                runWithEscalationUtil mkfs.ext4 -L guix-root ${diskPrefixed}1
+                runWithEscalationUtil mount ${diskPrefixed}1 ${geexMount}
                 export formattedWithSwap="No"
                 export formattedDisksStatus=1
-            fi
-            if [ "$GEEX_THE_HURD" == 1 ]; then
-                if [ "$userWantsSwap" == 1 ]; then
-                    sudo parted $disk --script \
-                         mklabel msdos \
-                         mkpart primary linux-swap 1MiB 4096MiB \
-                         mkpart primary ext2 4096 100% \
-                         set 2 boot on
-                    sudo mkswap -L guix-swap ${diskPrefixed}1
-                    sudo swapon ${diskPrefixed}1
-                    sudo mkfs.ext2 -L guix-root ${diskPrefixed}2
-                    sudo mount ${diskPrefixed}2 ${geexMount}
-                    export formattedWithSwap="Yes"
-                    export formattedDisksStatus=1
-                else
-                    sudo parted $disk --script \
-                         mklabel msdos \
-                         mkpart primary ext2 1MiB 100% \
-                         set 1 boot on
-                    sudo mkfs.ext2 -L guix-root ${diskPrefixed}1
-                    sudo mount ${diskPrefixed}1 ${geexMount}
-                    export formattedWithSwap="No"
-                    export formattedDisksStatus=1
-                fi
+            else
+                runWithEscalationUtil parted $disk --script \
+                     mklabel msdos \
+                     mkpart primary ext2 1MiB 100% \
+                     set 1 boot on
+                runWithEscalationUtil mkfs.ext2 -L guix-root ${diskPrefixed}1
+                runWithEscalationUtil mount ${diskPrefixed}1 ${geexMount}
+                export formattedDisksStatus=1
+                export formattedWithSwap="No"
                 export formattedHurd=1
             fi
         else
             # UEFI Logic
-            if [ "$userWantsSwap" == 1 ]; then
-                sudo parted $disk --script \
+            if [[ "$userWantsSwap" == 1 ]] && [[ "$GEEX_THE_HURD" != 1 ]]; then
+                runWithEscalationUtil parted $disk --script \
                      mklabel gpt \
                      mkpart primary linux-swap 1MiB 4096MiB \
                      name 1 guix-swap \
@@ -1550,74 +1600,57 @@ disksSetup() {
                      set 2 esp on \
                      mkpart primary ext4 6144MiB 100% \
                      name 3 guix-root
-                sudo mkswap -L guix-swap ${diskPrefixed}1
-                sudo swapon ${diskPrefixed}1
-                sudo mkfs.fat -F32 -n guix-efi ${diskPrefixed}2
-                sudo mkfs.ext4 -L guix-root ${diskPrefixed}3
-                sudo mount ${diskPrefixed}3 ${geexMount}
-                sudo mkdir -p ${geexMount}/boot/efi
-                sudo mount ${diskPrefixed}2 ${geexMount}/boot/efi
+                runWithEscalationUtil mkswap -L guix-swap ${diskPrefixed}1
+                runWithEscalationUtil swapon ${diskPrefixed}1
+                runWithEscalationUtil mkfs.fat -F32 -n guix-efi ${diskPrefixed}2
+                runWithEscalationUtil mkfs.ext4 -L guix-root ${diskPrefixed}3
+                runWithEscalationUtil mount ${diskPrefixed}3 ${geexMount}
+                runWithEscalationUtil mkdir -p ${geexMount}/boot/efi
+                runWithEscalationUtil mount ${diskPrefixed}2 ${geexMount}/boot/efi
                 export formattedWithSwap="Yes"
                 export formattedDisksStatus=1
-            else
-              sudo parted $disk --script \
+            elif [[ "$userWantsSwap" != 1 ]] && [[ "$GEEX_THE_HURD" != 1 ]]; then
+              runWithEscalationUtil parted $disk --script \
                   mklabel gpt \
                   mkpart ESP fat32 1MiB 2048MiB \
                   name 1 guix-efi \
                   set 1 esp on \
                   mkpart primary ext4 2048MiB 100% \
                   name 2 guix-root
-                sudo mkfs.fat -F32 -n guix-efi ${diskPrefixed}1
-                sudo mkfs.ext4 -L guix-root ${diskPrefixed}2
-                sudo mount ${diskPrefixed}2 ${geexMount}
-                sudo mkdir -p ${geexMount}/boot/efi
-                sudo mount ${diskPrefixed}1 ${geexMount}/boot/efi
+                runWithEscalationUtil mkfs.fat -F32 -n guix-efi ${diskPrefixed}1
+                runWithEscalationUtil mkfs.ext4 -L guix-root ${diskPrefixed}2
+                runWithEscalationUtil mount ${diskPrefixed}2 ${geexMount}
+                runWithEscalationUtil mkdir -p ${geexMount}/boot/efi
+                runWithEscalationUtil mount ${diskPrefixed}1 ${geexMount}/boot/efi
                 echo -e "\nFinished (U)EFI Formatting and Mounting\n"
                 export formattedDisksStatus=1
                 export formattedWithSwap="No"
-            fi
-            if [ "$GEEX_THE_HURD" == 1 ]; then
-                if [ "$userWantsSwap" == 1 ]; then
-                    sudo parted $disk --script \
-                         mklabel gpt \
-                         mkpart primary linux-swap 1MiB 4096MiB \
-                         name 1 guix-swap \
-                         mkpart ESP fat32 4096MiB 6144MiB \
-                         name 2 guix-efi \
-                         set 2 esp on \
-                         mkpart primary ext2 6144MiB 100% \
-                         name 3 guix-root
-                    sudo mkswap -L guix-swap ${diskPrefixed}1
-                    sudo swapon ${diskPrefixed}1
-                    sudo mkfs.fat -F32 -n guix-efi ${diskPrefixed}2
-                    sudo mkfs.ext2 -L guix-root ${diskPrefixed}3
-                    sudo mount ${diskPrefixed}3 ${geexMount}
-                    sudo mkdir -p ${geexMount}/boot/efi
-                    sudo mount ${diskPrefixed}2 ${geexMount}/boot/efi
-                    export formattedWithSwap="Yes"
-                    export formattedDisksStatus=1
-                else
-                    sudo parted $disk --script \
-                         mklabel gpt \
-                         mkpart ESP fat32 1MiB 2048MiB \
-                         name 1 guix-efi \
-                         set 1 esp on \
-                         mkpart primary ext2 2048MiB 100% \
-                         name 2 guix-root
-                    sudo mkfs.fat -F32 -n guix-efi ${diskPrefixed}1
-                    sudo mkfs.ext2 -L guix-root ${diskPrefixed}2
-                    sudo mount ${diskPrefixed}2 ${geexMount}
-                    sudo mkdir -p ${geexMount}/boot/efi
-                    sudo mount ${diskPrefixed}1 ${geexMount}/boot/efi
-                    export formattedDisksStatus=1
-                    export formattedWithSwap="No"
-                fi
+            else
+                runWithEscalationUtil parted $disk --script \
+                     mklabel gpt \
+                     mkpart ESP fat32 1MiB 2048MiB \
+                     set 1 esp on \
+                     name 1 guix-efi \
+                     mkpart primary ext2 2048MiB 100% \
+                     name 2 guix-root
+                runWithEscalationUtil mkfs.fat -F32 -n guix-efi ${diskPrefixed}1
+                runWithEscalationUtil mkfs.ext2 -L guix-root ${diskPrefixed}2
+                runWithEscalationUtil mount ${diskPrefixed}2 ${geexMount}
+                runWithEscalationUtil mkdir -p ${geexMount}/boot/efi
+                runWithEscalationUtil mount ${diskPrefixed}1 ${geexMount}/boot/efi
+                export formattedDisksStatus=1
+                export formattedWithSwap="No"
                 export formattedHurd=1
             fi
         fi
         if [[ "$formattedDisksStatus" != 1 ]]; then
             export formattedDisksStatus=0
         fi
+    fi
+    if [ "$wroteBiosBlock" == 0 ]; then
+        export wroteBiosBlock="No"
+    else
+        export wroteBiosBlock="Yes"
     fi
 }
 filesystemHook() {
@@ -1654,6 +1687,19 @@ filesystemHook() {
     if [ -f "/tmp/geex.filesystem.block.dd" ]; then
         rm /tmp/geex.filesystem.block.dd
     fi
+    if [[ "$GEEX_THE_HURD" == 1 ]] && [[ -n "$GEEX_THE_HURD" ]]; then
+        export filesystemBlockType="Hurd"
+        if [[ -n "$filesystemBlock" ]]; then
+            unset filesystemBlock
+        fi
+        if [[ "$bios" == "uefi" ]]; then
+            export filesystemBlock="$(echo -e "    (file-systems (cons* (file-system\n                           (mount-point \"/\")\n                           (device (file-system-label \"$rootPartName\"))\n                           (type \"ext2\"))\n                         (file-system\n                           (mount-point \"/boot/efi\")\n                           (device (file-system-label \"$efiPartName\"))\n                           (type \"vfat\")) %base-file-systems))\n")"
+        else
+            export filesystemBlock="$(echo -e "    (file-systems (cons* (file-system\n                           (mount-point \"/\")\n                           (device (file-system-label \"$rootPartName\"))\n                           (type \"ext2\")) %base-file-systems))\n")"
+        fi
+    else
+        export filesystemBlockType="GNU+Linux"
+    fi
     echo "$filesystemBlock" >> /tmp/geex.filesystem.block.dd
     if [ -f "/tmp/geex.config.${stager}.dd" ]; then
         sed -i "/GEEX_FILESYSTEM_OPTIONAL/{
@@ -1668,6 +1714,8 @@ filesystemHook() {
                               abort "Abort" \
                               3>&1 1>&2 2>&3) || exit 1
         if [ "$errorMessage" == "abort" ]; then
+            dialog --clear
+            clear
             echo "[ Status ]: Aborting..."
             exit 1
         fi
@@ -1699,6 +1747,11 @@ filesystemHook() {
             verboseNotice=$(dialog --backtitle "Geex Installer" --title "Verbose Notice" --msgbox "The Installer failed to write your filesystems block into the appropriate '/tmp/geex.config.${stager}.dd' file for unknown reasons.\n\nPlease investigate this!" 34 68 3>&1 1>&2 2>&3)
         fi
     fi
+    if [ "$wroteFilesystemBlock" == 0 ]; then
+        export isFilesystemWritten="No"
+    else
+        export isFilesystemWritten="Yes"
+    fi
 }
 biosLegacyEditHook() {
     export diskPrefixed=$diskPrefixed
@@ -1712,6 +1765,8 @@ biosLegacyEditHook() {
                                abort "Abort" \
                                3>&1 1>&2 2>&3) || exit 1
     if [ "$legacyBlockVerify" == "abort" ]; then
+        dialog --clear
+        clear
         echo "[ Status ]: Aborting..."
         exit 1
     fi
@@ -1730,6 +1785,8 @@ biosLegacyEditHook() {
                                     abort "Abort" \
                                     3>&1 1>&2 2>&3) || exit 1
             if [ "$successMessage" == "abort" ]; then
+                dialog --clear
+                clear
                 echo "[ Status ] Aborting..."
                 exit 1
             fi
@@ -1741,6 +1798,8 @@ biosLegacyEditHook() {
                               abort "Abort" \
                               3>&1 1>&2 2>&3) || exit 1
         if [ "$errorMessage" == "abort" ]; then
+            dialog --clear
+            clear
             echo "[ Status ]: Aborting..."
             exit 1
         fi
@@ -1755,6 +1814,8 @@ biosUefiEditHook() {
                              abort "Abort" \
                              3>&1 1>&2 2>&3) || exit 1
     if [ "$uefiBlockVerify" == "abort" ]; then
+        dialog --clear
+        clear
         echo "[ Status ]: Aborting..."
         exit 1
     fi
@@ -1773,6 +1834,8 @@ biosUefiEditHook() {
                                     abort "Abort" \
                                     3>&1 1>&2 2>&3) || exit 1
             if [ "$successMessage" == "abort" ]; then
+                dialog --clear
+                clear
                 echo "[ Status ] Aborting..."
                 exit 1
             fi
@@ -1784,6 +1847,8 @@ biosUefiEditHook() {
                               abort "Abort" \
                               3>&1 1>&2 2>&3) || exit 1
         if [ "$errorMessage" == "abort" ]; then
+            dialog --clear
+            clear
             echo "[ Status ]: Aborting..."
             exit 1
         fi
@@ -1794,6 +1859,11 @@ systemInstallHook() {
     echo "[ Status ]: Beginning formal GNU Guix installation..."
     if [ -n "$GEEX_DEBUG" ] || [ -n "$GEEX_DEBUG_MODE" ] || [[ "$GEEX_DEBUG" == 1 ]] || [[ "$GEEX_DEBUG_MODE" == 1 ]]; then
         echo "[ Status ]: Debug Mode Detected, pretending to install system..."
+        if [[ "$GEEX_VERBOSE_MODE" == 1 ]] && [[ -n "$GEEX_VERBOSE_MODE" ]]; then
+            if [[ -f "/tmp/geex.config.scm" ]]; then
+                verboseNotice=$(dialog --backtitle "Geex Installer" --title "Verbose Notice" --msgbox "The Installer has successfully copied and used your '/tmp/geex.config.scm' file for the system initialization and installation procedure." 34 68 3>&1 1>&2 2>&3)
+            fi
+        fi
     else
         if ! command -v herd >/dev/null; then
             echo "[ Error ]: Herd Missing, asking how to continue..."
@@ -1802,6 +1872,8 @@ systemInstallHook() {
                                   continue "Continue Anyways" \
                                   3>&1 1>&2 2>&3) || exit 1
             if [[ "$errorMessage" != "continue" ]] || [[ "$errorMessage" == "abort" ]]; then
+                dialog --clear
+                clear
                 echo "[ Status ]: Aborting..."
                 if [ -n "$GEEX_MISSING_HERD_IGNORE" ]; then
                     unset GEEX_MISSING_HERD_IGNORE
@@ -1815,13 +1887,20 @@ systemInstallHook() {
         if ! command -v herd >/dev/null && [[ "$GEEX_MISSING_HERD_IGNORE" != 1 ]]; then
             echo "[ Error ]: Herd Missing, asking how to continue..."
             errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "The Installer encountered an error: the 'herd' binary is missing, and the variable 'GEEX_MISSING_HERD_IGNORE' is not set (at all, or to '1'). The Installer will now forceably exit." 32 50 3>&1 1>&2 2>&3) || exit 1
+            dialog --clear
+            clear
             echo "[ Status ]: Aborting..."
             exit 1
         elif ! command -v herd >/dev/null && [[ "$GEEX_MISSING_HERD_IGNORE" == 1 ]]; then
             echo "[ Status ]: Ignoring missing 'herd' binary, continuing anyways..."
-            cp /tmp/geex.config.${stager}.dd /tmp/geex.config.${stager}.scm
+            if [[ ! -f "/tmp/geex.config.${stager}.scm" ]]; then
+                cp /tmp/geex.config.${stager}.dd /tmp/geex.config.${stager}.scm
+            fi
+            if [[ ! -f "/tmp/geex.config.scm" ]]; then
+                cp /tmp/geex.config.${stager}.scm /tmp/geex.config.scm
+            fi
             mkdir -p ${geexMount}/etc/guix
-            cp /tmp/geex.config.${stager}.scm ${geexMount}/etc/guix/config.scm
+            cp /tmp/geex.config.scm ${geexMount}/etc/guix/config.scm
             if [ -f "${geexMount}/etc/guix/config.scm" ]; then
                 export GEEX_GUIX_SYSTEM_INIT_CHECKFILE=/tmp/geex.guix.system.init.check.file.dd
                 export GEEX_GUIX_STYLE_CHECKFILE=/tmp/geex.guix.style.check.file.dd
@@ -1835,7 +1914,7 @@ systemInstallHook() {
                 if [ "$GEEX_THE_HURD" == 1 ] && [ -z "$GEEX_FORCE_THE_HURD" ]; then
                     errorMessage=$(dialog --backtitle "Geex Installer" --title "GNU Hurd" --msgbox "The Installer refused to initialize the GNU Guix system, because you have enabled 'GEEX_THE_HURD'. It is not intended to install GNU Guix with GNU Hurd 'the hurd' as your kernel. The Hurd does not support most hardware, is 32-bit only, and intended to be run inside a virtual machine.\n\nIf you want to experience GNU Hurd yourself, unset the variable 'GEEX_THE_HURD', restart the installer, and enable the 'GNU Hurd' service in the services selection.")
                 else
-                    guix system init ${geexMount}/etc/guix/config.scm ${geexMount} && touch $GEEX_GUIX_SYSTEM_INIT_CHECKFILE
+                    runWithEscalationUtil guix system init ${geexMount}/etc/guix/config.scm ${geexMount} && touch $GEEX_GUIX_SYSTEM_INIT_CHECKFILE
                 fi
                 if [[ ! -f "$GEEX_GUIX_STYLE_CHECKFILE" ]]; then
                     errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "The Installer failed to style the '/tmp/geex.config.${stager}.scm' file. This is either caused by the fact this file does not exist, or a problem with Guix itself (likely to happen if you do not have the 'guix' command available on your system).\n\nThis is not a fatal error, but it could pre-destine the installer to also fail at later stages that invole the 'guix' command, or other file operations.\n\nPlease investigate this error!" 34 75 3>&1 1>&2 2>&3) || exit 1
@@ -1849,6 +1928,8 @@ systemInstallHook() {
                                           ignore "No, Ignore and Keep Going" \
                                           3>&1 1>&2 2>&3) || exit 1
                     if [ "$errorMessage" == "okay" ]; then
+                        dialog --clear
+                        clear
                         echo "[ Status ]: Aborting..."
                         exit 1
                     fi
@@ -1867,7 +1948,10 @@ systemInstallHook() {
                 if [ "$GEEX_THE_HURD" == 1 ] && [ -z "$GEEX_THE_HURD_ALLOW" ]; then
                     errorMessage=$(dialog --backtitle "Geex Installer" --title "GNU Hurd" --msgbox "The Installer refused to initialize the GNU Guix system, because you have enabled 'GEEX_THE_HURD'. It is not intended to install GNU Guix with GNU Hurd 'the hurd' as your kernel. The Hurd does not support most hardware, is 32-bit only, and intended to be run inside a virtual machine.\n\nIf you want to experience GNU Hurd yourself, unset the variable 'GEEX_THE_HURD', restart the installer, and enable the 'GNU Hurd' service in the services selection.")
                 else
-                    guix system init /tmp/geex.config.${stager}.scm ${geexMount} && touch $GEEX_GUIX_SYSTEM_INIT_CHECKFILE
+                    if [[ ! -f "/tmp/geex.config.scm" ]]; then
+                        cp /tmp/geex.config.${stager}.scm /tmp/geex.config.scm
+                    fi
+                    runWithEscalationUtil guix system init /tmp/geex.config.scm ${geexMount} && touch $GEEX_GUIX_SYSTEM_INIT_CHECKFILE
                 fi
                 if [[ ! -f "$GEEX_GUIX_STYLE_CHECKFILE" ]]; then
                     errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "The Installer failed to style the '/tmp/geex.config.${stager}.scm' file. This is either caused by the fact this file does not exist, or a problem with Guix itself (likely to happen if you do not have the 'guix' command available on your system).\n\nThis is not a fatal error, but it could pre-destine the installer to also fail at later stages that invole the 'guix' command, or other file operations.\n\nPlease investigate this error!" 34 75 3>&1 1>&2 2>&3) || exit 1
@@ -1881,6 +1965,8 @@ systemInstallHook() {
                                           ignore "No, Ignore and Keep Going" \
                                           3>&1 1>&2 2>&3) || exit 1
                     if [ "$errorMessage" == "okay" ]; then
+                        dialog --clear
+                        clear
                         echo "[ Status ]: Aborting..."
                         exit 1
                     fi
@@ -1894,6 +1980,8 @@ systemInstallHook() {
                                       continue "Yes, still Continue" \
                                       3>&1 1>&2 2>&3) || exit 1
                 if [ "$errorMessage" == "abort" ]; then
+                    dialog --clear
+                    clear
                     echo "[ Status ]: Aborting..."
                     exit 1
                 fi
@@ -1901,9 +1989,14 @@ systemInstallHook() {
             fi
         else
             herd start cow-store ${geexMount}
-            cp /tmp/geex.config.${stager}.dd /tmp/geex.config.${stager}.scm
+            if [[ ! -f "/tmp/geex.config.${stager}.scm" ]]; then
+                cp /tmp/geex.config.${stager}.dd /tmp/geex.config.${stager}.scm
+            fi
+            if [[ ! -f "/tmp/geex.config.scm" ]]; then
+                cp /tmp/geex.config.${stager}.scm /tmp/geex.config.scm
+            fi
             mkdir -p ${geexMount}/etc/guix
-            cp /tmp/geex.config.${stager}.scm ${geexMount}/etc/guix/config.scm
+            cp /tmp/geex.config.scm ${geexMount}/etc/guix/config.scm
             if [ -f "${geexMount}/etc/guix/config.scm" ]; then
                 export GEEX_GUIX_SYSTEM_INIT_CHECKFILE=/tmp/geex.guix.system.init.check.file.dd
                 export GEEX_GUIX_STYLE_CHECKFILE=/tmp/geex.guix.style.check.file.dd
@@ -1917,7 +2010,7 @@ systemInstallHook() {
                 if [ "$GEEX_THE_HURD" == 1 ] && [ -z "$GEEX_FORCE_THE_HURD" ]; then
                     errorMessage=$(dialog --backtitle "Geex Installer" --title "GNU Hurd" --msgbox "The Installer refused to initialize the GNU Guix system, because you have enabled 'GEEX_THE_HURD'. It is not intended to install GNU Guix with GNU Hurd 'the hurd' as your kernel. The Hurd does not support most hardware, is 32-bit only, and intended to be run inside a virtual machine.\n\nIf you want to experience GNU Hurd yourself, unset the variable 'GEEX_THE_HURD', restart the installer, and enable the 'GNU Hurd' service in the services selection.")
                 else
-                    guix system init ${geexMount}/etc/guix/config.scm ${geexMount} && touch $GEEX_GUIX_SYSTEM_INIT_CHECKFILE
+                    runWithEscalationUtil guix system init ${geexMount}/etc/guix/config.scm ${geexMount} && touch $GEEX_GUIX_SYSTEM_INIT_CHECKFILE
                 fi
                 if [[ ! -f "$GEEX_GUIX_STYLE_CHECKFILE" ]]; then
                     errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "The Installer failed to style the '/tmp/geex.config.${stager}.scm' file. This is either caused by the fact this file does not exist, or a problem with Guix itself (likely to happen if you do not have the 'guix' command available on your system).\n\nThis is not a fatal error, but it could pre-destine the installer to also fail at later stages that invole the 'guix' command, or other file operations.\n\nPlease investigate this error!" 34 75 3>&1 1>&2 2>&3) || exit 1
@@ -1931,6 +2024,8 @@ systemInstallHook() {
                                           ignore "No, Ignore and Keep Going" \
                                           3>&1 1>&2 2>&3) || exit 1
                     if [ "$errorMessage" == "okay" ]; then
+                        dialog --clear
+                        clear
                         echo "[ Status ]: Aborting..."
                         exit 1
                     fi
@@ -1945,11 +2040,17 @@ systemInstallHook() {
                 if [ -f "$GEEX_GUIX_SYSTEM_INIT_CHECKFILE" ]; then
                     rm $GEEX_GUIX_SYSTEM_INIT_CHECKFILE
                 fi
-                guix style -f /tmp/geex.config.${stager}.scm && touch $GEEX_GUIX_STYLE_CHECKFILE
+                if [[ ! -f "/tmp/geex.config.${stager}.scm" ]]; then
+                    cp /tmp/geex.config.${stager}.dd /tmp/geex.config.${stager}.scm
+                fi
+                if [[ ! -f "/tmp/geex.config.scm" ]]; then
+                    cp /tmp/geex.config.${stager}.scm /tmp/geex.config.scm
+                fi
+                guix style -f /tmp/geex.config.scm && touch $GEEX_GUIX_STYLE_CHECKFILE
                 if [ "$GEEX_THE_HURD" == 1 ] && [ -z "$GEEX_THE_HURD_ALLOW" ]; then
                     errorMessage=$(dialog --backtitle "Geex Installer" --title "GNU Hurd" --msgbox "The Installer refused to initialize the GNU Guix system, because you have enabled 'GEEX_THE_HURD'. It is not intended to install GNU Guix with GNU Hurd 'the hurd' as your kernel. The Hurd does not support most hardware, is 32-bit only, and intended to be run inside a virtual machine.\n\nIf you want to experience GNU Hurd yourself, unset the variable 'GEEX_THE_HURD', restart the installer, and enable the 'GNU Hurd' service in the services selection.")
                 else
-                    guix system init /tmp/geex.config.${stager}.scm ${geexMount} && touch $GEEX_GUIX_SYSTEM_INIT_CHECKFILE
+                    runWithEscalationUtil guix system init /tmp/geex.config.scm ${geexMount} && touch $GEEX_GUIX_SYSTEM_INIT_CHECKFILE
                 fi
                 if [[ ! -f "$GEEX_GUIX_STYLE_CHECKFILE" ]]; then
                     errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "The Installer failed to style the '/tmp/geex.config.${stager}.scm' file. This is either caused by the fact this file does not exist, or a problem with Guix itself (likely to happen if you do not have the 'guix' command available on your system).\n\nThis is not a fatal error, but it could pre-destine the installer to also fail at later stages that invole the 'guix' command, or other file operations.\n\nPlease investigate this error!" 34 75 3>&1 1>&2 2>&3) || exit 1
@@ -1963,6 +2064,8 @@ systemInstallHook() {
                                           ignore "No, Ignore and Keep Going" \
                                           3>&1 1>&2 2>&3) || exit 1
                     if [ "$errorMessage" == "okay" ]; then
+                        dialog --clear
+                        clear
                         echo "[ Status ]: Aborting..."
                         exit 1
                     fi
@@ -1976,6 +2079,8 @@ systemInstallHook() {
                                       continue "Yes, still Continue" \
                                       3>&1 1>&2 2>&3) || exit 1
                 if [ "$errorMessage" == "abort" ]; then
+                    dialog --clear
+                    clear
                     echo "[ Status ]: Aborting..."
                     exit 1
                 fi
@@ -1983,6 +2088,46 @@ systemInstallHook() {
             fi
         fi
     fi
+}
+hostnameFunction() {
+    while true; do
+        hostname=$(dialog --backtitle "Geex Installer" --title "Hostname" --inputbox "Enter Hostname:" 8 40 \
+                          3>&1 1>&2 2>&3)
+        if [[ -n "$hostname" ]]; then
+            export hostname=$hostname
+            if [ -f "/tmp/geex.config.${stager}.dd" ]; then
+                sed -i "s/GEEX_HOSTNAME/$hostname/g" /tmp/geex.config.${stager}.dd
+            else
+                errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "File '/tmp/geex.config.${stager}.dd' was not found, thus the Installer did NOT set the Hostname to '$hostname'.\n\nThis Error is un-recoverable, and the installer will now forceably quit." 34 68 3>&1 1>&2 2>&3) || exit 1
+                dialog --clear
+                clear
+                echo "[ Error ]: Aborting..."
+                exit 1
+            fi
+            return 0
+        fi
+        dialog --backtitle "Geex Installer" --title "Error" --msgbox "You have either not provided a Hostname, or the provided Hostname was Invalid. Please try again and enter a valid (or any) Hostname." 32 50
+    done
+}
+usernameFunction() {
+    while true; do
+        username=$(dialog --backtitle "Geex Installer" --title "Username" --inputbox "Enter Username:" 8 40 \
+                          3>&1 1>&2 2>&3)
+        if [[ -n "$username" ]]; then
+            export username=$username
+            if [ -f "/tmp/geex.config.${stager}.dd" ]; then
+                sed -i "s/GEEX_USERNAME/$username/g" /tmp/geex.config.${stager}.dd
+            else
+                errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "File '/tmp/geex.config.${stager}.dd' was not found, thus the Installer did NOT set the Username to '$username'.\n\nThis Error is un-recoverable, and the installer will now forceably quit." 34 68 3>&1 1>&2 2>&3) || exit 1
+                dialog --clear
+                clear
+                echo "[ Error ]: Aborting..."
+                exit 1
+            fi
+            return 0
+        fi
+        dialog --backtitle "Geex Installer" --title "Error" --msgbox "You have either not provided a Username, or the provided Username was Invalid. Please try again and enter a valid (or any) Username." 32 50
+    done
 }
 passwordFunction() {
     while true; do
@@ -2016,7 +2161,7 @@ userPasswordFunction() {
 }
 passwordHook() {
     passwordFunction
-    uniqueUserPass=$(dialog --backtitle "Geex Installer" --title "User Password" --menu "Do you want to use the same password for the '$username' account?" 32 50 10 \
+    uniqueUserPass=$(dialog --backtitle "Geex Installer" --title "User Password" --menu "Do you want to use the same password for the '$username' account?" 12 50 10 \
                             yes "Yes" \
                             no "No" \
                             3>&1 1>&2 2>&3) || exit 1
@@ -2041,6 +2186,18 @@ passwordHook() {
         fi
     else
         export configuredPasswords=0
+    fi
+    if [ "$configuredPasswords" == 1 ]; then
+        export areAllPasswordsSet="Yes"
+    elif [ "$configuredPasswords" == 2 ]; then
+        export areAllPasswordsSet="Mock"
+    else
+        export areAllPasswordsSet="No"
+    fi
+    if [ "$reUsedRootPassword" == 1 ]; then
+        export wasPasswordReUsed="Yes"
+    else
+        export wasPasswordReUsed="No"
     fi
 }
 passwordApplyHook() {
@@ -2093,6 +2250,8 @@ homeHook() {
                                           abort "Abort" \
                                           3>&1 1>&2 2>&3) || exit 1
                     if [ "$errorMessage" == "abort" ]; then
+                        dialog --clear
+                        clear
                         echo "[ Status ]: Aborting..."
                         exit 1
                     fi
@@ -2137,6 +2296,8 @@ homeHook() {
                 export ignoredHomeErrorDueToDebug=1
                 export systemFinished=2
             else
+                dialog --clear
+                clear
                 echo "[ Status ]: Aborting..."
                 exit 1
             fi
@@ -2158,6 +2319,8 @@ timezoneHook() {
                               abort "Abort" \
                               3>&1 1>&2 2>&3) || exit 1
         if [ "$errorMessage" == "abort" ]; then
+            dialog --clear
+            clear
             echo "[ Status ]: Aborting..."
             exit 1
         fi
@@ -2210,6 +2373,8 @@ timezoneHook() {
                                   abort "Abort" \
                                   3>&1 1>&2 2>&3) || exit 1
             if [ "$errorMessage" == "abort" ]; then
+                dialog --clear
+                clear
                 echo "[ Status ]: Aborting..."
                 exit 1
             fi
@@ -2299,6 +2464,8 @@ keyboardHook() {
                               abort "Abort" \
                               3>&1 1>&2 2>&3) || exit 1
         if [ "$errorMessage" == "abort" ]; then
+            dialog --clear
+            clear
             echo "[ Status ]: Aborting..."
             exit 1
         fi
@@ -2331,6 +2498,8 @@ keyboardHook() {
                               continue "Continue despite Errors" \
                               3>&1 1>&2 2>&3) || exit 1
         if [ "$errorMessage" == "okay" ]; then
+            dialog --clear
+            clear
             echo "[ Status ]: Aborting..."
             exit 1
         fi
@@ -2440,6 +2609,8 @@ packageBundlesHook() {
         fi
     else
         errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "The Installer has encountered an un-recoverable Error:\n\nIt could not find the '/tmp/geex.config.${stager}.dd' file to write to. This is not supposed to happen. Please verify the installers code was not tinkered with, and that '/tmp' is writeable.\n\nThe Installer will now forcefully quit." 34 75 3>&1 1>&2 2>&3) || exit 1
+        dialog --clear
+        clear
         echo "[ Error ]: Aborting..."
         exit 1
     fi
@@ -2500,7 +2671,7 @@ addCustomPackageHook() {
     fi
 }
 swapQuestion() {
-    userSwapQuestion=$(dialog --backtitle "Geex Installer" --title "Swap Partition" --menu "Do you want to set up a 4GiB Swap Partition for your System?" 32 50 10 \
+    userSwapQuestion=$(dialog --backtitle "Geex Installer" --title "Swap Partition" --menu "Do you want to set up a 4GiB Swap Partition for your System?" 12 50 10 \
                            yes "Yes" \
                            no "No" \
                            3>&1 1>&2 2>&3) || exit 1
@@ -2521,17 +2692,82 @@ verifyDirectoryStatusHook() {
         fi
     fi
 }
+openConfigHook() {
+    openConfigQuestion=$(dialog --backtitle "Geex Installer" --title "Open Config" --menu "Do you want to open the current configuration file inside a text editor to make any last changes before the system initialization and installation?" 12 50 10 \
+                                no "No" \
+                                yes "Yes" \
+                                3>&1 1>&2 2>&3) || exit 1
+    if [[ "$openConfigQuestion" == "no" ]] || [[ "$openConfigQuestion" != "yes" ]]; then
+        return 0
+    fi
+    shopt -s expand_aliases
+    alias 9 >/dev/null 2>&1 && unalias 9
+    if command -v emacs >/dev/null; then
+        export openEditor="emacs"
+    elif command -v nixmacs >/dev/null; then
+        if [[ "$XDG_SESSION_TYPE" == "wayland" ]] || [[ -n "$WAYLAND_DISPLAY" ]]; then
+            export openEditor="nixmacs-wayland"
+        else
+            export openEditor="nixmacs"
+        fi
+    elif command -v vim >/dev/null; then
+        export openEditor="vim"
+    elif command -v nvim >/dev/null; then
+        export openEditor="nvim"
+    elif command -v nano >/dev/null; then
+        export openEditor="nano"
+    elif command -v vi >/dev/null; then
+        export openEditor="vi"
+    elif command -v 9 >/dev/null; then
+        if command -v whereis >/dev/null && command -v ls >/dev/null; then
+            local stage1=$(whereis 9 | awk '{print $2}')
+            local stage2=$(ls -la $stage1 | awk '{print $9}')
+            local stage3=$(echo $stage2 | sed "s|/bin/9|/plan9|g")
+            local stage4=$(ls -l -a $stage3 | grep -i acme)
+            if $stage4 >/dev/null; then
+                export openEditor="9 acme"
+            fi
+        fi
+    elif command -v helix >/dev/null; then
+        export openEditor="hx"
+    else
+        export openEditor="none"
+    fi
+    if [[ -n "$GEEX_EDITOR" ]] && [[ "$GEEX_EDITOR" != "" ]]; then
+        case "$GEEX_EDITOR" in
+            "vim"|"nvim"|"vi"|"nano"|"hx")
+                export openEditor="$GEEX_EDITOR"
+                ;;
+            "acme"|"9 acme"|"plan9"|"plan9port"|"9")
+                alias 9 >/dev/null 2>&1 && unalias 9
+                export openEditor="9 acme"
+                ;;
+            *)
+                export openEditor="$GEEX_EDITOR"
+                ;;
+        esac
+    fi
+    dialog --backtitle "Geex Installer" --title "Waiting..." --infobox "\n\nWaiting for Editor ($openEditor) to close..." 7 50
+    case "$openEditor" in
+        "$GEEX_EDITOR")
+            $openEditor /tmp/geex.config.scm
+            ;;
+        "vim"|"nvim"|"vi"|"nano"|"9 acme"|"hx"|"9 acme")
+            $openEditor /tmp/geex.config.scm
+            ;;
+        "emacs"|"nixmacs-wayland"|"nixmacs")
+            $openEditor -nw /tmp/geex.config.scm
+            ;;
+        *|"none")
+            errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "The Installer could not find any Text Editor on your Device, and thus was not able to run the Configuration File Editor Hook.\n\nThe Installer will continue as if you did not select to open the configuration File." 34 75 3>&1 1>&2 2>&3)
+            ;;
+    esac
+}
 
 # Installer Hooks
 installerHook() {
+    escalationUtilHook
     verifyDirectoryStatusHook
-    if [ "$compatibleDirectory" == 1 ] && [ -n "$GEEX_VERBOSE_MODE" ]; then
-        verboseNotice=$(dialog --backtitle "Geex Installer" --title "Verbose Notice" --msgbox "Detected the current directory the Geex Installer has been executed from as compatible, and containing all required files.\n\nCompatible directory path is: '$compatibleDirectoryPath'" 24 40 3>&1 1>&2 2>&3)
-    elif [[ "$compatibleDirectory" != 1 ]] && [[ -n "$GEEX_VERBOSE_MODE" ]]; then
-        verboseNotice=$(dialog --backtitle "Geex Installer" --title "Verbose Notice" --msgbox "Detected the current directory the Geex Installer has been executed from as INCOMPATIBLE!\n\nThe directory from which you executed the Geex Installer does not contain all required files and directories to be self-sustaining and be able to fall back on local files." 24 40 3>&1 1>&2 2>&3)
-    else
-        echo "[ Status ]: Unknown case experienced, ignoring..."
-    fi
     if [ -n "$GEEX_VERBOSE_MODE" ]; then
         verboseNotice=$(dialog --backtitle "Geex Installer" --title "Verbose Notice" --msgbox "The Installer has detected that you are running in Verbose Mode!\n\nYou will now see more popups and status messages as is the default, for the sake of debugging." 24 40 3>&1 1>&2 2>&3)
     fi
@@ -2573,34 +2809,33 @@ installerHook() {
         else
             export verboseWroteChannelsFile="No"
         fi
-        if [ -f "/tmp/geex.config.desktop.template.dd" ]; then
-            export verboseWroteDesktopTemplateFile="Yes"
+        if [ -f "/tmp/geex.config.custom.template.dd" ]; then
+            export verboseWroteCustomTemplateFile="Yes"
         else
-            export verboseWroteDesktopTemplateFile="No"
+            export verboseWroteCustomTemplateFile="No"
         fi
-        if [ -f "/tmp/geex.config.laptop.template.dd" ]; then
-            export verboseWroteLaptopTemplateFile="Yes"
+        if [[ "$escalationUtil" == "none" ]] && [[ "$USER" == "root" ]]; then
+            export verboseEscalationUtil="None (Root User Detected)"
+        elif [[ "$escalationUtil" == "none" ]] && [[ "$USER" != "root" ]]; then
+             export verboseEscalationUtil="None (Error)"
         else
-            export verboseWroteLaptopTemplateFile="No"
+            export verboseEscalationUtil="$escalationUtil"
         fi
-        if [ -f "/tmp/geex.config.minimal.template.dd" ]; then
-            export verboseWroteMinimalTemplateFile="Yes"
+        if [[ "$compatibleDirectory" == 1 ]]; then
+            export verboseCompatibleDirectory="Yes (Path: ${compatibleDirectoryPath})"
         else
-            export verboseWroteMinimalTemplateFile="No"
+            export verboseCompatibleDirectory="No"
         fi
-        if [ -f "/tmp/geex.config.libre.template.dd" ]; then
-            export verboseWroteLibreTemplateFile="Yes"
-        else
-            export verboseWroteLibreTemplateFile="No"
-        fi
-        verboseDefaultFileWriteStatusText="$(echo -e "Verbose Mode Detected, informing you of all default systems template files that were created, as well as checking for any leftover files from possible previous installation procedures.\n\n - Found Leftovers?: $verboseFoundLeftoverFiles\n\nThe Installer Wrote the following Files:\n\n - Channels?: $verboseWroteChannelsFile\n - Desktop Template?: $verboseWroteDesktopTemplateFile\n - Laptop Template?: $verboseWroteLaptopTemplateFile\n - Libre Template?: $verboseWroteLibreTemplateFile\n - Minimal Template?: $verboseWroteMinimalTemplateFile")"
+        verboseDefaultFileWriteStatusText="$(echo -e "Verbose Mode Detected, informing you of all default systems template files that were created, as well as checking for any leftover files from possible previous installation procedures.\n\n(1) General\nEscalation Util?: $verboseEscalationUtil\nCompatible Directory?: $verboseCompatibleDirectory\nFound Leftovers?: $verboseFoundLeftoverFiles\n\n(2) Installer Wrote Files\nChannels?: $verboseWroteChannelsFile\nCustom Template?: $verboseWroteCustomTemplateFile")"
         verboseNotice=$(dialog --backtitle "Geex Installer" --title "Verbose Notice" --msgbox "$verboseDefaultFileWriteStatusText" 34 68 3>&1 1>&2 2>&3)
     fi
-    welcome=$(dialog --backtitle "Geex Installer" --title "Welcome" --menu "Welcome to the (still experimental) Geex Installer, this Installer will help you to install the Geex Configuration Files onto real Hardware, or install a custom version of Guix, with your very own Configuration Files, to a system of your choice.\n\nThis Installer is pre-alpha code, so please follow instructions carefully when given, and verify everything worked after the installation finishes.\n\nTo begin, click 'I agree'." 32 50 10 \
+    welcome=$(dialog --backtitle "Geex Installer" --title "Welcome" --menu "Welcome to the (still experimental) Geex Installer, this Installer will help you to install the Geex Configuration Files onto real Hardware, or install a custom version of Guix, with your very own Configuration Files, to a system of your choice.\n\nThis Installer is pre-alpha code, so please follow instructions carefully when given, and verify everything worked after the installation finishes.\n\nTo begin, click 'I agree'." 22 60 10 \
                                 agree "I agree" \
                                 abort "Abort" \
                                 3>&1 1>&2 2>&3) || exit 1
     if [[ "$welcome" != "agree" ]]; then
+        dialog --clear
+        clear
         echo "[ Status ]: Aborting..."
         exit 1
     fi
@@ -2625,16 +2860,10 @@ installerHook() {
         cp /tmp/geex.config.${stager}.template.dd /tmp/geex.config.${stager}.dd
     else
         errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "The Installer has encountered a fatal Error:\n\nThe '/tmp/geex.config.${stager}.template.dd' file was not found. This means the installer failed to generate/write the file at initialization, which is only possible if the '/tmp' filesystem is read-only or otherwise inaccessible. Please fix this before trying again!" 34 75 3>&1 1>&2 2>&3) || exit 1
+        dialog --clear
+        clear
         echo "[ Error ]: Aborting..."
         exit 1
-    fi
-    if [[ -n "$GEEX_THE_HURD" ]] || [[ "$GEEX_THE_HURD" == 1 ]]; then
-        kernelExists=$(cat /tmp/geex.config.${stager}.dd | grep "GEEX_KERNEL_OPTIONAL")
-        if [[ "$kernelExists" != "" ]]; then
-            export hurdBlock="(kernel hurd)\n    (hurd hurd)\n    (server-services %base-services-hurd)\n"
-            sed -i "s|$kernelExists|$hurdBlock|g"
-        fi
-        hurdNotice=$(dialog --backtitle "Geex Instaler" --title "GNU Hurd" --msgbox "WARNING: You just replaced your 'linux' kernel with the GNU Hurd 'the hurd' kernel.\n\nThe Hurd only supports 32-bit, is very limited in terms of hardware support, and almost un-usable outside of a virtual machine. This replacement hook is more of an easter-egg, or a little memory hook to know how someone WOULD use the hurd on GNU Guix IF they wanted to.\n\nThis is not meant to actually be used, please exit the installer, unset the 'GEEX_THE_HURD' variable, and try again." 32 50 3>&1 1>&2 2>&3)
     fi
     if [ -n "$GEEX_THE_HURD_ALLOW" ] || [ "$GEEX_THE_HURD_ALLOW" == 1 ]; then
         hurdNoticeImportant=$(dialog --backtitle "Geex Installer" --title "GNU Hurd" --msgbox "THIS IS YOUR LAST WARNING - TURN BACK NOW!\n\nYou have enable the environment variable 'GEEX_THE_HURD_ALLOW', this option ONLY exists, because I, the creator of this installer, want to give users FULL CONTROL, even if it is AGAINST THEIR OWN BEST INTEREST!\n\nDO NOT INSTALL GNU HURD AS YOUR MAIN SYSTEMS KERNEL!" 32 50 3>&1 1>&2 2>&3)
@@ -2642,44 +2871,8 @@ installerHook() {
     if [ "$GEEX_LIVE_MODE" == 1 ] && [ -z "$GEEX_LIVE_OVERRIDE" ]; then
         livePreviewHook
     fi
-    username=$(dialog --backtitle "Geex Installer" --title "Username" --inputbox "Enter your Username:" 8 40 \
-                      3>&1 1>&2 2>&3) || exit 1
-    if [ "$username" == "" ]; then
-        echo "[ Error ]: No Username provided, aborting..."
-        exit 1
-    else
-        if [ -f "/tmp/geex.config.${stager}.dd" ]; then
-            sed -i "s/GEEX_USERNAME/$username/g" /tmp/geex.config.${stager}.dd
-        else
-            errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --menu "File '/tmp/geex.config.${stager}.dd' was not found, thus the Installer did NOT set the Username to '$username'." 32 50 10 \
-                                  continue "Continue anyways" \
-                                  abort "Abort" \
-                                  3>&1 1>&2 2>&3) || exit 1
-            if [ "$errorMessage" == "abort" ]; then
-                echo "[ Status ]: Aborting..."
-                exit 1
-            fi
-        fi
-    fi
-    hostname=$(dialog --backtitle "Geex Installer" --title "Hostname" --inputbox "Enter your Hostname:" 8 40 \
-                      3>&1 1>&2 2>&3) || exit 1
-    if [ "$hostname" == "" ]; then
-        echo "[ Error ]: No Hostname provided, aborting..."
-        exit 1
-    else
-        if [ -f "/tmp/geex.config.${stager}.dd" ]; then
-            sed -i "s/GEEX_HOSTNAME/$hostname/g" /tmp/geex.config.${stager}.dd
-        else
-            errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --menu "File '/tmp/geex.config.${stager}.dd' was not found, thus the Installer did NOT set the Hostname to '$hostname'." 32 50 10 \
-                                  continue "Continue anyways" \
-                                  abort "Abort" \
-                                  3>&1 1>&2 2>&3) || exit 1
-            if [ "$errorMessage" == "abort" ]; then
-                echo "[ Status ]: Aborting..."
-                exit 1
-            fi
-        fi
-    fi
+    usernameFunction
+    hostnameFunction
     if [ -n "$GEEX_VERBOSE_MODE" ] || [ "$GEEX_VERBOSE_MODE" == 1 ]; then
         verboseUsernameBlock=$(cat /tmp/geex.config.${stager}.dd | grep "name" | grep "$username" | sed "s/^[ \t]*//g")
         verboseHostnameBlock=$(cat /tmp/geex.config.${stager}.dd | grep "$hostname" | sed "s/^[ \t]*//g")
@@ -2700,6 +2893,8 @@ installerHook() {
                              abort "Abort" \
                              3>&1 1>&2 2>&3) || exit 1
         if [ "$noticePopup" == "abort" ]; then
+            dialog --clear
+            clear
             echo "[ Status ]: Aborting..."
             exit 1
         fi
@@ -2707,7 +2902,11 @@ installerHook() {
     kernelHook
     xorgHook
     transformationsHook
-    swapQuestion
+    if [[ "$GEEX_THE_HURD" == 1 ]] && [[ -n "$GEEX_THE_HURD" ]]; then
+        export userWantsSwap=0
+    else
+        swapQuestion
+    fi
     disksHook
     biosHook
     if [ "$bios" == "legacy" ]; then
@@ -2716,68 +2915,35 @@ installerHook() {
         biosUefiEditHook
     fi
     disksSetup
-    if [ "$wroteBiosBlock" == 0 ]; then
-        export wroteBiosBlock="No"
-    else
-        export wroteBiosBlock="Yes"
-    fi
     filesystemHook
     serviceSetupHook
-    if [ "$wroteFilesystemBlock" == 0 ]; then
-        export isFilesystemWritten="No"
-    else
-        export isFilesystemWritten="Yes"
-    fi
-    if [ "$finishedServiceSetup" == 0 ]; then
-        export areServicesWritten="No"
-        export serviceSelection="None"
-    else
-        export areServicesWritten="Yes"
-    fi
     desktopEnvironmentsHook
-    if [ "$finishedDesktopSetup" == 0 ]; then
-        export areDesktopsWritten="No"
-        export deSelection="None"
-    else
-        export areDesktopsWritten="Yes"
-    fi
     passwordHook
-    if [ "$configuredPasswords" == 1 ]; then
-        export areAllPasswordsSet="Yes"
-    elif [ "$configuredPasswords" == 2 ]; then
-        export areAllPasswordsSet="Mock"
-    else
-        export areAllPasswordsSet="No"
-    fi
-    if [ "$reUsedRootPassword" == 1 ]; then
-        export wasPasswordReUsed="Yes"
-    else
-        export wasPasswordReUsed="No"
-    fi
     if [ "$bios" == "legacy" ]; then
-        if [ "$userWantsSwap" == 1 ]; then
+        if [[ "$userWantsSwap" == 1 ]] && [[ "$GEEX_THE_HURD" != 1 ]]; then
             export diskPrefixedPartNameTextblock="${diskPrefixed}2 (guix-root)"
-        else
+        elif [[ "$userWantsSwap" != 1 ]] && [[ "$GEEX_THE_HURD" != 1 ]]; then
             export diskPrefixedPartNameTextblock="${diskPrefixed}1 (guix-root)"
+        else
+            export diskPrefixedPartNameTextblock="${diskPrefixed}1 (guix-root) (hurd)"
         fi
     else
-        if [ "$userWantsSwap" == 1 ]; then
+        if [[ "$userWantsSwap" == 1 ]] && [[ "$GEEX_THE_HURD" != 1 ]]; then
             export diskPrefixedPartNameTextblock="${diskPrefixed}2 (guix-efi), ${diskPrefixed}3 (guix-root)"
-        else
+        elif [[ "$userWantsSwap" != 1 ]] && [[ "$GEEX_THE_HURD" != 1 ]]; then
             export diskPrefixedPartNameTextblock="${diskPrefixed}1 (guix-efi), ${diskPrefixed}2 (guix-root)"
+        else
+            export diskPrefixedPartNameTextblock="${diskPrefixed}1 (guix-efi), ${diskPrefixed}2 (guix-root) (hurd)"
         fi
     fi
     packageBundlesHook
     addCustomPackageHook
-    summaryTextContents="$(echo -e "(1) Information\nUsername: $username\nHostname: $hostname\nTimezone: $TIMEZONE\nPasswords Set?: $areAllPasswordsSet (Re-Used?: $wasPasswordReUsed)\nDisk: $disk (Parts: $diskPrefixedPartNameTextblock)\nSwap: $formattedWithSwap\nBIOS: $bios (Detected: $detectedBios)\nKeyboard: $keyboardInfo\n\nServices: $serviceSelection\nDesktops: $deSelection\n\n(2) The Installer Wrote:\nSwap Block?: $wroteSwapBlock\nBIOS Block?: $wroteBiosBlock\nFilesystem Block?: $isFilesystemWritten\nServices Block?: $areServicesWritten\nDesktop Block?: $areDesktopsWritten\nKeyboard Block?: $wroteKeyboardBlock\nTimezone Block?: $wroteTimezoneBlock\nBundles Block?: $wroteBundles\nXorg Block?: $wroteXorgBlock\nClosing OS Block?: $wroteOSEndBlock (Compose?: $wroteComposeBlock)")"
+    summaryTextContents="$(echo -e "(1) Information\nUsername: $username\nHostname: $hostname\nTimezone: $TIMEZONE\nPasswords Set?: $areAllPasswordsSet (Re-Used?: $wasPasswordReUsed)\nDisk: $disk (Parts: $diskPrefixedPartNameTextblock)\nSwap: $formattedWithSwap\nBIOS: $bios (Detected: $detectedBios)\nKeyboard: $keyboardInfo\n\n(2) Multiple-Choice\nServices: $serviceSelection\nDesktops: $deSelection\n\n(3) The Installer Wrote\nSwap Block?: $wroteSwapBlock\nBIOS Block?: $wroteBiosBlock\nFilesystem Block?: $isFilesystemWritten (Type: $filesystemBlockType)\nServices Block?: $areServicesWritten\nDesktop Block?: $areDesktopsWritten\nKeyboard Block?: $wroteKeyboardBlock\nTimezone Block?: $wroteTimezoneBlock\nBundles Block?: $wroteBundles\nXorg Block?: $wroteXorgBlock\nClosing OS Block?: $wroteOSEndBlock (Compose?: $wroteComposeBlock)")"
     if [ -f "/tmp/geex.summary.dd" ]; then
         rm /tmp/geex.summary.dd
     fi
     echo "$summaryTextContents" >> /tmp/geex.summary.dd
     summary=$(dialog --backtitle "Geex Installer" --title "Summary" --msgbox "$summaryTextContents" 34 75 3>&1 1>&2 2>&3)
-    if [ "$GEEX_THE_HURD" == 1 ]; then
-        sed -i "s|ext4|ext2|g" /tmp/geex.config.${stager}.dd
-    fi
     if [[ -f "/tmp/geex.config.scm" ]]; then
         rm /tmp/geex.config.scm
     fi
@@ -2792,7 +2958,8 @@ installerHook() {
         liveNotice=$(dialog --backtitle "Geex Installer" --title "Live Notice" --msgbox "You have been using Live Mode for the duration of this installation process. However, the install process is nearing its end, the Live Preview Windows will now be selectively killed, and the installation procedure will continue." 34 75 3>&1 1>&2 2>&3) || exit 1
         liveKillHook
     fi
-    confirmation=$(dialog --backtitle "Geex Installer" --title "Confirmation" --menu "Have you confirmed whether or not all the information provided is correct? If so, would you like to begin the installation now?" 32 50 10 \
+    openConfigHook
+    confirmation=$(dialog --backtitle "Geex Installer" --title "Confirmation" --menu "Have you confirmed whether or not all the information provided is correct? If so, would you like to begin the installation now?" 12 60 10 \
                           yes "Yes, begin Installation" \
                           no "No, Abort" \
                           3>&1 1>&2 2>&3) || exit 1
@@ -2800,6 +2967,8 @@ installerHook() {
         channelPullHook
         systemInstallHook
     else
+        dialog --clear
+        clear
         echo "[ Status ]: Aborting..."
         exit 1
     fi
@@ -2809,6 +2978,8 @@ installerHook() {
                          abort "Abort" \
                          3>&1 1>&2 2>&3) || exit 1
         if [ "$success" == "abort" ]; then
+            dialog --clear
+            clear
             echo "[ Status ]: Aborting..."
             exit 1
         fi
@@ -2862,26 +3033,36 @@ installerHook() {
                         export finishedNoticeAnswer="no"
                     fi
                     if [ "$finishedNoticeAnswer" == "no" ]; then
+                        dialog --clear
+                        clear
                         echo "[ Status ]: Aborting..."
                         exit 1
                     else
                         dialog --clear
                         clear
                         if [[ ! -f "/tmp/config.scm" ]]; then
-                            cp /tmp/geex.config.${stager}.dd /tmp/config.scm
+                            if [ -f "/tmp/geex.config.scm" ]; then
+                                cp /tmp/geex.config.scm /tmp/config.scm
+                            else
+                                cp /tmp/geex.config.${stager}.dd /tmp/config.scm
+                            fi
+                            echo -e "[ Notice ]: Copied your '/tmp/geex.config.${stager}.dd' to '/tmp/config.scm'."
                             if command -v guix >/dev/null; then
                                 guix style -f /tmp/config.scm
                                 echo -e "\n[ Style Notice ]: Styled '/tmp/config.scm'"
                             fi
-                            echo -e "[ Notice ]: Copied your '/tmp/geex.config.${stager}.dd' to '/tmp/config.scm'."
                         else
                             rm /tmp/config.scm
+                            if [ -f "/tmp/geex.config.scm" ]; then
+                                cp /tmp/geex.config.scm /tmp/config.scm
+                            else
+                                cp /tmp/geex.config.${stager}.dd /tmp/config.scm
+                            fi
+                            echo -e "[ Notice ]: Copied your '/tmp/geex.config.${stager}.dd' to '/tmp/config.scm'."
                             if command -v guix >/dev/null; then
                                 guix style -f /tmp/config.scm
                                 echo -e "\n[ Style Notice ]: Styled '/tmp/config.scm'"
                             fi
-                            cp /tmp/geex.config.${stager}.dd /tmp/config.scm
-                            echo -e "[ Notice ]: Copied your '/tmp/geex.config.${stager}.dd' to '/tmp/config.scm'."
                         fi
                         echo -e "[ Status ]: Success! Geex (GNU Guix) was installed to your '$disk' Drive, and mounted at '${geexMount}'.\n[ Result ]: Here are your Files\n  - 'config.scm' -> ${geexMount}/etc/guix/config.scm (and) /tmp/geex.config.${stager}.scm\n - 'home.scm' -> ${geexMount}/etc/guix/home.scm\n[ Info ]: You may want to know about these useful Commands:\n - Rebuild System\n   - guix system reconfigure /etc/guix/config.scm\n - Rebuild Home\n   - guix home reconfigure /etc/guix/home.scm\n - Describe Generation\n   - guix describe\n - Pull Channels\n   - guix pull\n\nThank you for using Geex!"
                     fi
@@ -2899,6 +3080,8 @@ installerHook() {
                         export finishedNoticeAnswer="no"
                     fi
                     if [ "$finishedNoticeAnswer" == "no" ]; then
+                        dialog --clear
+                        clear
                         echo "[ Status ]: Aborting..."
                         exit 1
                     else
@@ -2906,7 +3089,11 @@ installerHook() {
                         clear
                         echo -e "[ Status ]: Success! Geex (GNU Guix) was installed to your '$disk' Drive, and mounted at '${geexMount}'.\n[ Result ]: Here are your Files\n  - 'config.scm' -> ${geexMount}/etc/guix/config.scm (and) /tmp/geex.config.${stager}.scm\n - 'home.scm' -> ${geexMount}/etc/guix/home.scm\n[ Info ]: You may want to know about these useful Commands:\n - Rebuild System\n   - guix system reconfigure /etc/guix/config.scm\n - Rebuild Home\n   - guix home reconfigure /etc/guix/home.scm\n - Describe Generation\n   - guix describe\n - Pull Channels\n   - guix pull\n\nThank you for using Geex!"
                         if [[ ! -f "/tmp/config.scm" ]]; then
-                            cp /tmp/geex.config.${stager}.dd /tmp/config.scm
+                            if [ -f "/tmp/geex.config.scm" ]; then
+                                cp /tmp/geex.config.scm /tmp/config.scm
+                            else
+                                cp /tmp/geex.config.${stager}.dd /tmp/config.scm
+                            fi
                             if command -v guix; then
                                 guix style -f /tmp/config.scm
                                 echo -e "\n[ Style Notice ]: Styled '/tmp/config.scm'"
@@ -2914,7 +3101,11 @@ installerHook() {
                             echo -e "[ Notice ]: Copied your '/tmp/geex.config.${stager}.dd' to '/tmp/config.scm'."
                         else
                             rm /tmp/config.scm
-                            cp /tmp/geex.config.${stager}.dd /tmp/config.scm
+                            if [ -f "/tmp/geex.config.scm" ]; then
+                                cp /tmp/geex.config.scm /tmp/config.scm
+                            else
+                                cp /tmp/geex.config.${stager}.dd /tmp/config.scm
+                            fi
                             if command -v guix; then
                                 guix style -f /tmp/config.scm
                                 echo -e "\n[ Style Notice ]: Styled '/tmp/config.scm'"
@@ -2935,11 +3126,15 @@ installerHook() {
                         debugNotice=$(dialog --backtitle "Geex Installer" --title "Debug Notice" --msgbox "The Installer has detected Debug Mode, all though it will no longer force-exit/quit the installation procedure, you have STILL encountered an error that is not supposed to ever occur under any circumstances, please verify this!\n\nActions to take:\n - Fetch the Official Geex Installer from 'https://github.com/librepup/geex'\n - Verify your '/tmp' Directory is Writeable\n\nContinuing due to Debug Setting." 34 75 3>&1 1>&2 2>&3) || exit 1
                     else
                         errorMessage=$(dialog  --backtitle "Geex Installer" --title "Error" --msgbox "The Installer has encountered one (or more) errors due to which the 'systemFinished' state could not be reached.\n\nPlease debug this error yourself. Possible causes are:\n - Faulty Internet Connection\n - Entire (Selected) Disk is Read-Only\n - The Geex Installer's Code was Tampered With\n - Files or Processes were Modified (or Killed) while the Geex Installer was not Done with them.\n\nThe Installer will now quit, but may have still been working on and with your disk(s), filesystem, written configuration files, copied or fetched remote sources, and more.\n\nPLEASE verify this yourself!" 34 75 3>&1 1>&2 2>&3) || exit 1
+                        dialog --clear
+                        clear
                         echo "[ Status ]: Aborting..."
                         exit 1
                     fi
                 else
                     errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "The Installer has experienced and unknown (and supposed to be impossible to reach) state due to an unknown error. This is pretty much only possible if you or someone else has tampered with the Geex Installer's Code beforehand, and you are not running an original copy of this Installer.\n\nPlease verify you are running the official Geex Installer from the following repository:\n - https://github.com/librepup/geex\n\nThe Installer cannot continue. If you are not inside Debug Mode, the installer may still have formatted and worked with your disk(s), as well as written files, and possibly taken other actions as well.\n\nPlease check this yourself." 34 75 3>&1 1>&2 2>&3) || exit 1
+                    dialog --clear
+                    clear
                     echo "[ Status ]: Aborting..."
                     exit 1
                 fi
@@ -2956,6 +3151,8 @@ installerHook() {
             fi
         else
             if [ "$error" == "okay" ]; then
+                dialog --clear
+                clear
                 echo "[ Status ]: Quitting..."
                 exit 1
             fi
