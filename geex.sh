@@ -134,6 +134,9 @@ done
 for arg in "$@"; do
     case "$arg" in
         c|-c|--c|clean|-clean|--clean)
+            if [ -f "/tmp/geex.bundle.combined.dd" ]; then
+                rm /tmp/geex.bundle.combined.dd
+            fi
             if [ -f "/tmp/geex.config.scm" ]; then
                 rm /tmp/geex.config.scm
             fi
@@ -742,6 +745,7 @@ cat > /tmp/geex.config.custom.template.dd <<'EOF'
                              "procps"
                              "wget"
                              "curl"
+                             GEEX_BUNDLE_OPTIONAL
                              "nss-certs"
                              "bash"
                              "sed"
@@ -754,6 +758,7 @@ cat > /tmp/geex.config.custom.template.dd <<'EOF'
               GEEX_NIX_SERVICE_OPTIONAL
               GEEX_HURD_SERVICE_OPTIONAL
               GEEX_GNOME_SERVICE_OPTIONAL
+              GEEX_TLP_SERVICE_OPTIONAL
               GEEX_DOAS_SERVICE_OPTIONAL
               GEEX_XORG_SERVICE_OPTIONAL
              )
@@ -1550,14 +1555,12 @@ kernelHook() {
         fi
         if [[ "$userWantsNonfreeKernel" == "yes" ]]; then
             echo -e "    (kernel linux)" >> /tmp/geex.kernel.block.dd
-            #echo -e $kernelNonfreeBlock >> /tmp/geex.kernel.block.dd
             sed -i "/GEEX_KERNEL_OPTIONAL/{
                    r /tmp/geex.kernel.block.dd
                    d
                    }" /tmp/geex.config.${stager}.dd
             export wroteKernelBlock="Yes (Non-Free)"
             echo -e "             (nongnu packages linux)\n             (nongnu system linux-initrd)" >> /tmp/geex.kernel.modules.block.dd
-            #echo -e $modulesNonfreeBlock >> /tmp/geex.kernel.modules.block.dd
             sed -i "/GEEX_NONFREE_MODULES_OPTIONAL/{
                    r /tmp/geex.kernel.modules.block.dd
                    d
@@ -1567,21 +1570,23 @@ kernelHook() {
             sed -i "s|GEEX_INITRD_OPTIONAL|$initrd|g" /tmp/geex.config.${stager}.dd
             sed -i "s|GEEX_FIRMWARE_OPTIONAL|$firmware|g" /tmp/geex.config.${stager}.dd
         elif [[ "$userWantsNonfreeKernel" == "no" ]]; then
-            sed -i "s|GEEX_KERNEL_OPTIONAL||g" /tmp/geex.config.${stager}.dd
-            sed -i "s|GEEX_NONFREE_MODULES_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+            sed -i "/GEEX_KERNEL_OPTIONAL/d" /tmp/geex.config.${stager}.dd
+            sed -i "/GEEX_NONFREE_MODULES_OPTIONAL/d" /tmp/geex.config.${stager}.dd
+            sed -i "/GEEX_INITRD_OPTIONAL/d" /tmp/geex.config.${stager}.dd
+            sed -i "/GEEX_FIRMWARE_OPTIONAL/d" /tmp/geex.config.${stager}.dd
+            #sed -i "s|GEEX_KERNEL_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+            #sed -i "s|GEEX_NONFREE_MODULES_OPTIONAL||g" /tmp/geex.config.${stager}.dd
             export wroteKernelBlock="Yes (Free)"
-            sed -i "s|GEEX_INITRD_OPTIONAL||g" /tmp/geex.config.${stager}.dd
-            sed -i "s|GEEX_FIRMWARE_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+            #sed -i "s|GEEX_INITRD_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+            #sed -i "s|GEEX_FIRMWARE_OPTIONAL||g" /tmp/geex.config.${stager}.dd
         elif [[ "$userWantsNonfreeKernel" != "yes" ]] && [[ "$userWantsNonfreeKernel" != "no" ]]; then
             echo -e "    (kernel linux)" >> /tmp/geex.kernel.block.dd
-            #echo -e $kernelNonfreeBlock >> /tmp/geex.kernel.block.dd
             sed -i "/GEEX_KERNEL_OPTIONAL/{
                    r /tmp/geex.kernel.block.dd
                    d
                    }" /tmp/geex.config.${stager}.dd
             export wroteKernelBlock="Yes (Fallback Non-Free)"
             echo -e "             (nongnu packages linux)\n             (nongnu system linux-initrd)" >> /tmp/geex.kernel.modules.block.dd
-            #echo -e $modulesNonfreeBlock >> /tmp/geex.kernel.modules.block.dd
             sed -i "/GEEX_NONFREE_MODULES_OPTIONAL/{
                    r /tmp/geex.kernel.modules.block.dd
                    d
@@ -1608,7 +1613,6 @@ xorgHook() {
             unset wroteXorgBlock
         fi
         echo -e "                   (set-xorg-configuration\n                    (xorg-configuration (keyboard-layout keyboard-layout)))\n" >> /tmp/geex.xorg.optional.dd
-        #echo -e $xorgBlockRegular >> /tmp/geex.xorg.optional.dd
         sed -i "s|GEEX_NVIDIA_MODULES_OPTIONAL||g" /tmp/geex.config.${stager}.dd
         if [[ -f "/tmp/geex.xorg.nvidia.modules.optional.dd" ]]; then
             rm /tmp/geex.xorg.nvidia.modules.optional.dd
@@ -1621,8 +1625,10 @@ xorgHook() {
         return 0
     fi
     if [[ "$GEEX_THE_HURD" == 1 ]] || [[ -n "$GEEX_THE_HURD" ]]; then
-        sed -i "s|GEEX_NVIDIA_MODULES_OPTIONAL||g" /tmp/geex.config.${stager}.dd
-        sed -i "s|GEEX_XORG_SERVICE_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+        sed -i "/GEEX_NVIDIA_MODULES_OPTIONAL/d" /tmp/geex.config.${stager}.dd
+        sed -i "/GEEX_XORG_SERVICE_OPTIONAL/d" /tmp/geex.config.${stager}.dd
+        #sed -i "s|GEEX_NVIDIA_MODULES_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+        #sed -i "s|GEEX_XORG_SERVICE_OPTIONAL||g" /tmp/geex.config.${stager}.dd
         return 0
     fi
     if lspci | grep -i nvidia >/dev/null; then
@@ -1655,8 +1661,6 @@ xorgHook() {
     if [[ "$userWantsNvidia" == "yes" ]]; then
         echo -e "             (nongnu packages nvidia)\n             (nongnu services nvidia)\n             (nonguix transformations)\n" >> /tmp/geex.xorg.nvidia.modules.optional.dd
         echo -e "                   (set-xorg-configuration\n                    (xorg-configuration (keyboard-layout keyboard-layout)\n                                        (modules (cons nvidia-driver\n                                                       %default-xorg-modules))\n                                        (drivers '(\"nvidia\"))))\n" >> /tmp/geex.xorg.optional.dd
-        #echo $xorgBlockNvidia >> /tmp/geex.xorg.optional.dd
-        #echo $modulesBlockNvidia >> /tmp/geex.xorg.nvidia.modules.optional.dd
         if [[ -n "$wroteXorgBlock" ]]; then
             unset wroteXorgBlock
         fi
@@ -1676,8 +1680,8 @@ xorgHook() {
             unset wroteXorgBlock
         fi
         echo -e "                   (set-xorg-configuration\n                    (xorg-configuration (keyboard-layout keyboard-layout)))\n" >> /tmp/geex.xorg.optional.dd
-        #echo -e $xorgBlockRegular >> /tmp/geex.xorg.optional.dd
-        sed -i "s|GEEX_NVIDIA_MODULES_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+        sed -i "/GEEX_NVIDIA_MODULES_OPTIONAL/d" /tmp/geex.config.${stager}.dd
+        #sed -i "s|GEEX_NVIDIA_MODULES_OPTIONAL||g" /tmp/geex.config.${stager}.dd
         if [[ -f "/tmp/geex.xorg.nvidia.modules.optional.dd" ]]; then
             rm /tmp/geex.xorg.nvidia.modules.optional.dd
         fi
@@ -1694,7 +1698,6 @@ xorgHook() {
             rm /tmp/geex.xorg.optional.dd
         fi
         echo -e "                   (set-xorg-configuration\n                    (xorg-configuration (keyboard-layout keyboard-layout)))\n" >> /tmp/geex.xorg.optional.dd
-        #echo -e $xorgBlockFallback >> /tmp/geex.xorg.optional.dd
         sed -i "/GEEX_XORG_SERVICE_OPTIONAL/{
                r /tmp/geex.xorg.optional.dd
                d
@@ -1743,7 +1746,6 @@ transformationsHook() {
         fi
         export composeBlock="$(echo -e "((compose (nonguix-transformation-nvidia))\n %guix-os)")"
         echo -e "((compose (nonguix-transformation-nvidia))\n %guix-os)" >> /tmp/geex.compose.block.dd
-        #echo -e $composeBlock >> /tmp/geex.compose.block.dd
         sed -i "/GEEX_OS_END_CALL_BLOCK/{
                r /tmp/geex.compose.block.dd
                d
@@ -1808,7 +1810,8 @@ desktopEnvironmentsHook() {
                    }" /tmp/geex.config.${stager}.dd
             export installedDesktopi3=1
         else
-            sed -i 's/GEEX_I3_PACKAGE_OPTIONAL//g' /tmp/geex.config.${stager}.dd
+            sed -i "/GEEX_I3_PACKAGE_OPTIONAL/d" /tmp/geex.config.${stager}.dd
+            #sed -i 's/GEEX_I3_PACKAGE_OPTIONAL//g' /tmp/geex.config.${stager}.dd
             export installedDesktopi3=0
         fi
         if [[ "$deSelection" == *gnome* ]]; then
@@ -1818,7 +1821,8 @@ desktopEnvironmentsHook() {
                    }" /tmp/geex.config.${stager}.dd
             export installedDesktopGnome=1
         else
-            sed -i 's/GEEX_GNOME_SERVICE_OPTIONAL//g' /tmp/geex.config.${stager}.dd
+            sed -i "/GEEX_GNOME_SERVICE_OPTIONAL/d" /tmp/geex.config.${stager}.dd
+            #sed -i 's/GEEX_GNOME_SERVICE_OPTIONAL//g' /tmp/geex.config.${stager}.dd
             export installedDesktopGnome=0
         fi
         if [[ "$deSelection" == *naitre* ]]; then
@@ -1828,7 +1832,8 @@ desktopEnvironmentsHook() {
                    }" /tmp/geex.config.${stager}.dd
             export installedDesktopNaitre=1
         else
-            sed -i 's/GEEX_NAITRE_PACKAGE_OPTIONAL//g' /tmp/geex.config.${stager}.dd
+            sed -i "/GEEX_NAITRE_PACKAGE_OPTIONAL/d" /tmp/geex.config.${stager}.dd
+            #sed -i 's/GEEX_NAITRE_PACKAGE_OPTIONAL//g' /tmp/geex.config.${stager}.dd
             export installedDesktopNaitre=0
         fi
         if [[ "$deSelection" == *xmonad* ]]; then
@@ -1838,7 +1843,8 @@ desktopEnvironmentsHook() {
                    }" /tmp/geex.config.${stager}.dd
             export installedDesktopXmonad=1
         else
-            sed -i 's/GEEX_XMONAD_PACKAGE_OPTIONAL//g' /tmp/geex.config.${stager}.dd
+            sed -i "/GEEX_XMONAD_PACKAGE_OPTIONAL/d" /tmp/geex.config.${stager}.dd
+            #sed -i 's/GEEX_XMONAD_PACKAGE_OPTIONAL//g' /tmp/geex.config.${stager}.dd
             export installedDesktopXmonad=0
         fi
         export finishedDesktopSetup=1
@@ -1851,6 +1857,7 @@ serviceSetupHook() {
                               hurd "GNU Hurd" off \
                               nix "Nix" off \
                               doas "doas" on \
+                              tlp "TLP (Laptop)" off \
                               3>&1 1>&2 2>&3) || exit 1
     read -r -a serviceSelectionArray <<< "$serviceSelection"
     serviceSelectionCount="${#serviceSelectionArray[@]}"
@@ -1866,6 +1873,12 @@ serviceSetupHook() {
     fi
     echo -e "$nixServiceBlock" >> /tmp/geex.service.nix.block.dd
     echo -e "$nixGroupBlock" >> /tmp/geex.group.nix.block.dd
+    # TLP Service
+    if [ -f "/tmp/geex.service.tlp.block.dd" ]; then
+        rm /tmp/geex.service.tlp.block.dd
+    fi
+    tlpServiceBlock="$(echo -e "                   (service tlp-service-type\n                            (tlp-configuration (cpu-scaling-governor-on-ac '(\"performace\"))\n                                               (cpu-scaling-governor-on-bat '(\"powersave\"))\n                                               (sched-powersave-on-bat? #t)))")"
+    echo "$tlpServiceBlock" >> /tmp/geex.service.tlp.block.dd
     # Doas Service
     doasPackageBlock="$(echo -e "                             \"opendoas\"")"
     doasServiceBlock="$(echo -e "                   (simple-service 'doas-config etc-service-type\n                                   (list \`(\"doas.conf\" ,(plain-file\n                                                         \"doas.conf\"\n                                                         \"permit nopass keepenv root\npermit persist keepenv setenv :wheel\"))))")"
@@ -1896,9 +1909,22 @@ serviceSetupHook() {
                    }" /tmp/geex.config.${stager}.dd
             export installedServiceDoas=1
         else
-            sed -i 's/GEEX_DOAS_SERVICE_OPTIONAL//g' /tmp/geex.config.${stager}.dd
-            sed -i 's/GEEX_DOAS_PACKAGE_OPTIONAL//g' /tmp/geex.config.${stager}.dd
+            sed -i "/GEEX_DOAS_SERVICE_OPTIONAL/d" /tmp/geex.config.${stager}.dd
+            sed -i "/GEEX_DOAS_PACKAGE_OPTIONAL/d" /tmp/geex.config.${stager}.dd
+            #sed -i 's/GEEX_DOAS_SERVICE_OPTIONAL//g' /tmp/geex.config.${stager}.dd
+            #sed -i 's/GEEX_DOAS_PACKAGE_OPTIONAL//g' /tmp/geex.config.${stager}.dd
             export installedServiceDoas=0
+        fi
+        if [[ "$serviceSelection" == *tlp* ]]; then
+            sed -i "/GEEX_TLP_SERVICE_OPTIONAL/{
+                   r /tmp/geex.service.tlp.block.dd
+                   d
+                   }" /tmp/geex.config.${stager}.dd
+            export installedServiceTlp=1
+        else
+            sed -i "/GEEX_TLP_SERVICE_OPTIONAL/d" /tmp/geex.config.${stager}.dd
+            #sed -i "s|GEEX_TLP_SERVICE_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+            export installedServiceTlp=0
         fi
         if [[ "$serviceSelection" == *nix* ]]; then
             sed -i "/GEEX_NIX_SERVICE_OPTIONAL/{
@@ -1911,8 +1937,10 @@ serviceSetupHook() {
                    }" /tmp/geex.config.${stager}.dd
             export installedServiceNix=1
         else
-            sed -i 's/GEEX_NIX_SERVICE_OPTIONAL//g' /tmp/geex.config.${stager}.dd
-            sed -i 's/GEEX_NIX_GROUP_OPTIONAL//g' /tmp/geex.config.${stager}.dd
+            sed -i "/GEEX_NIX_SERVICE_OPTIONAL/d" /tmp/geex.config.${stager}.dd
+            sed -i "/GEEX_NIX_GROUP_OPTIONAL/d" /tmp/geex.config.${stager}.dd
+            #sed -i 's/GEEX_NIX_SERVICE_OPTIONAL//g' /tmp/geex.config.${stager}.dd
+            #sed -i 's/GEEX_NIX_GROUP_OPTIONAL//g' /tmp/geex.config.${stager}.dd
             export installedServiceNix=0
         fi
         if [[ "$serviceSelection" == *hurd* ]]; then
@@ -1922,7 +1950,8 @@ serviceSetupHook() {
                    }" /tmp/geex.config.${stager}.dd
             export installedServiceHurd=1
         else
-            sed -i 's/GEEX_HURD_SERVICE_OPTIONAL//g' /tmp/geex.config.${stager}.dd
+            sed -i "/GEEX_HURD_SERVICE_OPTIONAL/d" /tmp/geex.config.${stager}.dd
+            #sed -i 's/GEEX_HURD_SERVICE_OPTIONAL//g' /tmp/geex.config.${stager}.dd
             export installedServiceHurd=0
         fi
         export finishedServiceSetup=1
@@ -2646,11 +2675,6 @@ passwordHookOld() {
         else
             export userPassword=$password
         fi
-        #echo "[ Status ]: Please enter 'root' password:"
-        #passwd -R /mnt root
-        #echo "[ Status ]: Please enter '$username' password:"
-        #passwd -R /mnt $username
-        #export CONFIGURED_PASSWORDS=1
     fi
 }
 homeHook() {
@@ -2976,6 +3000,73 @@ searchForPackageFunction() {
         return 1
     fi
 }
+packageBundlesHook() {
+    bundleSelection=$(dialog --backtitle "Geex Installer" --title "Package Bundles" --checklist "Select Package Bundles:" 15 50 5 \
+                             office "Office" off \
+                             plan9 "Plan9 Tools" off \
+                             archivers "Archiving Tools" off \
+                             rescue "Rescue Tools" off \
+                             fonts "Fonts" on \
+                             3>&1 1>&2 2>&3) || exit 1
+    read -r -a bundleSelectionArray <<< "$bundleSelection"
+    bundleSelectionCount="${#bundleSelectionArray[@]}"
+    bundleSelectionSummaryText=$(printf '%s\n' "${bundleSelectionArray[@]}")
+    if [ -f "/tmp/geex.bundle.office.dd" ]; then
+        rm /tmp/geex.bundle.office.dd
+    fi
+    bundleOfficeBlock="$(echo -e "                             \"libreoffice\"\n                             \"gnucash\"")"
+    if [ -f "/tmp/geex.bundle.plan9.dd" ]; then
+        rm /tmp/geex.bundle.plan9.dd
+    fi
+    bundlePlan9Block="$(echo -e "                             \"plan9port\"")"
+    if [ -f "/tmp/geex.bundle.archivers.dd" ]; then
+        rm /tmp/geex.bundle.archivers.dd
+    fi
+    bundleArchiversBlock="$(echo -e "                             \"unrar-free\"\n                             \"7zip\"\n                             \"unzip\"")"
+    if [ -f "/tmp/geex.bundle.rescue.dd" ]; then
+        rm /tmp/geex.bundle.rescue.dd
+    fi
+    bundleRescueBlock="$(echo -e "                             \"cryptsetup\"\n                             \"encfs\"\n                             \"testdisk\"\n                             \"ntfs-3g\"")"
+    if [ -f "/tmp/geex.bundle.fonts.dd" ]; then
+        rm /tmp/geex.bundle.fonts.dd
+    fi
+    bundleFontsBlock="$(echo -e "                             \"font-jonafonts\"\n                             \"font-dejavu\"\n                             \"font-google-noto-emoji\"")"
+    if [ -f "/tmp/geex.config.${stager}.dd" ]; then
+        if [[ "$bundleSelection" == *office* ]]; then
+            bundleCombined="$(echo -e "$bundleOfficeBlock\n$bundleCombined\n")"
+        fi
+        if [[ "$bundleSelection" == *plan9* ]]; then
+            bundleCombined="$(echo -e "$bundlePlan9Block\n$bundleCombined\n")"
+        fi
+        if [[ "$bundleSelection" == *archivers* ]]; then
+            bundleCombined="$(echo -e "$bundleArchiversBlock\n$bundleCombined\n")"
+        fi
+        if [[ "$bundleSelection" == *rescue* ]]; then
+            bundleCombined="$(echo -e "$bundleRescueBlock\n$bundleCombined\n")"
+        fi
+        if [[ "$bundleSelection" == *fonts* ]]; then
+            bundleCombined="$(echo -e "$bundleFontsBlock\n$bundleCombined\n")"
+        fi
+        if [ -f "/tmp/geex.bundle.combined.dd" ]; then
+            rm /tmp/geex.bundle.combined.dd
+        fi
+        echo "$bundleCombined" >> /tmp/geex.bundle.combined.dd
+        if [[ "$bundleCombined" != "" ]] || [[ -n "$bundleCombined" ]]; then
+            sed -i "/GEEX_BUNDLE_OPTIONAL/{
+                   r /tmp/geex.bundle.combined.dd
+                   d
+                   }" /tmp/geex.config.${stager}.dd
+            export wroteBundles="Yes"
+        else
+            sed -i "s|GEEX_BUNDLE_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+            export wroteBundles="No"
+        fi
+    else
+        errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "The Installer has encountered an un-recoverable Error:\n\nIt could not find the '/tmp/geex.config.${stager}.dd' file to write to. This is not supposed to happen. Please verify the installers code was not tinkered with, and that '/tmp' is writeable.\n\nThe Installer will now forcefully quit." 34 75 3>&1 1>&2 2>&3) || exit 1
+        echo "[ Error ]: Aborting..."
+        exit 1
+    fi
+}
 addCustomPackageHook() {
     userPkgList=$(dialog --backtitle "Geex Installer" --title "Extra Packages" --inputbox "Enter Packages Separated by a Comma\n\nExample:\n\`\`\`\npackage-1, package-2, package-3\n\`\`\`\n" 20 64 3>&1 1>&2 2>&3) || exit 1
     confirmedPkgList=""
@@ -3017,15 +3108,18 @@ addCustomPackageHook() {
                    d
                    }" /tmp/geex.config.${stager}.dd
         else
-            sed -i "s/GEEX_EXTRA_PACKAGE_LIST_OPTIONAL//g" /tmp/geex.config.${stager}.dd
+            sed -i "/GEEX_EXTRA_PACKAGE_LIST_OPTIONAL/d" /tmp/geex.config.${stager}.dd
+            #sed -i "s/GEEX_EXTRA_PACKAGE_LIST_OPTIONAL//g" /tmp/geex.config.${stager}.dd
         fi
         #sed "s|GEEX_EXTRA_PACKAGE_LIST_OPTIONAL|$extraPackageListInsertable|g" /tmp/geex.config.${stager}.dd
     else
         echo -e "[ Error ]: Error with List Confirmation"
-        sed "s|GEEX_EXTRA_PACKAGE_LIST_OPTIONAL||g" /tmp/geex.config.${stager}.dd
+        sed -i "/GEEX_EXTRA_PACKAGE_LIST_OPTIONAL/d" /tmp/geex.config.${stager}.dd
+        #sed "s|GEEX_EXTRA_PACKAGE_LIST_OPTIONAL||g" /tmp/geex.config.${stager}.dd
     fi
     if [ "$extraPackageListInsertable" == "" ] || [ -z "$extraPackageListInsertable" ]; then
-        sed -i "s/GEEX_EXTRA_PACKAGE_LIST_OPTIONAL//g" /tmp/geex.config.${stager}.dd
+        sed -i "/GEEX_EXTRA_PACKAGE_LIST_OPTIONAL/d" /tmp/geex.config.${stager}.dd
+        #sed -i "s/GEEX_EXTRA_PACKAGE_LIST_OPTIONAL//g" /tmp/geex.config.${stager}.dd
     fi
 }
 swapQuestion() {
@@ -3318,6 +3412,7 @@ installerHook() {
     else
         export diskPrefixedPartNameTextblock="${diskPrefixed}1 (guix-efi), ${diskPrefixed}2 (guix-root)"
     fi
+    packageBundlesHook
     addCustomPackageHook
     summaryTextContents="$(echo -e "(1) Information\nUsername: $username\nHostname: $hostname\nTimezone: $TIMEZONE\nPasswords Set?: $areAllPasswordsSet (Re-Used?: $wasPasswordReUsed)\nDisk: $disk (Parts: $diskPrefixedPartNameTextblock)\nSwap: $formattedWithSwap\nBIOS: $bios (Detected: $detectedBios)\nKeyboard: $keyboardInfo\n\nServices: $serviceSelection\nDesktops: $deSelection\n\n(2) The Installer Wrote:\nSwap Block?: $wroteSwapBlock\nBIOS Block?: $wroteBiosBlock\nFilesystem Block?: $isFilesystemWritten\nServices Block?: $areServicesWritten\nDesktop Block?: $areDesktopsWritten\nKeyboard Block?: $wroteKeyboardBlock")"
     #summaryTextContents="$(echo -e "Please verify all the information below is accurate and exactly as you selected/want it:\n - Username: $username\n - $username Password Set?: $areAllPasswordsSet\n - Root Password Set?: $areAllPasswordsSet\n - Root and $username Password Match?: $wasPasswordReUsed\n - Hostname: $hostname\n - Timezone: $TIMEZONE\n - Disk: $disk\n - Disk Parts: $diskPrefixedPartNameTextblock\n - Formatted Swap?: $formattedWithSwap\n - Wrote Swap?: $wroteSwapBlock\n - BIOS: $bios\n - Auto-Detected BIOS: $detectedBios\n - Keyboard: $keyboardInfo\n - Services: $serviceSelection\n - Desktops: $deSelection\n\nInternal Statistics:\n - Systemchoice: $systemchoice\n - Stager: $stager\n - Stagerfile: '/tmp/geex.config.${stager}.dd'\n\nWrote Blocks Status (Did the Installer Write ... X?):\n - BIOS Block?: ${wroteBiosBlock}\n - Filesystems?: $isFilesystemWritten\n - Services?: $areServicesWritten\n - Desktops?: $areDesktopsWritten\n - Keyboard?: $wroteKeyboardBlock (Found?: $foundKeyboardBlock)")"
