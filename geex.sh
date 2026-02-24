@@ -1827,7 +1827,7 @@ biosLegacyEditHook() {
     if [ "$userWantsSwap" == 1 ]; then
         export diskChoice=${diskPrefixed}2
     fi
-    legacyBlock="$(echo -e "    (bootloader (bootloader-configuration\n              (keyboard-layout keyboard-layout)\n              (bootloader grub-bootloader)\n              (targets '(\"${diskChoice}\"))))\n")"
+    legacyBlock="$(echo -e "    (bootloader (bootloader-configuration\n              (keyboard-layout keyboard-layout)\n              (bootloader grub-bootloader)\n              (targets '(\"${disk}\"))))\n")"
     legacyBlockVerify=$(dialog --backtitle "Geex Installer" --title "Verify BIOS Block" --menu "Please verify that the BIOS Block below is correct and can be written:\n\n\`\`\`\n$legacyBlock\n\`\`\`\n\n\n  " 28 50 10 \
                                continue "Continue" \
                                abort "Abort" \
