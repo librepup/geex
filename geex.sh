@@ -28,6 +28,7 @@ ENVIRONMENT can be one of the environment variables listed below:
     GEEX_DEBUG_MISSING_ENABLE    pretend as if packages were missing
     GEEX_PRETEND_FATAL           pretend to have encountered a fatal error
     GEEX_IGNORE_FORCED_DEBUG     ignore forced debug mode if herd was not found
+    GEEX_MISSING_HERD_IGNORE     ignore whether herd/shepherd is missing
 
   experimental environment variables
     GEEX_THE_HURD                force the installer to set your system up with GNU Hurd
@@ -295,6 +296,7 @@ ENVIRONMENT can be one of the environment variables listed below:
     GEEX_DEBUG_MISSING_ENABLE    pretend as if packages were missing
     GEEX_PRETEND_FATAL           pretend to have encountered a fatal error
     GEEX_IGNORE_FORCED_DEBUG     ignore forced debug mode if herd was not found
+    GEEX_MISSING_HERD_IGNORE     ignore whether herd/shepherd is missing
 
   experimental environment variables
     GEEX_THE_HURD                force the installer to set your system up with GNU Hurd
@@ -1913,18 +1915,112 @@ biosUefiEditHook() {
 }
 systemInstallHook() {
     echo "[ Status ]: Beginning formal GNU Guix installation..."
-    if [ -n "$GEEX_DEBUG" ] || [ -n "$GEEX_DEBUG_MODE" ]; then
+    if [ -n "$GEEX_DEBUG" ] || [ -n "$GEEX_DEBUG_MODE" ] || [[ "$GEEX_DEBUG" == 1 ]] || [[ "$GEEX_DEBUG_MODE" == 1 ]]; then
         echo "[ Status ]: Debug Mode Detected, pretending to install system..."
     else
         if ! command -v herd >/dev/null; then
             echo "[ Error ]: Herd Missing, asking how to continue..."
-            errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --menu "The Installer encountered an error: the 'herd' binary is missing. Do you still want to continue?\n\n(!) Warning (!)\nThe system may not install correctly if the cow-store is not initialized correctly, continue at your own risk!" 32 50 10 \
-                                  continue "Continue" \
+            errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --menu "The Installer encountered an error: the 'herd' binary is missing. Do you still want to continue?\n\n(!) Warning (!)\nThe system may not install correctly if the cow-store is not initialized correctly, as fetched and built packages and derivations will remain on the live/current operating systems '/gnu/store' - and won't be written to '${geexMount}/gnu/store', continue at your own risk!" 32 50 10 \
                                   abort "Abort" \
+                                  continue "Continue Anyways" \
                                   3>&1 1>&2 2>&3) || exit 1
-            if [[ "$errorMessage" != "continue" ]]; then
+            if [[ "$errorMessage" != "continue" ]] || [[ "$errorMessage" == "abort" ]]; then
                 echo "[ Status ]: Aborting..."
+                if [ -n "$GEEX_MISSING_HERD_IGNORE" ]; then
+                    unset GEEX_MISSING_HERD_IGNORE
+                fi
                 exit 1
+            else
+                echo "[ Status ]: Ignoring error..."
+                export GEEX_MISSING_HERD_IGNORE=1
+            fi
+        fi
+        if ! command -v herd >/dev/null && [[ "$GEEX_MISSING_HERD_IGNORE" != 1 ]]; then
+            echo "[ Error ]: Herd Missing, asking how to continue..."
+            errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "The Installer encountered an error: the 'herd' binary is missing, and the variable 'GEEX_MISSING_HERD_IGNORE' is not set (at all, or to '1'). The Installer will now forceably exit." 32 50 3>&1 1>&2 2>&3) || exit 1
+            echo "[ Status ]: Aborting..."
+            exit 1
+        elif ! command -v herd >/dev/null && [[ "$GEEX_MISSING_HERD_IGNORE" == 1 ]]; then
+            echo "[ Status ]: Ignoring missing 'herd' binary, continuing anyways..."
+            cp /tmp/geex.config.${stager}.dd /tmp/geex.config.${stager}.scm
+            mkdir -p ${geexMount}/etc/guix
+            cp /tmp/geex.config.${stager}.scm ${geexMount}/etc/guix/config.scm
+            if [ -f "${geexMount}/etc/guix/config.scm" ]; then
+                export GEEX_GUIX_SYSTEM_INIT_CHECKFILE=/tmp/geex.guix.system.init.check.file.dd
+                export GEEX_GUIX_STYLE_CHECKFILE=/tmp/geex.guix.style.check.file.dd
+                if [ -f "$GEEX_GUIX_STYLE_CHECKFILE" ]; then
+                    rm $GEEX_GUIX_STYLE_CHECKFILE
+                fi
+                if [ -f "$GEEX_GUIX_SYSTEM_INIT_CHECKFILE" ]; then
+                    rm $GEEX_GUIX_SYSTEM_INIT_CHECKFILE
+                fi
+                guix style -f ${geexMount}/etc/guix/config.scm && touch $GEEX_GUIX_STYLE_CHECKFILE
+                if [ "$GEEX_THE_HURD" == 1 ] && [ -z "$GEEX_FORCE_THE_HURD" ]; then
+                    errorMessage=$(dialog --backtitle "Geex Installer" --title "GNU Hurd" --msgbox "The Installer refused to initialize the GNU Guix system, because you have enabled 'GEEX_THE_HURD'. It is not intended to install GNU Guix with GNU Hurd 'the hurd' as your kernel. The Hurd does not support most hardware, is 32-bit only, and intended to be run inside a virtual machine.\n\nIf you want to experience GNU Hurd yourself, unset the variable 'GEEX_THE_HURD', restart the installer, and enable the 'GNU Hurd' service in the services selection.")
+                else
+                    guix system init ${geexMount}/etc/guix/config.scm ${geexMount} && touch $GEEX_GUIX_SYSTEM_INIT_CHECKFILE
+                fi
+                if [[ ! -f "$GEEX_GUIX_STYLE_CHECKFILE" ]]; then
+                    errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "The Installer failed to style the '/tmp/geex.config.${stager}.scm' file. This is either caused by the fact this file does not exist, or a problem with Guix itself (likely to happen if you do not have the 'guix' command available on your system).\n\nThis is not a fatal error, but it could pre-destine the installer to also fail at later stages that invole the 'guix' command, or other file operations.\n\nPlease investigate this error!" 34 75 3>&1 1>&2 2>&3) || exit 1
+                fi
+                if [ -f "$GEEX_GUIX_SYSTEM_INIT_CHECKFILE" ]; then
+                    export installationStatus=1
+                else
+                    fatalSystemErrorMessage="$(echo -e "The Installer has encountered a Fatal Error, it was not able to initialize the Guix System on your '${geexMount}' via the selected configuration file ('${geexMount}/etc/guix/config.scm').\n\nThis error is un-recoverable, and the installer will now quit, unless you force it to continue running.\n\nSelect 'Okay' to abort the installation process, and 'No, Ignore and Keep Going' to continue anyways (not recommended).")"
+                    errorMessage=$(dialog --backtitle "Geex Installer" --title "Fatal Error" --menu "$fatalSystemErrorMessage" 40 124 10 \
+                                          okay "Okay" \
+                                          ignore "No, Ignore and Keep Going" \
+                                          3>&1 1>&2 2>&3) || exit 1
+                    if [ "$errorMessage" == "okay" ]; then
+                        echo "[ Status ]: Aborting..."
+                        exit 1
+                    fi
+                    export installationStatus=0
+                fi
+            elif [ -f "/tmp/geex.config.${stager}.scm" ]; then
+                export GEEX_GUIX_SYSTEM_INIT_CHECKFILE=/tmp/geex.guix.system.init.check.file.dd
+                export GEEX_GUIX_STYLE_CHECKFILE=/tmp/geex.guix.style.check.file.dd
+                if [ -f "$GEEX_GUIX_STYLE_CHECKFILE" ]; then
+                    rm $GEEX_GUIX_STYLE_CHECKFILE
+                fi
+                if [ -f "$GEEX_GUIX_SYSTEM_INIT_CHECKFILE" ]; then
+                    rm $GEEX_GUIX_SYSTEM_INIT_CHECKFILE
+                fi
+                guix style -f /tmp/geex.config.${stager}.scm && touch $GEEX_GUIX_STYLE_CHECKFILE
+                if [ "$GEEX_THE_HURD" == 1 ] && [ -z "$GEEX_THE_HURD_ALLOW" ]; then
+                    errorMessage=$(dialog --backtitle "Geex Installer" --title "GNU Hurd" --msgbox "The Installer refused to initialize the GNU Guix system, because you have enabled 'GEEX_THE_HURD'. It is not intended to install GNU Guix with GNU Hurd 'the hurd' as your kernel. The Hurd does not support most hardware, is 32-bit only, and intended to be run inside a virtual machine.\n\nIf you want to experience GNU Hurd yourself, unset the variable 'GEEX_THE_HURD', restart the installer, and enable the 'GNU Hurd' service in the services selection.")
+                else
+                    guix system init /tmp/geex.config.${stager}.scm ${geexMount} && touch $GEEX_GUIX_SYSTEM_INIT_CHECKFILE
+                fi
+                if [[ ! -f "$GEEX_GUIX_STYLE_CHECKFILE" ]]; then
+                    errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "The Installer failed to style the '/tmp/geex.config.${stager}.scm' file. This is either caused by the fact this file does not exist, or a problem with Guix itself (likely to happen if you do not have the 'guix' command available on your system).\n\nThis is not a fatal error, but it could pre-destine the installer to also fail at later stages that invole the 'guix' command, or other file operations.\n\nPlease investigate this error!" 34 75 3>&1 1>&2 2>&3) || exit 1
+                fi
+                if [ -f "$GEEX_GUIX_SYSTEM_INIT_CHECKFILE" ]; then
+                    export installationStatus=1
+                else
+                    fatalSystemErrorMessage="$(echo -e "The Installer has encountered a Fatal Error, it was not able to initialize the Guix System on your '${geexMount}' via the selected configuration file ('/tmp/geex.config.${stager}.scm').\n\nThis error is un-recoverable, and the installer will now quit, unless you force it to continue running.\n\nSelect 'Okay' to abort the installation process, and 'No, Ignore and Keep Going' to continue anyways (not recommended).")"
+                    errorMessage=$(dialog --backtitle "Geex Installer" --title "Fatal Error" --menu "$fatalSystemErrorMessage" 40 124 10 \
+                                          okay "Okay" \
+                                          ignore "No, Ignore and Keep Going" \
+                                          3>&1 1>&2 2>&3) || exit 1
+                    if [ "$errorMessage" == "okay" ]; then
+                        echo "[ Status ]: Aborting..."
+                        exit 1
+                    fi
+                    export installationStatus=0
+                fi
+            elif [ -n "$GEEX_DEBUG" ] || [ -n "$GEEX_DEBUG_MODE" ]; then
+                export installationStatus=2
+            else
+                errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --menu "The Installer encountered an error: neither the '${geexMount}/etc/guix/config.scm', nor the '/tmp/geex.config.${stager}.scm' files are present. Or, the 'guix' command is not available to your system and thus not available to the installer.\n\nThe Installer must have failed the copying process, or errorer at a different stage. Please investigate.\n\nThe Installer cannot continue meaningfully, still proceed with the broken installation process?" 32 50 10 \
+                                      abort "Abort" \
+                                      continue "Yes, still Continue" \
+                                      3>&1 1>&2 2>&3) || exit 1
+                if [ "$errorMessage" == "abort" ]; then
+                    echo "[ Status ]: Aborting..."
+                    exit 1
+                fi
+                export installationStatus=0
             fi
         else
             herd start cow-store ${geexMount}
