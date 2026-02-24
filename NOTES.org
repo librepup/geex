@@ -119,14 +119,11 @@ To initialize the Guix System, run `guix system init /path/to/config.scm /mnt`, 
 #+BEGIN_SRC sh
 mkdir -p /mnt/etc/guix
 mv /path/to/geex/* /mnt/etc/guix/
+herd start cow-store /mnt
 guix system init /mnt/etc/guix/config.scm /mnt
 #+END_SRC
 
-****** Cow-Store
-This is an old/outdated command you had to run pre-2020 Guix System:
-#+BEGIN_SRC sh
-herd start cow-store /mnt
-#+END_SRC
+The command `herd start cow-store /mnt` initializes a copy-on-write /gnu/store inside /mnt, so that the downloaded and installed packages, derivations, and files, get installed to /mnt/gnu/store, and not into RAM or any other temporary/live /gnu/store.
 
 ***** Passwords
 Set passwords for users inside the "/mnt"-mounted GNU+Linux install.
