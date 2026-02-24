@@ -231,49 +231,6 @@
 
   (services
    (list
-    ;; emacs daemon
-    (simple-service 'emacs-daemon shepherd-root-service-type
-                    (list (shepherd-service (documentation "Emacs Daemon")
-                                            (provision '(emacs-daemon))
-                                            (requirement '(user-processes))
-                                            (start #~(make-forkexec-constructor
-                                                      (list #+(file-append
-                                                               emacs-pgtk
-                                                               "/bin/emacs")
-                                                            "--fg-daemon")
-                                                      #:user "puppy"
-                                                      #:group "users"
-                                                      #:log-file
-                                                      "/var/log/emacs-daemon.log"
-                                                      #:environment-variables (list
-                                                                               (string-append
-                                                                                "HOME=/home/puppy")
-                                                                               "TERM=kitty")))
-                                            (stop #~(make-kill-destructor))
-                                            (respawn? #t))))
-    ;; mute-audio services
-    (simple-service 'null-audio boot-service-type
-                    (list (shepherd-service (documentation "Null Out Audio")
-                                            (provision '(audio-null-out))
-                                            (requirement '(alsa))
-                                            (start #~(make-forkexec-constructor
-                                                      (list #+(file-append
-                                                               alsa-utils
-                                                               "/bin/amixer")
-                                                            "set" "Master"
-                                                            "0%")))
-                                            (stop #~(make-kill-destructor)))))
-    (simple-service 'mute-audio boot-service-type
-                    (list (shepherd-service (documentation "Mute Audio")
-                                            (provision '(audio-mute))
-                                            (requirement '(alsa))
-                                            (start #~(make-forkexec-constructor
-                                                      (list #+(file-append
-                                                               alsa-utils
-                                                               "/bin/amixer")
-                                                            "set" "Master"
-                                                            "mute")))
-                                            (stop #~(make-kill-destructor)))))
     ;; services
     ;; dbus
     (service home-dbus-service-type)

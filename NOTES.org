@@ -276,6 +276,53 @@ sudo herd status
 2. `sudo systemctl restart guix-daemon.service` or `sudo herd restart guix-daemon`
 
 ** Snippets
+*** Manual Emacs Daemon
+#+BEGIN_SRC guile
+(simple-service 'emacs-daemon shepherd-root-service-type
+                (list (shepherd-service (documentation "Emacs Daemon")
+                                        (provision '(emacs-daemon))
+                                        (requirement '(user-processes))
+                                        (start #~(make-forkexec-constructor
+                                                  (list #+(file-append
+                                                           emacs-pgtk
+                                                           "/bin/emacs")
+                                                        "--fg-daemon")
+                                                  #:user "puppy"
+                                                  #:group "users"
+                                                  #:log-file
+                                                  "/var/log/emacs-daemon.log"
+                                                  #:environment-variables (list
+                                                                           (string-append
+                                                                            "HOME=/home/puppy")
+                                                                           "TERM=kitty")))
+                                        (stop #~(make-kill-destructor))
+                                        (respawn? #t))))
+#+END_SRC
+*** Mute Audio Devices Service
+#+BEGIN_SRC guile
+(simple-service 'null-audio boot-service-type
+                (list (shepherd-service (documentation "Null Out Audio")
+                                        (provision '(audio-null-out))
+                                        (requirement '(alsa))
+                                        (start #~(make-forkexec-constructor
+                                                  (list #+(file-append
+                                                           alsa-utils
+                                                           "/bin/amixer")
+                                                        "set" "Master"
+                                                        "0%")))
+                                        (stop #~(make-kill-destructor)))))
+(simple-service 'mute-audio boot-service-type
+                (list (shepherd-service (documentation "Mute Audio")
+                                        (provision '(audio-mute))
+                                        (requirement '(alsa))
+                                        (start #~(make-forkexec-constructor
+                                                  (list #+(file-append
+                                                           alsa-utils
+                                                           "/bin/amixer")
+                                                        "set" "Master"
+                                                        "mute")))
+                                        (stop #~(make-kill-destructor)))))
+#+END_SRC
 *** Pin Kernel Version
 Use this to pin nonguix & guix channel to linux kernel 6.18.7 commit, so that not every rebuild, rebuilds the entire kernel.
 #+BEGIN_SRC emacs-lisp
