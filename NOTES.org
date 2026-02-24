@@ -149,12 +149,18 @@ guix pull
 **** Commands
 Find WiFi Device/Cards Name via 'ifconfig -a'.
 #+BEGIN_SRC sh
+sudo ip link set interface1s0 up
+sudo rfkill unblock wifi
 rfkill unblock all
 wpa_supplicant -c wifi.conf -i interface1s0 -B
 dhclient -v interface1s0
 nmcli device wifi list
 nmcli device wifi connect "SSID" password "PASSWORD"
 #+END_SRC
+
+Then check ip address assignment via 'ip addr show interface1s0',
+and check the routing table with 'ip route show'. If the routing
+got set up correctly, a line starting with "default via ..." should appear.
 
 **** wifi.conf
 #+BEGIN_SRC sh
