@@ -358,6 +358,11 @@ Use this to pin nonguix & guix channel to linux kernel 6.18.7 commit, so that no
              "A36A D41E ECC7 A871 1003  5D24 524F EB1A 9D33 C9CB")))))
         %default-channels)
 #+END_SRC
+*** Alsa Service
+The Alsa Service is already included in "%desktop-services", so no need to manually add it.
+#+BEGIN_SRC guile
+(service alsa-service-type)
+#+END_SRC
 *** Bootloader
 **** Legacy/BIOS
 #+BEGIN_SRC emacs-lisp
