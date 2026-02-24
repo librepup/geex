@@ -2702,14 +2702,17 @@ openConfigHook() {
     fi
     shopt -s expand_aliases
     alias 9 >/dev/null 2>&1 && unalias 9
-    if command -v emacs >/dev/null; then
-        export openEditor="emacs"
-    elif command -v nixmacs >/dev/null; then
+    if command -v nixmacs >/dev/null; then
+        if [[ -n "$EMACSLOADPATH" ]]; then
+            unset EMACSLOADPATH
+        fi
         if [[ "$XDG_SESSION_TYPE" == "wayland" ]] || [[ -n "$WAYLAND_DISPLAY" ]]; then
             export openEditor="nixmacs-wayland"
         else
             export openEditor="nixmacs"
         fi
+    elif command -v emacs >/dev/null; then
+        export openEditor="emacs"
     elif command -v vim >/dev/null; then
         export openEditor="vim"
     elif command -v nvim >/dev/null; then
@@ -3046,7 +3049,6 @@ installerHook() {
                             else
                                 cp /tmp/geex.config.${stager}.dd /tmp/config.scm
                             fi
-                            echo -e "[ Notice ]: Copied your '/tmp/geex.config.${stager}.dd' to '/tmp/config.scm'."
                             if command -v guix >/dev/null; then
                                 guix style -f /tmp/config.scm
                                 echo -e "\n[ Style Notice ]: Styled '/tmp/config.scm'"
@@ -3058,7 +3060,6 @@ installerHook() {
                             else
                                 cp /tmp/geex.config.${stager}.dd /tmp/config.scm
                             fi
-                            echo -e "[ Notice ]: Copied your '/tmp/geex.config.${stager}.dd' to '/tmp/config.scm'."
                             if command -v guix >/dev/null; then
                                 guix style -f /tmp/config.scm
                                 echo -e "\n[ Style Notice ]: Styled '/tmp/config.scm'"
