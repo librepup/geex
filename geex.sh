@@ -32,6 +32,8 @@ ENVIRONMENT can be one of the environment variables listed below:
     GEEX_SKIP_WIFI               ignore if there is no active internet connection
     GEEX_EDITOR                  force the use of a specific editor for editing
                                  the configuration file (if selected)
+    GEEX_MANUAL_NET_SETUP_MODE   force the installer to throw you into manual networking
+                                 setup mode
 
   experimental environment variables
     GEEX_THE_HURD                force the installer to set your system up with GNU Hurd
@@ -345,6 +347,8 @@ ENVIRONMENT can be one of the environment variables listed below:
     GEEX_SKIP_WIFI               ignore if there is no active internet connection
     GEEX_EDITOR                  force the use of a specific editor for editing
                                  the configuration file (if selected)
+    GEEX_MANUAL_NET_SETUP_MODE   force the installer to throw you into manual networking
+                                 setup mode
 
   experimental environment variables
     GEEX_THE_HURD                force the installer to set your system up with GNU Hurd
@@ -1878,6 +1882,40 @@ biosUefiEditHook() {
     fi
 }
 systemInstallHook() {
+    if [[ "$GEEX_HAS_INTERNET" == 3 ]] || [[ "$GEEX_HAS_INTERNET" == 0 ]]; then
+        if [[ -n "$GEEX_HAS_INTERNET" ]]; then
+            unset GEEX_HAS_INTERNET
+        fi
+        if [[ "$GEEX_DEBUG_MODE" != 1 ]]; then
+            checkInternetHook
+        else
+            export GEEX_HAS_INTERNET=2
+        fi
+    fi
+    if [[ "$GEEX_HAS_INTERNET" == 2 ]] && [[ "$GEEX_DEBUG_MODE" != 1 ]]; then
+        errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "The Installer has detected that you are using 'GEEX_SKIP_WIFI' to skip WiFi verification, yet you are trying to call the System Initialization and Installation Hook. This is not supported, unless 'GEEX_DEBUG' is also set. The Installer will forceably quit now." 32 50 3>&1 1>&2 2>&3) || exit 1
+        dialog --clear
+        clear
+        echo "[ Error ]: Aborting..."
+        exit 1
+    fi
+    if [[ "$GEEX_HAS_INTERNET" == 3 ]]; then
+        errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "The Installer has noticed that you still have not set up Networking for an active Internet connection, and will thus forceably quit now.\n\nPlease make sure you have a working Internet Connection before beginning the System Initialization and Installation Phase." 32 50 3>&1 1>&2 2>&3) || exit 1
+        dialog --clear
+        clear
+        echo "[ Error ]: Aborting..."
+        exit 1
+    fi
+    if [[ "$GEEX_HAS_INTERNET" != 1 ]] && [[ "$GEEX_HAS_INTERNET" != 2 ]] && [[ "$GEEX_HAS_INTERNET" != 3 ]]; then
+        checkInternetHook
+        if [[ "$GEEX_HAS_INTERNET" != 1 ]] && [[ "$GEEX_HAS_INTERNET" != 2 ]] && [[ "$GEEX_HAS_INTERNET" != 3 ]]; then
+            errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "The Installer has not found any way to identify whether you have an active Internet Connection or not (NetNum: $GEEX_HAS_INTERNET). This is not supposed to happen. You have neither a WiFi Connection, nor an Ethernet Connection, skipped the WiFi Setup (with or without Debug Mode), and also have not been set to 'No Internet'. This is an unrecoverable Error, and the installer will now forceably quit." 34 68 3>&1 1>&2 2>&3) || exit 1
+            dialog --clear
+            clear
+            echo "[ Error ]: Aborting..."
+            exit 1
+        fi
+    fi
     echo "[ Status ]: Beginning formal GNU Guix installation..."
     if [ -n "$GEEX_DEBUG" ] || [ -n "$GEEX_DEBUG_MODE" ] || [[ "$GEEX_DEBUG" == 1 ]] || [[ "$GEEX_DEBUG_MODE" == 1 ]]; then
         echo "[ Status ]: Debug Mode Detected, pretending to install system..."
@@ -2980,24 +3018,69 @@ internetChooseNetwork() {
         dialog --backtitle "Geex Installer" --title "Error" --msgbox "Please choose a Valid (or any) Network and try again." 32 50
     done
 }
+manualInternetPasswordHook() {
+    while true; do
+        manualNetworkPassword=$(dialog --backtitle "Geex Installer" --title "Network Password" --inputbox "Enter Network Password:" 12 44 3>&1 1>&2 2>&3) || exit 1
+        passwordNoSpaces=$(echo "$manualNetworkPassword" | sed "s|[[:space:]]||g")
+        if [[ -n "$passwordIsEmpty" ]]; then
+            unset passwordIsEmpty
+        fi
+        if [[ "$passwordNoSpaces" == "" ]] || [[ -z "$passwordNoSpaces" ]]; then
+            export passwordIsEmpty=1
+        elif [[ "$manualNetworkPassword" == "" ]] || [[ -z "$manualNetworkPassword" ]]; then
+            export passwordIsEmpty=1
+        else
+            export passwordIsEmpty=0
+        fi
+        if [[ "$passwordIsEmpty" != 1 ]]; then
+            export passwordIsEmpty=$passwordIsEmpty
+            return 0
+        fi
+        dialog --backtitle "Geex Installer" --title "Error" --msgbox "Please enter a valid (or any) Password for your Network." 8 50
+    done
+}
 manualInternetConfigCreationHook() {
     while true; do
         manualNetworkName=$(dialog --backtitle "Geex Installer" --title "Network Name" --inputbox "Enter Network Name:" 12 44 3>&1 1>&2 2>&3) || exit 1
-        if [[ -n "$manualNetworkName" ]]; then
+        nameNoSpaces=$(echo "$manualNetworkName" | sed "s|[[:space:]]||g")
+        if [[ -n "$nameIsEmpty" ]]; then
+            unset nameIsEmpty
+        fi
+        if [[ "$nameNoSpaces" == "" ]] || [[ -z "$nameNoSpaces" ]]; then
+            export nameIsEmpty=1
+        elif [[ "$manualNetworkName" == "" ]] || [[ -z "$manualNetworkName" ]]; then
+            export nameIsEmpty=1
+        else
+            export nameIsEmpty=0
+        fi
+        if [[ "$nameIsEmpty" != 1 ]]; then
             export manualNetworkName=$manualNetworkName
             manualNetworkSecurity=$(dialog --backtitle "Geex Installer" --title "Network Security" --menu "Is Network '$manualNetworkName' Secured with a Password?" 12 50 10 \
                                            yes "Yes" \
                                            no "No" \
                                            3>&1 1>&2 2>&3) || exit 1
+            if [[ "$manualNetworkSecurity" == "no" ]] || [[ "$manualNetworkSecurity" != "yes" ]]; then
+                if [[ -n "$passwordIsEmpty" ]]; then
+                    unset passwordIsEmpty
+                fi
+                export passwordIsEmpty=0
+            fi
             if [[ "$manualNetworkSecurity" == "yes" ]]; then
-                manualNetworkPassword=$(dialog --backtitle "Geex Installer" --title "Network Password" --inputbox "Enter Network Password:" 12 44 3>&1 1>&2 2>&3) || exit 1
-                if [[ -n "$manualNetworkPassword" ]]; then
+                manualInternetPasswordHook
+                if [[ "$passwordIsEmpty" != 1 ]]; then
                     if [ -f "/tmp/geex.manual.network.config.conf" ]; then
                         rm /tmp/geex.manual.network.config.conf
                     fi
                     echo -e "network={\n  ssid=\"$manualNetworkName\"\n  key_mgmt=WPA-PSK\n  psk=\"$manualNetworkPassword\"\n  priority=1\n}" >> /tmp/geex.manual.network.config.conf
-                    manualNetworkStart=$(dialog --backtitle "Geex Installer" --title "Network Connection" --yesno "Connect to Network now?" 34 75 3>&1 1>&2 2>&3)
+                    if [[ -f "/tmp/geex.manual.network.config.conf" ]]; then
+                        wifiConfigFile=$(cat /tmp/geex.manual.network.config.conf)
+                    fi
+                    manualNetworkStart=$(dialog --cr-wrap --backtitle "Geex Installer" --title "Network Connection" --yesno "Wrote WiFi Configuration:\n\`\`\`\n${wifiConfigFile}\n\`\`\`\n\nConnect to Network now?" 18 75 3>&1 1>&2 2>&3)
                     manualNetworkStart_RESPONSE_CODE=$?
+                    if [[ ! "$manualNetworkStart_RESPONSE_CODE" -eq 0 ]]; then
+                        noticePopup=$(dialog --backtitle "Geex Installer" --title "Network Setup" --msgbox "If you want to manually connect to the '$manualNetworkName' Network, run the following commands from a separate Terminal, before continuing the installation process.\n\nrfkill unblock all\nwpa_supplicant -B -i $GEEX_WIFI_DEVICE -c /tmp/geex.manual.network.config.conf &\ndhclient -v $GEEX_WIFI_DEVICE" 18 75 3>&1 1>&2 2>&3)
+                        export GEEX_HAS_INTERNET=3
+                    fi
                     if [ "$manualNetworkStart_RESPONSE_CODE" -eq 0 ]; then
                         if command -v rfkill >/dev/null; then
                             runWithEscalationUtil rfkill unblock all &
@@ -3044,8 +3127,15 @@ manualInternetConfigCreationHook() {
                     rm /tmp/geex.manual.network.config.conf
                 fi
                 echo -e "network={\n  ssid=\"$manualNetworkName\"\n  key_mgmt=NONE\n  priority=1\n}" >> /tmp/geex.manual.network.config.conf
-                manualNetworkStart=$(dialog --backtitle "Geex Installer" --title "Network Connection" --yesno "Connect to Network now?" 34 75 3>&1 1>&2 2>&3)
+                if [[ -f "/tmp/geex.manual.network.config.conf" ]]; then
+                    wifiConfigFile=$(cat /tmp/geex.manual.network.config.conf)
+                fi
+                manualNetworkStart=$(dialog --cr-wrap --backtitle "Geex Installer" --title "Network Connection" --yesno "Wrote WiFi Configuration:\n\`\`\`\n${wifiConfigFile}\n\`\`\`\n\nConnect to Network now?" 18 75 3>&1 1>&2 2>&3)
                 manualNetworkStart_RESPONSE_CODE=$?
+                if [[ ! "$manualNetworkStart_RESPONSE_CODE" -eq 0 ]]; then
+                    noticePopup=$(dialog --backtitle "Geex Installer" --title "Network Setup" --msgbox "If you want to manually connect to the '$manualNetworkName' Network, run the following commands from a separate Terminal, before continuing the installation process.\n\nrfkill unblock all\nwpa_supplicant -B -i $GEEX_WIFI_DEVICE -c /tmp/geex.manual.network.config.conf &\ndhclient -v $GEEX_WIFI_DEVICE" 18 75 3>&1 1>&2 2>&3)
+                    export GEEX_HAS_INTERNET=3
+                fi
                 if [ "$manualNetworkStart_RESPONSE_CODE" -eq 0 ]; then
                     if command -v rfkill >/dev/null; then
                         runWithEscalationUtil rfkill unblock all &
@@ -3088,14 +3178,17 @@ manualInternetConfigCreationHook() {
                 fi
             fi
         fi
-        if checkInternetHook; then
+        if [[ "$nameIsEmpty" != 1 ]] && [[ "$GEEX_HAS_INTERNET" != 3 ]] && [[ "$passwordIsEmpty" != 1 ]] && checkInternetHook; then
             export GEEX_HAS_INTERNET=1
-            if [[ -n "$MANUALNETWORKSTART_RESPONSE_CODE" ]] || [[ "$MANUALNETWORKSTART_RESPONSE_CODE" == 0 ]]; then
+            if [[ -n "$MANUAL_NETWORK_LOOP_BREAKOUT" ]] || [[ "$MANUAL_NETWORK_LOOP_BREAKOUT" == 0 ]]; then
                 unset MANUAL_NETWORK_LOOP_BREAKOUT
             fi
             export MANUAL_NETWORK_LOOP_BREAKOUT=1
             export connectivityStatusCheck="WiFi (Manual)"
             return 0
+        elif [[ "$nameIsEmpty" != 1 ]] && [[ "$passwordIsEmpty" != 1 ]] && [[ "$GEEX_HAS_INTERNET" == 3 ]]; then
+            export GEEX_HAS_INTERNET=3
+            export MANUAL_NETWORK_LOOP_BREAKOUT=1
         else
             if [[ "$GEEX_HAS_INTERNET" == 1 ]]; then
                 unset GEEX_HAS_INTERNET
@@ -3108,7 +3201,11 @@ manualInternetConfigCreationHook() {
         if [[ "$MANUAL_NETWORK_LOOP_BREAKOUT" == 1 ]] || [[ "$GEEX_HAS_INTERNET" == 1 ]]; then
             return 0
         fi
-        dialog --backtitle "Geex Installer" --title "Error" --msgbox "Please make sure you have selected a valid Networking Device, entered a valid (or any) WiFi Network Name/SSID, and entered the correct Network Password (if required)." 32 50
+        if [[ "$nameIsEmpty" == 1 ]]; then
+            dialog --backtitle "Geex Installer" --title "Error" --msgbox "Please enter a valid (or any) Network Name/SSID." 8 50
+        else
+            dialog --backtitle "Geex Installer" --title "Error" --msgbox "There was a problem establishing a connection to your selected Network, please check your answers again or choose another Network and try again." 8 50
+        fi
     done
 }
 manualInternetHook() {
@@ -3136,12 +3233,14 @@ internetConnectionHook() {
         fi
         return 1
     fi
-    alreadyConnectedHook
-    if [[ "$GEEX_HAS_INTERNET" == 1 ]]; then
+    if [[ "$GEEX_MANUAL_NET_SETUP_MODE" != 1 ]] || [[ -z "$GEEX_MANUAL_NET_SETUP_MODE" ]]; then
+        alreadyConnectedHook
+    fi
+    if [[ "$GEEX_HAS_INTERNET" == 1 ]] && [[ "$GEEX_MANUAL_NET_SETUP_MODE" != 1 ]]; then
         return 1
     fi
-    if ! command -v nmcli >/dev/null 2>&1; then
-        errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "The Installer detected that you are missing 'nmcli', a required dependency for setting up a WiFi Connection, do you want to continue to manually set up your Networking Connection via 'wpa_supplicant', or quit the installer?" 20 60 \
+    if ! command -v nmcli >/dev/null 2>&1 || [[ "$GEEX_MANUAL_NET_SETUP_MODE" == 1 ]]; then
+        errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --menu "The Installer detected that you are missing 'nmcli', a required dependency for setting up a WiFi Connection, do you want to continue to manually set up your Networking Connection via 'wpa_supplicant', or quit the installer?" 20 60 10 \
                               manual "Manual" \
                               quit "Quit" \
                               3>&1 1>&2 2>&3) || exit 1
