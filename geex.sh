@@ -575,12 +575,16 @@ done
 
 # Check if Commands are Missing
 export missingCommandCount=0
-for cmd in cp awk dialog git grep parted lsblk find tzselect ps mke2fs lspci; do
+for cmd in cp awk dialog git grep parted lsblk find ps mke2fs lspci wpa_supplicant; do
     if ! command -v "$cmd" >/dev/null 2>&1; then
         echo "[ Warning ]: Missing required binary: $cmd" >&2
         export missingCommandCount=$(($missingCommandCount + 1))
     fi
 done
+if ! command -v dhclient >/dev/null 2>&1 && ! command -v dhcpcd >/dev/null 2>&1; then
+    echo "[ Warning ]: Missing both 'dhclient' and 'dhcpcd', addressing issue..." >&2
+    export missingCommandCount=$(($missingCommandCount + 1))
+fi
 
 if command -v herd >/dev/null; then
     echo "[ Status ]: 'herd' found, continuing."
@@ -605,15 +609,15 @@ fi
 
 # If Commands are Missing, Open a Guix Shell with them Present
 if [[ "$missingCommandCount" != 0 ]]; then
-  if [ -z "$GUIX_ENVIRONMENT" ] && echo "[ Status ]: Checking for Guix, then running shell exec hook..." && command -v guix >/dev/null 2>&1 && guix shell coreutils bash gawk grep parted findutils util-linux git-minimal dialog tzdata procps e2fsprogs pciutils -- true >/dev/null 2>&1; then
+  if [ -z "$GUIX_ENVIRONMENT" ] && echo "[ Status ]: Checking for Guix, then running shell exec hook..." && command -v guix >/dev/null 2>&1 && guix shell coreutils bash gawk grep parted findutils util-linux git-minimal dialog procps e2fsprogs pciutils wpa-supplicant isc-dhcp -- true >/dev/null 2>&1; then
       echo "[ Guix ]: Found Guix, running guix shell exec hook..."
       export IN_GUIX_SHELL=1
       export GEEX_RUNNING_IN="guix"
-      exec guix shell coreutils bash gawk grep parted findutils util-linux git-minimal dialog tzdata procps e2fsprogs pciutils -- bash "$0" "$@"
-  elif [ -z "$IN_NIX_SHELL" ] && echo "[ Warning ]: Guix not found, checking for Nix, then running shell exec hook..." && command -v nix-shell >/dev/null 2>&1 && nix-shell -p coreutils gawk bash gnugrep parted findutils util-linux git dialog tzdata procps e2fsprogs pciutils --run true >/dev/null 2>&1; then
+      exec guix shell coreutils bash gawk grep parted findutils util-linux git-minimal dialog procps e2fsprogs pciutils wpa-supplicant isc-dhcp -- bash "$0" "$@"
+  elif [ -z "$IN_NIX_SHELL" ] && echo "[ Warning ]: Guix not found, checking for Nix, then running shell exec hook..." && command -v nix-shell >/dev/null 2>&1 && nix-shell -p coreutils gawk bash gnugrep parted findutils util-linux git dialog procps e2fsprogs pciutils wpa_supplicant dhcpcd --run true >/dev/null 2>&1; then
       echo "[ Nix ]: Found Nix, running nix shell exec hook..."
       export GEEX_RUNNING_IN="nix"
-      exec nix-shell -p coreutils bash gawk gnugrep parted findutils util-linux git dialog tzdata procps e2fsprogs pciutils --run "bash "$0" "$@""
+      exec nix-shell -p coreutils bash gawk gnugrep parted findutils util-linux git dialog procps e2fsprogs pciutils wpa_supplicant dhcpcd --run "bash "$0" "$@""
   else
       echo -e "[ Warning ]: Commands missing, but found no way to retrieve them temporarily.\nAborting unless Variable 'GEEX_IGNORE_MISSING' is set."
       if [ ! -n "$GEEX_IGNORE_MISSING" ]; then
@@ -766,8 +770,6 @@ cat > /tmp/geex.config.custom.template.dd <<'EOF'
                              "emacs-no-x"
                              "usbutils"
                              "pciutils"
-                             "wpa-supplicant"
-                             "dhcpcd"
                              "naitre"
                              "procps"
                              "wget"
@@ -2673,6 +2675,7 @@ packageBundlesHook() {
                              archivers "Archiving Tools" off \
                              rescue "Rescue Tools" off \
                              fonts "Fonts" on \
+                             networking "Networking" on \
                              3>&1 1>&2 2>&3) || exit 1
     read -r -a bundleSelectionArray <<< "$bundleSelection"
     bundleSelectionCount="${#bundleSelectionArray[@]}"
@@ -2683,6 +2686,10 @@ packageBundlesHook() {
     bundleOfficeBlock="$(echo -e "                             \"libreoffice\"\n                             \"gnucash\"")"
     if [ -f "/tmp/geex.bundle.plan9.dd" ]; then
         rm /tmp/geex.bundle.plan9.dd
+    fi
+    bundleNetworkingBlock="$(echo -e "                             \"isc-dhcp\"\n                             \"dhcpcd\"\n                             \"wpa-supplicant\"")"
+    if [ -f "/tmp/geex.bundle.networking.dd" ]; then
+        rm /tmp/geex.bundle.networking.dd
     fi
     bundlePlan9Block="$(echo -e "                             \"plan9port\"")"
     if [ -f "/tmp/geex.bundle.archivers.dd" ]; then
@@ -2712,6 +2719,9 @@ packageBundlesHook() {
         fi
         if [[ "$bundleSelection" == *fonts* ]]; then
             bundleCombined="$(echo -e "$bundleFontsBlock\n$bundleCombined\n")"
+        fi
+        if [[ "$bundleSelection" == *networking* ]]; then
+            bundleCombined="$(echo -e "$bundleNetworkingBlock\n$bundleCombined\n")"
         fi
         if [ -f "/tmp/geex.bundle.combined.dd" ]; then
             rm /tmp/geex.bundle.combined.dd
@@ -3040,6 +3050,17 @@ manualInternetPasswordHook() {
     done
 }
 manualInternetConfigCreationHook() {
+    if [[ "$GEEX_RUNNING_IN" == "guix" ]]; then
+        export dhRunner="dhclient -v"
+    elif [[ "$GEEX_RUNNING_IN" == "nix" ]]; then
+        export dhRunner="dhcpcd"
+    elif command -v dhclient >/dev/null 2>&1; then
+        export dhRunner="dhclient -v"
+    elif command -v dhcpcd >/dev/null 2>&1; then
+        export dhRunner="dhcpcd"
+    else
+        export dhRunner="none"
+    fi
     while true; do
         manualNetworkName=$(dialog --backtitle "Geex Installer" --title "Network Name" --inputbox "Enter Network Name:" 12 44 3>&1 1>&2 2>&3) || exit 1
         nameNoSpaces=$(echo "$manualNetworkName" | sed "s|[[:space:]]||g")
@@ -3078,15 +3099,18 @@ manualInternetConfigCreationHook() {
                     manualNetworkStart=$(dialog --cr-wrap --backtitle "Geex Installer" --title "Network Connection" --yesno "Wrote WiFi Configuration:\n\`\`\`\n${wifiConfigFile}\n\`\`\`\n\nConnect to Network now?" 18 75 3>&1 1>&2 2>&3)
                     manualNetworkStart_RESPONSE_CODE=$?
                     if [[ ! "$manualNetworkStart_RESPONSE_CODE" -eq 0 ]]; then
-                        noticePopup=$(dialog --backtitle "Geex Installer" --title "Network Setup" --msgbox "If you want to manually connect to the '$manualNetworkName' Network, run the following commands from a separate Terminal, before continuing the installation process.\n\nrfkill unblock all\nwpa_supplicant -B -i $GEEX_WIFI_DEVICE -c /tmp/geex.manual.network.config.conf &\ndhclient -v $GEEX_WIFI_DEVICE" 18 75 3>&1 1>&2 2>&3)
+                        noticePopup=$(dialog --backtitle "Geex Installer" --title "Network Setup" --msgbox "If you want to manually connect to the '$manualNetworkName' Network, run the following commands from a separate Terminal, before continuing the installation process.\n\n$escalationUtil rfkill unblock all\n$escalationUtil wpa_supplicant -B -i $GEEX_WIFI_DEVICE -c /tmp/geex.manual.network.config.conf &\n$escalationUtil $dhRunner $GEEX_WIFI_DEVICE" 18 90 3>&1 1>&2 2>&3)
                         export GEEX_HAS_INTERNET=3
+                        if [[ -z "$connectivityStatusCheck" ]] || [[ "$connectivityStatusCheck" == "" ]]; then
+                            export connectivityStatusCheck="WiFi (Not Started)"
+                        fi
                     fi
                     if [ "$manualNetworkStart_RESPONSE_CODE" -eq 0 ]; then
                         if command -v rfkill >/dev/null; then
                             runWithEscalationUtil rfkill unblock all &
                         fi
                         runWithEscalationUtil wpa_supplicant -B -i $GEEX_WIFI_DEVICE -c /tmp/geex.manual.network.config.conf &
-                        if command -v dhclient >/dev/null; then
+                        if [[ "$dhRunner" != "none" ]]; then
                             if command -v wpa_cli >/dev/null; then
                                 timeoutThreshhold=30
                                 i=0
@@ -3118,7 +3142,7 @@ manualInternetConfigCreationHook() {
                                     fi
                                 fi
                             fi
-                            runWithEscalationUtil dhclient -v $GEEX_WIFI_DEVICE &
+                            runWithEscalationUtil $dhRunner $GEEX_WIFI_DEVICE &
                         fi
                     fi
                 fi
@@ -3133,15 +3157,18 @@ manualInternetConfigCreationHook() {
                 manualNetworkStart=$(dialog --cr-wrap --backtitle "Geex Installer" --title "Network Connection" --yesno "Wrote WiFi Configuration:\n\`\`\`\n${wifiConfigFile}\n\`\`\`\n\nConnect to Network now?" 18 75 3>&1 1>&2 2>&3)
                 manualNetworkStart_RESPONSE_CODE=$?
                 if [[ ! "$manualNetworkStart_RESPONSE_CODE" -eq 0 ]]; then
-                    noticePopup=$(dialog --backtitle "Geex Installer" --title "Network Setup" --msgbox "If you want to manually connect to the '$manualNetworkName' Network, run the following commands from a separate Terminal, before continuing the installation process.\n\nrfkill unblock all\nwpa_supplicant -B -i $GEEX_WIFI_DEVICE -c /tmp/geex.manual.network.config.conf &\ndhclient -v $GEEX_WIFI_DEVICE" 18 75 3>&1 1>&2 2>&3)
+                    noticePopup=$(dialog --backtitle "Geex Installer" --title "Network Setup" --msgbox "If you want to manually connect to the '$manualNetworkName' Network, run the following commands from a separate Terminal, before continuing the installation process.\n\n$escalationUtil rfkill unblock all\n$escalationUtil wpa_supplicant -B -i $GEEX_WIFI_DEVICE -c /tmp/geex.manual.network.config.conf &\n$escalationUtil $dhRunner $GEEX_WIFI_DEVICE" 18 90 3>&1 1>&2 2>&3)
                     export GEEX_HAS_INTERNET=3
+                    if [[ -z "$connectivityStatusCheck" ]] || [[ "$connectivityStatusCheck" == "" ]]; then
+                        export connectivityStatusCheck="WiFi (Not Started)"
+                    fi
                 fi
                 if [ "$manualNetworkStart_RESPONSE_CODE" -eq 0 ]; then
                     if command -v rfkill >/dev/null; then
                         runWithEscalationUtil rfkill unblock all &
                     fi
                     runWithEscalationUtil wpa_supplicant -B -i $GEEX_WIFI_DEVICE -c /tmp/geex.manual.network.config.conf &
-                    if command -v dhclient >/dev/null; then
+                    if [[ "$dhRunner" != "none" ]]; then
                         if command -v wpa_cli >/dev/null; then
                             timeoutThreshhold=30
                             i=0
@@ -3173,7 +3200,7 @@ manualInternetConfigCreationHook() {
                                 fi
                             fi
                         fi
-                        runWithEscalationUtil dhclient -v $GEEX_WIFI_DEVICE &
+                        runWithEscalationUtil $dhRunner $GEEX_WIFI_DEVICE &
                     fi
                 fi
             fi
@@ -3485,6 +3512,8 @@ installerHook() {
         export hasInternetConnection="Yes"
     elif [[ "$GEEX_HAS_INTERNET" == 2 ]]; then
         export hasInternetConnection="Mock"
+    elif [[ "$GEEX_HAS_INTERNET" == 3 ]]; then
+        export hasInternetConnection="Configured"
     else
         export hasInternetConnection="No"
     fi
@@ -3495,7 +3524,7 @@ installerHook() {
     else
         export connectivityStatusSummary=$connectivityStatusCheck
     fi
-    summaryTextContents="$(echo -e "(1) Information\nUsername: $username\nHostname: $hostname\nTimezone: $TIMEZONE\nPasswords Set?: $areAllPasswordsSet (Re-Used?: $wasPasswordReUsed)\nDisk: $disk (Parts: $diskPrefixedPartNameTextblock)\nSwap: $formattedWithSwap\nBIOS: $bios (Detected: $detectedBios)\nKeyboard: $keyboardInfo\nInternet?: $hasInternetConnection (Via: $connectivityStatusSummary)\n\n(2) Multiple-Choice\nServices: $serviceSelection\nDesktops: $deSelection\n\n(3) The Installer Wrote\nSwap Block?: $wroteSwapBlock\nBIOS Block?: $wroteBiosBlock\nFilesystem Block?: $isFilesystemWritten (Type: $filesystemBlockType)\nServices Block?: $areServicesWritten\nDesktop Block?: $areDesktopsWritten\nKeyboard Block?: $wroteKeyboardBlock\nTimezone Block?: $wroteTimezoneBlock\nBundles Block?: $wroteBundles\nXorg Block?: $wroteXorgBlock\nClosing OS Block?: $wroteOSEndBlock (Compose?: $wroteComposeBlock)")"
+    summaryTextContents="$(echo -e "(1) Information\nUsername: $username\nHostname: $hostname\nTimezone: $TIMEZONE\nPasswords Set?: $areAllPasswordsSet (Re-Used?: $wasPasswordReUsed)\nDisk: $disk (Parts: $diskPrefixedPartNameTextblock)\nSwap: $formattedWithSwap\nBIOS: $bios (Detected: $detectedBios)\nKeyboard: $keyboardInfo\nInternet?: $hasInternetConnection (Via: $connectivityStatusSummary)\n\n(2) Multiple-Choice\nServices: $serviceSelection\nDesktops: $deSelection\nBundles: $bundleSelection\n\n(3) The Installer Wrote\nSwap Block?: $wroteSwapBlock\nBIOS Block?: $wroteBiosBlock\nFilesystem Block?: $isFilesystemWritten (Type: $filesystemBlockType)\nServices Block?: $areServicesWritten\nDesktop Block?: $areDesktopsWritten\nKeyboard Block?: $wroteKeyboardBlock\nTimezone Block?: $wroteTimezoneBlock\nBundles Block?: $wroteBundles\nXorg Block?: $wroteXorgBlock\nClosing OS Block?: $wroteOSEndBlock (Compose?: $wroteComposeBlock)")"
     if [ -f "/tmp/geex.summary.dd" ]; then
         rm /tmp/geex.summary.dd
     fi
