@@ -753,7 +753,8 @@ cat > /tmp/geex.config.custom.template.dd <<'EOF'
 
     ;; Packages
     (packages (append (map specification->package
-                           '("eza" "bat"
+                           '("eza"
+                             "bat"
                              "zoxide"
                              GEEX_DOAS_PACKAGE_OPTIONAL
                              GEEX_I3_PACKAGE_OPTIONAL
@@ -770,7 +771,6 @@ cat > /tmp/geex.config.custom.template.dd <<'EOF'
                              "emacs-no-x"
                              "usbutils"
                              "pciutils"
-                             "naitre"
                              "procps"
                              "wget"
                              "curl"
@@ -2748,14 +2748,23 @@ packageBundlesHook() {
 addCustomPackageHook() {
     userPkgList=$(dialog --backtitle "Geex Installer" --title "Extra Packages" --inputbox "Enter Packages Separated by a Comma\n\nExample:\n\`\`\`\npackage-1, package-2, package-3\n\`\`\`\n" 20 64 3>&1 1>&2 2>&3) || exit 1
     confirmedPkgList=""
+    duplicationList=""
     IFS=',' read -ra ADDR <<< "$userPkgList"
     for i in "${ADDR[@]}"; do
         verified=$(searchForPackageFunction "$i")
         if [[ $? -eq 0 ]]; then
-            if [ "$confirmedPkgList" == "" ] || [ -z "$confirmedPkgList" ]; then
-                confirmedPkgList="$verified"
+            if cat /tmp/geex.config.${stager}.dd | grep -i "$verified" >/dev/null 2>&1; then
+                if [ "$duplicationList" == "" ] || [ -z "$duplicationList" ]; then
+                    duplicationList="$verified"
+                else
+                    duplicationList="$duplicationList $verified"
+                fi
             else
-                confirmedPkgList="$confirmedPkgList $verified"
+                if [ "$confirmedPkgList" == "" ] || [ -z "$confirmedPkgList" ]; then
+                    confirmedPkgList="$verified"
+                else
+                    confirmedPkgList="$confirmedPkgList $verified"
+                fi
             fi
         fi
     done
@@ -2764,9 +2773,14 @@ addCustomPackageHook() {
     export finalCustomPkgListWithoutCommas=$(echo -e "$finalCustomPkgListWithCommas" | sed "s/, / /g" | sed "s/,/ /g")
     export finalCustomPkgListCleanup=$(echo "$finalCustomPkgListWithoutCommas" | tr ' ' '\n' | sort -u | xargs)
     export finalCustomPkgList=$(echo ${finalCustomPkgListCleanup//$'\n'/ })
-    pkgListConfirmationText="$(echo -e "Please confirm that the list below contains all of the custom packages you selected (filtered through a 'guix search' to determine whether each package exists or not):\n\n$finalCustomPkgList\n\nNote that at this stage, the installer does not check whether a package you defined is already present in your system configuration file, please make sure you do not add duplicate packages.")"
+    export finalDuplicationListWithoutCommas=$(echo -e "$duplicationList" | sed "s/, / /g" | sed "s/,/ /g")
+    export finalDuplicationListCleanup=$(echo "$finalDuplicationListWithoutCommas" | tr ' ' '\n' | sort -u | xargs)
+    export finalDuplicationList=$(echo ${finalDuplicationListCleanup//$'\n'/ })
+    pkgListConfirmationText="$(echo -e "Please confirm that the list below contains all of the custom packages you selected (filtered through a 'guix search' to determine whether each package exists or not):\n\n$finalCustomPkgList\n\nThe Installer removed the following provided Packages due to duplication:\n\n$finalDuplicationList")"
     if [[ "$finalCustomPkgList" == "" ]]; then
         sed -i "/GEEX_EXTRA_PACKAGE_LIST_OPTIONAL/d" /tmp/geex.config.${stager}.dd
+        export userWantedCustomPackages="No"
+        export wroteCustomPackages="No"
         return 0
     fi
     pkgListConfirmation=$(dialog --backtitle "Geex Installer" --title "Confirm Packages" --yesno "$pkgListConfirmationText" 34 75 3>&1 1>&2 2>&3)
@@ -2789,15 +2803,23 @@ addCustomPackageHook() {
                    r /tmp/geex.extra.packages.insertable.dd
                    d
                    }" /tmp/geex.config.${stager}.dd
+            export userWantedCustomPackages="Yes"
+            export wroteCustomPackages="$finalCustomPkgList"
         else
             sed -i "/GEEX_EXTRA_PACKAGE_LIST_OPTIONAL/d" /tmp/geex.config.${stager}.dd
+            export userWantedCustomPackages="No"
+            export wroteCustomPackages="No"
         fi
     else
         echo -e "[ Error ]: Error with List Confirmation"
         sed -i "/GEEX_EXTRA_PACKAGE_LIST_OPTIONAL/d" /tmp/geex.config.${stager}.dd
+        export userWantedCustomPackages="Unknown"
+        export wroteCustomPackages="No"
     fi
     if [ "$extraPackageListInsertable" == "" ] || [ -z "$extraPackageListInsertable" ]; then
         sed -i "/GEEX_EXTRA_PACKAGE_LIST_OPTIONAL/d" /tmp/geex.config.${stager}.dd
+        export userWantedCustomPackages="No"
+        export wroteCustomPackages="No"
     fi
 }
 swapQuestion() {
@@ -3524,7 +3546,7 @@ installerHook() {
     else
         export connectivityStatusSummary=$connectivityStatusCheck
     fi
-    summaryTextContents="$(echo -e "(1) Information\nUsername: $username\nHostname: $hostname\nTimezone: $TIMEZONE\nPasswords Set?: $areAllPasswordsSet (Re-Used?: $wasPasswordReUsed)\nDisk: $disk (Parts: $diskPrefixedPartNameTextblock)\nSwap: $formattedWithSwap\nBIOS: $bios (Detected: $detectedBios)\nKeyboard: $keyboardInfo\nInternet?: $hasInternetConnection (Via: $connectivityStatusSummary)\n\n(2) Multiple-Choice\nServices: $serviceSelection\nDesktops: $deSelection\nBundles: $bundleSelection\n\n(3) The Installer Wrote\nSwap Block?: $wroteSwapBlock\nBIOS Block?: $wroteBiosBlock\nFilesystem Block?: $isFilesystemWritten (Type: $filesystemBlockType)\nServices Block?: $areServicesWritten\nDesktop Block?: $areDesktopsWritten\nKeyboard Block?: $wroteKeyboardBlock\nTimezone Block?: $wroteTimezoneBlock\nBundles Block?: $wroteBundles\nXorg Block?: $wroteXorgBlock\nClosing OS Block?: $wroteOSEndBlock (Compose?: $wroteComposeBlock)")"
+    summaryTextContents="$(echo -e "(1) Information\nUsername: $username\nHostname: $hostname\nTimezone: $TIMEZONE\nPasswords Set?: $areAllPasswordsSet (Re-Used?: $wasPasswordReUsed)\nDisk: $disk (Parts: $diskPrefixedPartNameTextblock)\nSwap: $formattedWithSwap\nBIOS: $bios (Detected: $detectedBios)\nKeyboard: $keyboardInfo\nInternet: $hasInternetConnection (Via: $connectivityStatusSummary)\nExtra Packages: $userWantedCustomPackages\n\n(2) Multiple-Choice\nServices: $serviceSelection\nDesktops: $deSelection\nBundles: $bundleSelection\nExtra Packages: $wroteCustomPackages\n\n(3) The Installer Wrote\nSwap Block?: $wroteSwapBlock\nBIOS Block?: $wroteBiosBlock\nFilesystem Block?: $isFilesystemWritten (Type: $filesystemBlockType)\nServices Block?: $areServicesWritten\nDesktop Block?: $areDesktopsWritten\nKeyboard Block?: $wroteKeyboardBlock\nTimezone Block?: $wroteTimezoneBlock\nBundles Block?: $wroteBundles\nXorg Block?: $wroteXorgBlock\nClosing OS Block?: $wroteOSEndBlock (Compose?: $wroteComposeBlock)")"
     if [ -f "/tmp/geex.summary.dd" ]; then
         rm /tmp/geex.summary.dd
     fi
