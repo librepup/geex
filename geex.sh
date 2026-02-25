@@ -29,6 +29,9 @@ ENVIRONMENT can be one of the environment variables listed below:
     GEEX_PRETEND_FATAL           pretend to have encountered a fatal error
     GEEX_IGNORE_FORCED_DEBUG     ignore forced debug mode if herd was not found
     GEEX_MISSING_HERD_IGNORE     ignore whether herd/shepherd is missing
+    GEEX_SKIP_WIFI               ignore if there is no active internet connection
+    GEEX_EDITOR                  force the use of a specific editor for editing
+                                 the configuration file (if selected)
 
   experimental environment variables
     GEEX_THE_HURD                force the installer to set your system up with GNU Hurd
@@ -36,6 +39,7 @@ ENVIRONMENT can be one of the environment variables listed below:
                                  a joke variable, do not install GNU Hurd as your systems
                                  main kernel - it will likely not boot, nor support your
                                  hardware
+    GEEX_FORCE_THE_HURD          force installation even if installer is set to GNU Hurd
 
 EXAMPLES that you may consider running yourself listed below:
 
@@ -52,6 +56,10 @@ NOTICE for you to consider:
     if you run the installer without debug mode, it will try to install gnu guix on your system or one
     of your disks, please be aware of this and ALWAYS run the installer in DEBUG MODE before deciding
     to actually use it to install an operating system (GNU Guix).
+
+    as a last-resort safety mechanism, the installer forcefully enables DEBUG MODE if it detects that
+    shepherd (herd) as a command is not available on your system, automatically assuming you are
+    running the installer on a system with which you do not intend to actually install GNU Guix.
 
   mover notices
     if you run the mover without debug mode, it will try to move and copy files into your system without
@@ -328,6 +336,9 @@ ENVIRONMENT can be one of the environment variables listed below:
     GEEX_PRETEND_FATAL           pretend to have encountered a fatal error
     GEEX_IGNORE_FORCED_DEBUG     ignore forced debug mode if herd was not found
     GEEX_MISSING_HERD_IGNORE     ignore whether herd/shepherd is missing
+    GEEX_SKIP_WIFI               ignore if there is no active internet connection
+    GEEX_EDITOR                  force the use of a specific editor for editing
+                                 the configuration file (if selected)
 
   experimental environment variables
     GEEX_THE_HURD                force the installer to set your system up with GNU Hurd
@@ -335,6 +346,7 @@ ENVIRONMENT can be one of the environment variables listed below:
                                  a joke variable, do not install GNU Hurd as your systems
                                  main kernel - it will likely not boot, nor support your
                                  hardware
+    GEEX_FORCE_THE_HURD          force installation even if installer is set to GNU Hurd
 
 EXAMPLES that you may consider running yourself listed below:
 
@@ -351,6 +363,10 @@ NOTICE for you to consider:
     if you run the installer without debug mode, it will try to install gnu guix on your system or one
     of your disks, please be aware of this and ALWAYS run the installer in DEBUG MODE before deciding
     to actually use it to install an operating system (GNU Guix).
+
+    as a last-resort safety mechanism, the installer forcefully enables DEBUG MODE if it detects that
+    shepherd (herd) as a command is not available on your system, automatically assuming you are
+    running the installer on a system with which you do not intend to actually install GNU Guix.
 
   mover notices
     if you run the mover without debug mode, it will try to move and copy files into your system without
@@ -1911,8 +1927,23 @@ systemInstallHook() {
                     rm $GEEX_GUIX_SYSTEM_INIT_CHECKFILE
                 fi
                 guix style -f ${geexMount}/etc/guix/config.scm && touch $GEEX_GUIX_STYLE_CHECKFILE
-                if [ "$GEEX_THE_HURD" == 1 ] && [ -z "$GEEX_FORCE_THE_HURD" ]; then
-                    errorMessage=$(dialog --backtitle "Geex Installer" --title "GNU Hurd" --msgbox "The Installer refused to initialize the GNU Guix system, because you have enabled 'GEEX_THE_HURD'. It is not intended to install GNU Guix with GNU Hurd 'the hurd' as your kernel. The Hurd does not support most hardware, is 32-bit only, and intended to be run inside a virtual machine.\n\nIf you want to experience GNU Hurd yourself, unset the variable 'GEEX_THE_HURD', restart the installer, and enable the 'GNU Hurd' service in the services selection.")
+                if [[ "$GEEX_FORCE_THE_HURD" != 1 ]] || [[ "$GEEX_THE_HURD_ALLOW" != 1 ]] || [[ "$GEEX_IGNORE_FORCED_DEBUG" != 1 ]]; then
+                    export PROCEED_WITH_HURD=0
+                else
+                    export PROCEED_WITH_HURD=1
+                fi
+                if [[ "$GEEX_THE_HURD" == 1 ]] && [[ "$GEEX_FORCE_THE_HURD" != 1 ]]; then
+                    errorMessage=$(dialog --backtitle "Geex Installer" --title "GNU Hurd" --msgbox "The Installer refused to initialize the GNU Guix system, because you have enabled 'GEEX_THE_HURD'. It is not intended to install GNU Guix with GNU Hurd 'the hurd' as your kernel. The Hurd does not support most hardware, is 32-bit only, and intended to be run inside a virtual machine.\n\nIf you want to experience GNU Hurd yourself, unset the variable 'GEEX_THE_HURD', restart the installer, and enable the 'GNU Hurd' service in the services selection." 18 48 3>&1 1>&2 2>&3) || exit 1
+                    dialog --clear
+                    clear
+                    echo "[ Status ]: Aborting..."
+                    exit 1
+                elif [[ "$GEEX_THE_HURD" == 1 ]] && [[ "$PROCEED_WITH_HURD" != 1 ]]; then
+                    errorMessage=$(dialog --backtitle "Geex Installer" --title "GNU Hurd" --msgbox "The Installer refused to initialize the GNU Guix system, because you have enabled 'GEEX_THE_HURD'. It is not intended to install GNU Guix with GNU Hurd 'the hurd' as your kernel. The Hurd does not support most hardware, is 32-bit only, and intended to be run inside a virtual machine.\n\nIf you want to experience GNU Hurd yourself, unset the variable 'GEEX_THE_HURD', restart the installer, and enable the 'GNU Hurd' service in the services selection." 18 48 3>&1 1>&2 2>&3) || exit 1
+                    dialog --clear
+                    clear
+                    echo "[ Status ]: Aborting..."
+                    exit 1
                 else
                     runWithEscalationUtil guix system init ${geexMount}/etc/guix/config.scm ${geexMount} && touch $GEEX_GUIX_SYSTEM_INIT_CHECKFILE
                 fi
@@ -1945,8 +1976,23 @@ systemInstallHook() {
                     rm $GEEX_GUIX_SYSTEM_INIT_CHECKFILE
                 fi
                 guix style -f /tmp/geex.config.${stager}.scm && touch $GEEX_GUIX_STYLE_CHECKFILE
-                if [ "$GEEX_THE_HURD" == 1 ] && [ -z "$GEEX_THE_HURD_ALLOW" ]; then
-                    errorMessage=$(dialog --backtitle "Geex Installer" --title "GNU Hurd" --msgbox "The Installer refused to initialize the GNU Guix system, because you have enabled 'GEEX_THE_HURD'. It is not intended to install GNU Guix with GNU Hurd 'the hurd' as your kernel. The Hurd does not support most hardware, is 32-bit only, and intended to be run inside a virtual machine.\n\nIf you want to experience GNU Hurd yourself, unset the variable 'GEEX_THE_HURD', restart the installer, and enable the 'GNU Hurd' service in the services selection.")
+                if [[ "$GEEX_FORCE_THE_HURD" != 1 ]] || [[ "$GEEX_THE_HURD_ALLOW" != 1 ]] || [[ "$GEEX_IGNORE_FORCED_DEBUG" != 1 ]]; then
+                    export PROCEED_WITH_HURD=0
+                else
+                    export PROCEED_WITH_HURD=1
+                fi
+                if [[ "$GEEX_THE_HURD" == 1 ]] && [[ "$GEEX_THE_HURD_ALLOW" != 1 ]]; then
+                    errorMessage=$(dialog --backtitle "Geex Installer" --title "GNU Hurd" --msgbox "The Installer refused to initialize the GNU Guix system, because you have enabled 'GEEX_THE_HURD'. It is not intended to install GNU Guix with GNU Hurd 'the hurd' as your kernel. The Hurd does not support most hardware, is 32-bit only, and intended to be run inside a virtual machine.\n\nIf you want to experience GNU Hurd yourself, unset the variable 'GEEX_THE_HURD', restart the installer, and enable the 'GNU Hurd' service in the services selection." 18 48 3>&1 1>&2 2>&3) || exit 1
+                    dialog --clear
+                    clear
+                    echo "[ Status ]: Aborting..."
+                    exit 1
+                elif [[ "$GEEX_THE_HURD" == 1 ]] && [[ "$PROCEED_WITH_HURD" != 1 ]]; then
+                    errorMessage=$(dialog --backtitle "Geex Installer" --title "GNU Hurd" --msgbox "The Installer refused to initialize the GNU Guix system, because you have enabled 'GEEX_THE_HURD'. It is not intended to install GNU Guix with GNU Hurd 'the hurd' as your kernel. The Hurd does not support most hardware, is 32-bit only, and intended to be run inside a virtual machine.\n\nIf you want to experience GNU Hurd yourself, unset the variable 'GEEX_THE_HURD', restart the installer, and enable the 'GNU Hurd' service in the services selection." 18 48 3>&1 1>&2 2>&3) || exit 1
+                    dialog --clear
+                    clear
+                    echo "[ Status ]: Aborting..."
+                    exit 1
                 else
                     if [[ ! -f "/tmp/geex.config.scm" ]]; then
                         cp /tmp/geex.config.${stager}.scm /tmp/geex.config.scm
@@ -2006,9 +2052,24 @@ systemInstallHook() {
                 if [ -f "$GEEX_GUIX_SYSTEM_INIT_CHECKFILE" ]; then
                     rm $GEEX_GUIX_SYSTEM_INIT_CHECKFILE
                 fi
+                if [[ "$GEEX_FORCE_THE_HURD" != 1 ]] || [[ "$GEEX_THE_HURD_ALLOW" != 1 ]] || [[ "$GEEX_IGNORE_FORCED_DEBUG" != 1 ]]; then
+                    export PROCEED_WITH_HURD=0
+                else
+                    export PROCEED_WITH_HURD=1
+                fi
                 guix style -f ${geexMount}/etc/guix/config.scm && touch $GEEX_GUIX_STYLE_CHECKFILE
-                if [ "$GEEX_THE_HURD" == 1 ] && [ -z "$GEEX_FORCE_THE_HURD" ]; then
-                    errorMessage=$(dialog --backtitle "Geex Installer" --title "GNU Hurd" --msgbox "The Installer refused to initialize the GNU Guix system, because you have enabled 'GEEX_THE_HURD'. It is not intended to install GNU Guix with GNU Hurd 'the hurd' as your kernel. The Hurd does not support most hardware, is 32-bit only, and intended to be run inside a virtual machine.\n\nIf you want to experience GNU Hurd yourself, unset the variable 'GEEX_THE_HURD', restart the installer, and enable the 'GNU Hurd' service in the services selection.")
+                if [[ "$GEEX_THE_HURD" == 1 ]] && [[ "$GEEX_FORCE_THE_HURD" != 1 ]]; then
+                    errorMessage=$(dialog --backtitle "Geex Installer" --title "GNU Hurd" --msgbox "The Installer refused to initialize the GNU Guix system, because you have enabled 'GEEX_THE_HURD'. It is not intended to install GNU Guix with GNU Hurd 'the hurd' as your kernel. The Hurd does not support most hardware, is 32-bit only, and intended to be run inside a virtual machine.\n\nIf you want to experience GNU Hurd yourself, unset the variable 'GEEX_THE_HURD', restart the installer, and enable the 'GNU Hurd' service in the services selection." 18 48 3>&1 1>&2 2>&3) || exit 1
+                    dialog --clear
+                    clear
+                    echo "[ Status ]: Aborting..."
+                    exit 1
+                elif [[ "$GEEX_THE_HURD" == 1 ]] && [[ "$PROCEED_WITH_HURD" != 1 ]]; then
+                    errorMessage=$(dialog --backtitle "Geex Installer" --title "GNU Hurd" --msgbox "The Installer refused to initialize the GNU Guix system, because you have enabled 'GEEX_THE_HURD'. It is not intended to install GNU Guix with GNU Hurd 'the hurd' as your kernel. The Hurd does not support most hardware, is 32-bit only, and intended to be run inside a virtual machine.\n\nIf you want to experience GNU Hurd yourself, unset the variable 'GEEX_THE_HURD', restart the installer, and enable the 'GNU Hurd' service in the services selection." 18 48 3>&1 1>&2 2>&3) || exit 1
+                    dialog --clear
+                    clear
+                    echo "[ Status ]: Aborting..."
+                    exit 1
                 else
                     runWithEscalationUtil guix system init ${geexMount}/etc/guix/config.scm ${geexMount} && touch $GEEX_GUIX_SYSTEM_INIT_CHECKFILE
                 fi
@@ -2047,8 +2108,23 @@ systemInstallHook() {
                     cp /tmp/geex.config.${stager}.scm /tmp/geex.config.scm
                 fi
                 guix style -f /tmp/geex.config.scm && touch $GEEX_GUIX_STYLE_CHECKFILE
-                if [ "$GEEX_THE_HURD" == 1 ] && [ -z "$GEEX_THE_HURD_ALLOW" ]; then
-                    errorMessage=$(dialog --backtitle "Geex Installer" --title "GNU Hurd" --msgbox "The Installer refused to initialize the GNU Guix system, because you have enabled 'GEEX_THE_HURD'. It is not intended to install GNU Guix with GNU Hurd 'the hurd' as your kernel. The Hurd does not support most hardware, is 32-bit only, and intended to be run inside a virtual machine.\n\nIf you want to experience GNU Hurd yourself, unset the variable 'GEEX_THE_HURD', restart the installer, and enable the 'GNU Hurd' service in the services selection.")
+                if [[ "$GEEX_FORCE_THE_HURD" != 1 ]] || [[ "$GEEX_THE_HURD_ALLOW" != 1 ]] || [[ "$GEEX_IGNORE_FORCED_DEBUG" != 1 ]]; then
+                    export PROCEED_WITH_HURD=0
+                else
+                    export PROCEED_WITH_HURD=1
+                fi
+                if [[ "$GEEX_THE_HURD" == 1 ]] && [[ "$GEEX_THE_HURD_ALLOW" != 1 ]]; then
+                    errorMessage=$(dialog --backtitle "Geex Installer" --title "GNU Hurd" --msgbox "The Installer refused to initialize the GNU Guix system, because you have enabled 'GEEX_THE_HURD'. It is not intended to install GNU Guix with GNU Hurd 'the hurd' as your kernel. The Hurd does not support most hardware, is 32-bit only, and intended to be run inside a virtual machine.\n\nIf you want to experience GNU Hurd yourself, unset the variable 'GEEX_THE_HURD', restart the installer, and enable the 'GNU Hurd' service in the services selection." 18 48 3>&1 1>&2 2>&3) || exit 1
+                    dialog --clear
+                    clear
+                    echo "[ Status ]: Aborting..."
+                    exit 1
+                elif [[ "$GEEX_THE_HURD" == 1 ]] && [[ "$PROCEED_WITH_HURD" != 1 ]]; then
+                    errorMessage=$(dialog --backtitle "Geex Installer" --title "GNU Hurd" --msgbox "The Installer refused to initialize the GNU Guix system, because you have enabled 'GEEX_THE_HURD'. It is not intended to install GNU Guix with GNU Hurd 'the hurd' as your kernel. The Hurd does not support most hardware, is 32-bit only, and intended to be run inside a virtual machine.\n\nIf you want to experience GNU Hurd yourself, unset the variable 'GEEX_THE_HURD', restart the installer, and enable the 'GNU Hurd' service in the services selection." 18 48 3>&1 1>&2 2>&3) || exit 1
+                    dialog --clear
+                    clear
+                    echo "[ Status ]: Aborting..."
+                    exit 1
                 else
                     runWithEscalationUtil guix system init /tmp/geex.config.scm ${geexMount} && touch $GEEX_GUIX_SYSTEM_INIT_CHECKFILE
                 fi
@@ -2092,7 +2168,7 @@ systemInstallHook() {
 hostnameFunction() {
     while true; do
         hostname=$(dialog --backtitle "Geex Installer" --title "Hostname" --inputbox "Enter Hostname:" 8 40 \
-                          3>&1 1>&2 2>&3)
+                          3>&1 1>&2 2>&3) || exit 1
         if [[ -n "$hostname" ]]; then
             export hostname=$hostname
             if [ -f "/tmp/geex.config.${stager}.dd" ]; then
@@ -2112,7 +2188,7 @@ hostnameFunction() {
 usernameFunction() {
     while true; do
         username=$(dialog --backtitle "Geex Installer" --title "Username" --inputbox "Enter Username:" 8 40 \
-                          3>&1 1>&2 2>&3)
+                          3>&1 1>&2 2>&3) || exit 1
         if [[ -n "$username" ]]; then
             export username=$username
             if [ -f "/tmp/geex.config.${stager}.dd" ]; then
@@ -2766,9 +2842,366 @@ openConfigHook() {
             ;;
     esac
 }
+checkInternetHook() {
+    if ping -q -c 1 -W 5 8.8.8.8 >/dev/null 2>&1; then
+        export GEEX_HAS_INTERNET=1
+        return 0
+    else
+        export GEEX_HAS_INTERNET=0
+        return 1
+    fi
+}
+alreadyConnectedHook() {
+    dialog --backtitle "Geex Installer" --title "Checking Internet Connection" --infobox "Checking Internet Connection, please wait..." 7 50
+    if ping -q -c 1 -W 5 8.8.8.8 >/dev/null 2>&1 && ping -q -c 1 -W 5 google.com >/dev/null 2>&1; then
+        activeWifiConnection=$(nmcli connection show --active | grep "wifi" | awk '{print $1 " " $4}')
+        activeEthernetConnection=$(nmcli connection show --active | grep "ethernet" | awk '{print $1 " " $4}')
+        if [[ "$activeEthernetConnection" == "" ]] || [[ -z "$activeEthernetConnection" ]]; then
+            if [[ "$activeWifiConnection" == "" ]] || [[ -z "$activeWifiConnection" ]]; then
+                export connectivitiyStatusCheck="off"
+            else
+                export connectivitiyStatusCheck="WiFi"
+            fi
+        else
+            export connectivitiyStatusCheck="Ethernet"
+        fi
+        if [[ "$connectivitiyStatusCheck" != "off" ]]; then
+            if [[ "$connectivitiyStatusCheck" == "Ethernet" ]]; then
+                activeNetwork=$(echo $activeEthernetConnection | awk '{print $1}')
+                activeDevice=$(echo $activeEthernetConnection | awk '{print $2}')
+            else
+                activeNetwork=$(echo $activeWifiConnection | awk '{print $1}')
+                activeDevice=$(echo $activeWifiConnection | awk '{print $2}')
+            fi
+            connectivityNotice=$(dialog --backtitle "Geex Installer" --title "Network Connection" --msgbox "Already Connected via '$connectivitiyStatusCheck' to Network '$activeNetwork' with Device '$activeDevice'." 8 50 3>&1 1>&2 2>&3)
+            export GEEX_HAS_INTERNET=1
+        fi
+    else
+        export GEEX_HAS_INTERNET=0
+    fi
+}
+selectInternetDeviceHook() {
+    devices=$(ls /sys/class/net | grep -E '^w')
+    if [ -z "$devices" ]; then
+        errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "The Installer could not find any WiFi Devices attached to your Machine." 8 60 3>&1 1>&2 2>&3)
+        if [[ "$GEEX_SKIP_WIFI" == 1 ]]; then
+            export GEEX_WIFI_DEVICE="Mock"
+            return 1
+        else
+            dialog --clear
+            clear
+            echo "[ Status ]: Aborting..."
+            exit 1
+        fi
+        return 1
+    fi
+    deviceList=""
+    for dev in $devices; do
+        deviceList="$deviceList $dev 'Wireless Interface'"
+    done
+    selectDevice=$(eval "dialog --backtitle \"Geex Installer\" --title \"Select WiFi Device\" --menu \"Select the WiFi Device you wish to use:\" 15 60 5 $deviceList" 3>&1 1>&2 2>&3)
+    if [ -n "$selectDevice" ]; then
+        export GEEX_WIFI_DEVICE=$selectDevice
+        echo "[ Status ]: Pinned WiFi Device to '$selectDevice'..."
+    else
+        errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "You either did not select a valid WiFi Device, or did not select any WiFi Device at all." 8 60 3>&1 1>&2 2>&3)
+        if [[ "$GEEX_SKIP_WIFI" == 1 ]]; then
+            export GEEX_WIFI_DEVICE="Mock"
+            return 0
+        else
+            dialog --clear
+            clear
+            echo "[ Status ]: Aborting..."
+            exit 1
+        fi
+    fi
+}
+internetGetNetworks() {
+    networks=$(nmcli -t -f "SSID,SECURITY" device wifi list | grep -v '^--' | sort -u | sed "/^:/d" | sed 's/\([^:]\):$/\1:NONE/')
+    export networks=$networks
+    if [ -z "$networks" ]; then
+        errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "No WiFi Networks found nearby." 8 60 3>&1 1>&2 2>&3)
+        if [[ "$GEEX_SKIP_WIFI" == 1 ]]; then
+            export GEEX_HAS_INTERNET=2
+            return 1
+        else
+            dialog --clear
+            clear
+            echo "[ Status ]: Aborting..."
+            exit 1
+        fi
+        return 1
+    fi
+    menuItems=""
+    while IFS=: read -r ssid security; do
+        [ -z "$ssid" ] && continue
+        menuItems="$menuItems \"$ssid\" \"$security\""
+    done <<EOF
+$networks
+EOF
+    export menuItems=$menuItems
+}
+internetChooseNetwork() {
+    while true; do
+        chosenSsid=$(eval "dialog --backtitle \"Geex Installer\" --title \"WiFi Selection\" --menu \"Select Network to Connect to:\" 20 60 10 $menuItems" 3>&1 1>&2 2>&3)
+        if [ -n "$chosenSsid" ]; then
+            export chosenSsid=$chosenSsid
+            securityType=$(echo "$networks" | grep "^$chosenSsid:" | cut -d: -f2)
+            if [ -z "$securityType" ] || [ "$securityType" == "--" ]; then
+                if [[ "$GEEX_HAS_INTERNET" == 1 ]]; then
+                    dialog --infobox "Already Connected to the Internet" 3 50
+                elif [[ "$GEEX_SKIP_WIFI" == 1 ]]; then
+                    dialog --infobox "Skipping WiFi Setup" 3 50
+                else
+                    dialog --infobox "Connecting to Open Network: $chosenSsid..." 3 50
+                    nmcli device wifi connect "$chosenSsid"
+                fi
+            else
+                wifiPass=$(dialog --backtitle "Geex Installer" --title "Network Password" --passwordbox "Enter Password for $chosenSsid:" 10 50 3>&1 1>&2 2>&3)
+                if [ -n "$wifiPass" ]; then
+                    dialog --infobox "Attempting to Connect to $chosenSsid..." 3 50
+                    nmcli device wifi connect "$chosenSsid" password "$wifiPass"
+                fi
+            fi
+            if checkInternetHook; then
+                dialog --msgbox "Successfully Connected to '$chosenSsid'." 8 50
+                export GEEX_HAS_INTERNET=1
+                return 0
+            else
+                dialog --msgbox "Failed to Connect to '$chosenSsid', please verify Credentials or choose another Network." 8 60
+            fi
+        fi
+        dialog --backtitle "Geex Installer" --title "Error" --msgbox "Please choose a Valid (or any) Network and try again." 32 50
+    done
+}
+manualInternetConfigCreationHook() {
+    while true; do
+        manualNetworkName=$(dialog --backtitle "Geex Installer" --title "Network Name" --inputbox "Enter Network Name:" 12 44 3>&1 1>&2 2>&3) || exit 1
+        if [[ -n "$manualNetworkName" ]]; then
+            export manualNetworkName=$manualNetworkName
+            manualNetworkSecurity=$(dialog --backtitle "Geex Installer" --title "Network Security" --menu "Is Network '$manualNetworkName' Secured with a Password?" 12 50 10 \
+                                           yes "Yes" \
+                                           no "No" \
+                                           3>&1 1>&2 2>&3) || exit 1
+            if [[ "$manualNetworkSecurity" == "yes" ]]; then
+                manualNetworkPassword=$(dialog --backtitle "Geex Installer" --title "Network Password" --inputbox "Enter Network Password:" 12 44 3>&1 1>&2 2>&3) || exit 1
+                if [[ -n "$manualNetworkPassword" ]]; then
+                    if [ -f "/tmp/geex.manual.network.config.conf" ]; then
+                        rm /tmp/geex.manual.network.config.conf
+                    fi
+                    echo -e "network={\n  ssid=\"$manualNetworkName\"\n  key_mgmt=WPA-PSK\n  psk=\"$manualNetworkPassword\"\n  priority=1\n}" >> /tmp/geex.manual.network.config.conf
+                    manualNetworkStart=$(dialog --backtitle "Geex Installer" --title "Network Connection" --yesno "Connect to Network now?" 34 75 3>&1 1>&2 2>&3)
+                    manualNetworkStart_RESPONSE_CODE=$?
+                    if [ "$manualNetworkStart_RESPONSE_CODE" -eq 0 ]; then
+                        if command -v rfkill >/dev/null; then
+                            runWithEscalationUtil rfkill unblock all &
+                        fi
+                        runWithEscalationUtil wpa_supplicant -B -i $GEEX_WIFI_DEVICE -c /tmp/geex.manual.network.config.conf &
+                        if command -v dhclient >/dev/null; then
+                            if command -v wpa_cli >/dev/null; then
+                                timeoutThreshhold=30
+                                i=0
+                                dialog --backtitle "Geex Installer" --title "'wpa_cli' Confirmation" --infobox "Waiting for 'wpa_cli' Status Response, please wait..." 10 50
+                                until wpa_cli -i $GEEX_WIFI_DEVICE status >/dev/null 2>&1; do
+                                    sleep 1
+                                    ((i++))
+                                    if (( i >= timeoutThreshhold )); then
+                                        errorMessage=$(dialog --backtitle "Geex Installer" --title "Networking Error" --msgbox "The Installers request for a positive Status Message from 'wpa_cli' has timed out after 30 Seconds. This means that the Installer was not able to establish a working Internet Connection, or 'wpa_cli' is faulty (or not present on your System).\n\nThe Installer will now forceably quit." 34 75 3>&1 1>&2 2>&3) || exit 1
+                                        dialog --clear
+                                        clear
+                                        echo "[ Error ]: No reponse from 'wpa_cli', aborting..."
+                                        exit 1
+                                    fi
+                                done
+                                if wpa_cli -i $GEEX_WIFI_DEVICE ping 2>/dev/null | grep -q PONG; then
+                                    echo "[ Status ]: Confirmed wpa_cli Pong..."
+                                else
+                                    echo "[ Error ]: Could not confirm wpa_cli Pong..."
+                                    wpaCliNoPong=$(dialog --backtitle "Geex Installer" --title "Networking Error" --yesno "The Installer could not get a valid PONG Signal from 'wpa_cli', it is possible that Network Connection Establishment did not work as expected, please verify whether you have an active and working Internet Connection or not.\n\nContinue anyways?" 34 75 3>&1 1>&2 2>&3)
+                                    wpaCliNoPong_RESPONSE_CODE=$?
+                                    if [ "$wpaCliNoPong_RESPONSE_CODE" -eq 0 ]; then
+                                        echo "[ Status ]: Continuing anyways..."
+                                    else
+                                        dialog --clear
+                                        clear
+                                        echo "[ Error ]: Could not get valid PONG Signal from 'wpa_cli', aborting..."
+                                        exit 1
+                                    fi
+                                fi
+                            fi
+                            runWithEscalationUtil dhclient -v $GEEX_WIFI_DEVICE &
+                        fi
+                    fi
+                fi
+            else
+                if [ -f "/tmp/geex.manual.network.config.conf" ]; then
+                    rm /tmp/geex.manual.network.config.conf
+                fi
+                echo -e "network={\n  ssid=\"$manualNetworkName\"\n  key_mgmt=NONE\n  priority=1\n}" >> /tmp/geex.manual.network.config.conf
+                manualNetworkStart=$(dialog --backtitle "Geex Installer" --title "Network Connection" --yesno "Connect to Network now?" 34 75 3>&1 1>&2 2>&3)
+                manualNetworkStart_RESPONSE_CODE=$?
+                if [ "$manualNetworkStart_RESPONSE_CODE" -eq 0 ]; then
+                    if command -v rfkill >/dev/null; then
+                        runWithEscalationUtil rfkill unblock all &
+                    fi
+                    runWithEscalationUtil wpa_supplicant -B -i $GEEX_WIFI_DEVICE -c /tmp/geex.manual.network.config.conf &
+                    if command -v dhclient >/dev/null; then
+                        if command -v wpa_cli >/dev/null; then
+                            timeoutThreshhold=30
+                            i=0
+                            dialog --backtitle "Geex Installer" --title "'wpa_cli' Confirmation" --infobox "Waiting for 'wpa_cli' Status Response, please wait..." 10 50
+                            until wpa_cli -i $GEEX_WIFI_DEVICE status >/dev/null 2>&1; do
+                                sleep 1
+                                ((i++))
+                                if (( i >= timeoutThreshhold )); then
+                                    errorMessage=$(dialog --backtitle "Geex Installer" --title "Networking Error" --msgbox "The Installers request for a positive Status Message from 'wpa_cli' has timed out after 30 Seconds. This means that the Installer was not able to establish a working Internet Connection, or 'wpa_cli' is faulty (or not present on your System).\n\nThe Installer will now forceably quit." 34 75 3>&1 1>&2 2>&3) || exit 1
+                                    dialog --clear
+                                    clear
+                                    echo "[ Error ]: No reponse from 'wpa_cli', aborting..."
+                                    exit 1
+                                fi
+                            done
+                            if wpa_cli -i $GEEX_WIFI_DEVICE ping 2>/dev/null | grep -q PONG; then
+                                echo "[ Status ]: Confirmed wpa_cli Pong..."
+                            else
+                                echo "[ Error ]: Could not confirm wpa_cli Pong..."
+                                wpaCliNoPong=$(dialog --backtitle "Geex Installer" --title "Networking Error" --yesno "The Installer could not get a valid PONG Signal from 'wpa_cli', it is possible that Network Connection Establishment did not work as expected, please verify whether you have an active and working Internet Connection or not.\n\nContinue anyways?" 34 75 3>&1 1>&2 2>&3)
+                                wpaCliNoPong_RESPONSE_CODE=$?
+                                if [ "$wpaCliNoPong_RESPONSE_CODE" -eq 0 ]; then
+                                    echo "[ Status ]: Continuing anyways..."
+                                else
+                                    dialog --clear
+                                    clear
+                                    echo "[ Error ]: Could not get valid PONG Signal from 'wpa_cli', aborting..."
+                                    exit 1
+                                fi
+                            fi
+                        fi
+                        runWithEscalationUtil dhclient -v $GEEX_WIFI_DEVICE &
+                    fi
+                fi
+            fi
+        fi
+        if checkInternetHook; then
+            export GEEX_HAS_INTERNET=1
+            if [[ -n "$MANUALNETWORKSTART_RESPONSE_CODE" ]] || [[ "$MANUALNETWORKSTART_RESPONSE_CODE" == 0 ]]; then
+                unset MANUAL_NETWORK_LOOP_BREAKOUT
+            fi
+            export MANUAL_NETWORK_LOOP_BREAKOUT=1
+            return 0
+        else
+            if [[ "$GEEX_HAS_INTERNET" == 1 ]]; then
+                unset GEEX_HAS_INTERNET
+            fi
+            if [[ -n "$MANUAL_NETWORK_LOOP_BREAKOUT" ]] || [[ "$MANUAL_NETWORK_LOOP_BREAKOUT" == 1 ]]; then
+                unset MANUAL_NETWORK_LOOP_BREAKOUT
+            fi
+            export MANUAL_NETWORK_LOOP_BREAKOUT=0
+        fi
+        if [[ "$MANUAL_NETWORK_LOOP_BREAKOUT" == 1 ]] || [[ "$GEEX_HAS_INTERNET" == 1 ]]; then
+            return 0
+        fi
+        dialog --backtitle "Geex Installer" --title "Error" --msgbox "Please make sure you have selected a valid Networking Device, entered a valid (or any) WiFi Network Name/SSID, and entered the correct Network Password (if required)." 32 50
+    done
+}
+manualInternetHook() {
+    if ! command -v wpa_supplicant >/dev/null 2>&1; then
+        errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "The Installer detected that you are missing both 'nmcli' and 'wpa_supplicant', which means no Internet Connection can be established.\n\nThe Installer will now forceably quit." 34 68 3>&1 1>&2 2>&3) || exit 1
+        if [[ "$GEEX_SKIP_WIFI" == 1 ]]; then
+            export GEEX_HAS_INTERNET=2
+            return 1
+        else
+            dialog --clear
+            clear
+            echo "[ Error ]: Not Connection Possible, Aborting..."
+            exit 1
+        fi
+    else
+        selectInternetDeviceHook
+        manualInternetConfigCreationHook
+    fi
+}
+internetConnectionHook() {
+    if [[ "$GEEX_SKIP_WIFI" == 1 ]]; then
+        export GEEX_HAS_INTERNET=2
+        if [[ "$GEEX_VERBOSE_MODE" == 1 ]]; then
+            verboseNotice=$(dialog --backtitle "Geex Installer" --title "Verbose Notice" --msgbox "You have set the variable 'GEEX_SKIP_WIFI' to '1', the Installer will skip the Internet Connectivity Check." 34 68 3>&1 1>&2 2>&3)
+        fi
+        return 1
+    fi
+    alreadyConnectedHook
+    if [[ "$GEEX_HAS_INTERNET" == 1 ]]; then
+        return 1
+    fi
+    if ! command -v nmcli >/dev/null 2>&1; then
+        errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "The Installer detected that you are missing 'nmcli', a required dependency for setting up a WiFi Connection, do you want to continue to manually set up your Networking Connection via 'wpa_supplicant', or quit the installer?" 20 60 \
+                              manual "Manual" \
+                              quit "Quit" \
+                              3>&1 1>&2 2>&3) || exit 1
+        if [[ "$errorMessage" == "manual" ]]; then
+            selectInternetDeviceHook
+            manualInternetConfigCreationHook
+            return 1
+        else
+            dialog --clear
+            clear
+            echo "[ Status ]: Aborting..."
+            exit 1
+        fi
+        if [[ "$GEEX_SKIP_WIFI" == 1 ]]; then
+            export GEEX_HAS_INTERNET=2
+            return 1
+        else
+            dialog --clear
+            clear
+            echo "[ Status ]: Aborting..."
+            exit 1
+        fi
+        return 1
+    fi
+    internetGetNetworks
+    internetChooseNetwork
+}
 
 # Installer Hooks
 installerHook() {
+    if [[ "$GEEX_HURD_RENDER_WARNING" == 1 ]]; then
+        hurdNotice=$(dialog --backtitle "Geex Installer" --title "Hurd Notice" --infobox "You have forceably enabled GNU Hurd Support for the Geex Installer. This is not intended, and that option merely exists for testing purposes. You SHOULD NOT and DO NOT want to use GNU Hurd as your main Systems Kernel.\n\nIf you are absolutely sure you know what you are doing, select 'Force', otherwise, please select 'Okay'.\n\n3..." 18 70 3>&1 1>&2 2>&3)
+        sleep 1
+        hurdNotice=$(dialog --backtitle "Geex Installer" --title "Hurd Notice" --infobox "You have forceably enabled GNU Hurd Support for the Geex Installer. This is not intended, and that option merely exists for testing purposes. You SHOULD NOT and DO NOT want to use GNU Hurd as your main Systems Kernel.\n\nIf you are absolutely sure you know what you are doing, select 'Force', otherwise, please select 'Okay'.\n\n3... 2..." 18 70 3>&1 1>&2 2>&3)
+        sleep 1
+        hurdNotice=$(dialog --backtitle "Geex Installer" --title "Hurd Notice" --infobox "You have forceably enabled GNU Hurd Support for the Geex Installer. This is not intended, and that option merely exists for testing purposes. You SHOULD NOT and DO NOT want to use GNU Hurd as your main Systems Kernel.\n\nIf you are absolutely sure you know what you are doing, select 'Force', otherwise, please select 'Okay'.\n\n3... 2... 1..." 18 70 3>&1 1>&2 2>&3)
+        sleep 1
+        hurdNotice=$(dialog --backtitle "Geex Installer" --title "Hurd Notice" --menu "You have forceably enabled GNU Hurd Support for the Geex Installer. This is not intended, and that option merely exists for testing purposes. You SHOULD NOT and DO NOT want to use GNU Hurd as your main Systems Kernel.\n\nIf you are absolutely sure you know what you are doing, select 'Force', otherwise, please select 'Okay'." 18 70 10 \
+                            okay "Okay" \
+                            okay "Okay" \
+                            force "Force" \
+                            okay "Okay" \
+                            3>&1 1>&2 2>&3) || exit 1
+        if [[ "$hurdNotice" != "force" ]] || [[ "$hurdNotice" == "okay" ]]; then
+            dialog --clear
+            clear
+            echo "[ Status ]: Aborting..."
+            exit 1
+        fi
+    elif [[ "$GEEX_IGNORE_FORCED_DEBUG" == 1 ]] && [[ "$GEEX_HURD_RENDER_WARNING" == 2 ]] && [[ "$GEEX_THE_HURD" == 1 ]] && [[ "$GEEX_THE_HURD_ALLOW" == 1 ]] && [[ "$GEEX_FORCE_THE_HURD" == 1 ]]; then
+        hurdNotice=$(dialog --backtitle "Geex Installer" --title "Hurd Notice" --infobox "You have forceably enabled GNU Hurd Support for the Geex Installer. This is not intended, and that option merely exists for testing purposes. You SHOULD NOT and DO NOT want to use GNU Hurd as your main Systems Kernel.\n\nIf you are absolutely sure you know what you are doing, select 'Force', otherwise, please select 'Okay'.\n\n3..." 18 70 3>&1 1>&2 2>&3)
+        sleep 1
+        hurdNotice=$(dialog --backtitle "Geex Installer" --title "Hurd Notice" --infobox "You have forceably enabled GNU Hurd Support for the Geex Installer. This is not intended, and that option merely exists for testing purposes. You SHOULD NOT and DO NOT want to use GNU Hurd as your main Systems Kernel.\n\nIf you are absolutely sure you know what you are doing, select 'Force', otherwise, please select 'Okay'.\n\n3... 2..." 18 70 3>&1 1>&2 2>&3)
+        sleep 1
+        hurdNotice=$(dialog --backtitle "Geex Installer" --title "Hurd Notice" --infobox "You have forceably enabled GNU Hurd Support for the Geex Installer. This is not intended, and that option merely exists for testing purposes. You SHOULD NOT and DO NOT want to use GNU Hurd as your main Systems Kernel.\n\nIf you are absolutely sure you know what you are doing, select 'Force', otherwise, please select 'Okay'.\n\n3... 2... 1..." 18 70 3>&1 1>&2 2>&3)
+        sleep 1
+        hurdNotice=$(dialog --backtitle "Geex Installer" --title "Immense Danger Detected" --msgbox "WARNING: Extreme Danger Detected :WARNING\n\nThe Installer detected that, on top of forcing GNU Hurd support, you also forcefully disable the automatic Debug Mode safety mechanism, we urge you to quit the installer and do not try to install a GNU Guix System with GNU Hurd as your Kernel.\n\nDue to the situation, you will have to write a confirmation text if you REALLY want to go through with this." 18 70 3>&1 1>&2 2>&3)
+        hurdNotice=$(dialog --backtitle "Geex Installer" --title "Hurd Notice" --inputbox "If you are absolutely sure you want to go through with this, please type out the following case-and-space-sensitive sentence in the input field below. Any deviation from the presented text will result in the immediate forceful exit of the installer.\n\n'Yes, I really want to install GNU Hurd.'" 18 70 3>&1 1>&2 2>&3) || exit 1
+        if [[ "$hurdNotice" != "Yes, I really want to install GNU Hurd." ]]; then
+            dialog --clear
+            clear
+            echo "[ Status ]: Aborting..."
+            exit 1
+        fi
+    else
+        echo "[ Status ]: No forced Hurd Support detected, skipping..."
+    fi
     escalationUtilHook
     verifyDirectoryStatusHook
     if [ -n "$GEEX_VERBOSE_MODE" ]; then
@@ -2874,6 +3307,7 @@ installerHook() {
     if [ "$GEEX_LIVE_MODE" == 1 ] && [ -z "$GEEX_LIVE_OVERRIDE" ]; then
         livePreviewHook
     fi
+    internetConnectionHook
     usernameFunction
     hostnameFunction
     if [ -n "$GEEX_VERBOSE_MODE" ] || [ "$GEEX_VERBOSE_MODE" == 1 ]; then
@@ -3181,13 +3615,23 @@ done
 
 for arg in "$@"; do
     case "$arg" in
-        p|-p|--p|package|-package|--package|pkgtest|-pkgtest|--pkgtest)
-            export GEEX_PKG_TEST_MODE=1
-            export GEEX_DEBUG_MODE=1
-            ;;
-        pi|-pi|--pi|packageinstall|-packageinstall|--packageinstall|pkgtestinstall|-pkgtestinstall|--pkgtestinstall)
-            export GEEX_PKG_TEST_MODE=1
-            export GEEX_DEBUG_MODE=1
+        iwantgnuhurd|-iwantgnuhurd|--iwantgnuhurd)
+            export GEEX_THE_HURD=1
+            export GEEX_THE_HURD_ALLOW=1
+            export GEEX_FORCE_THE_HURD=1
+            if [[ "$GEEX_IGNORE_FORCED_DEBUG" != 1 ]] || [[ -z "$GEEX_IGNORE_FORCED_DEBUG" ]]; then
+                export GEEX_DEBUG_MODE=1
+                export GEEX_DEBUG=1
+                export GEEX_FORCED_DEBUG=1
+                export GEEX_HURD_RENDER_WARNING=1
+            elif [[ "$GEEX_IGNORE_FORCED_DEBUG" == 1 ]] && [[ -n "$GEEX_IGNORE_FORCED_DEBUG" ]]; then
+                export GEEX_HURD_RENDER_WARNING=2
+            else
+                export GEEX_DEBUG_MODE=1
+                export GEEX_DEBUG=1
+                export GEEX_FORCED_DEBUG=1
+                export GEEX_HURD_RENDER_WARNING=1
+            fi
             installerHook
             ;;
     esac
