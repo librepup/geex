@@ -143,6 +143,12 @@ done
 for arg in "$@"; do
     case "$arg" in
         c|-c|--c|clean|-clean|--clean)
+            if [ -f "/tmp/geex.service.tlp.block.dd" ]; then
+                rm /tmp/geex.service.tlp.block.dd
+            fi
+            if [ -f "/tmp/geex.manual.network.config.conf" ]; then
+                rm /tmp/geex.manual.network.config.conf
+            fi
             if [ -f "/tmp/geex.bundle.combined.dd" ]; then
                 rm /tmp/geex.bundle.combined.dd
             fi
@@ -1171,11 +1177,11 @@ xorgHook() {
     if [ -f "/tmp/geex.xorg.nvidia.modules.optional.dd" ]; then
         rm /tmp/geex.xorg.nvidia.modules.optional.dd
     fi
-    modulesBlockNvidia="$(echo -e "             (nongnu packages nvidia)\n             (nongnu services nvidia)\n             (nonguix transformations)\n")"
+    modulesBlockNvidia="$(echo -e "             (nongnu packages nvidia)\n             (nongnu services nvidia)\n             (nonguix transformations)")"
     xorgBlockNvidia="$(echo -e "                   (set-xorg-configuration\n                    (xorg-configuration (keyboard-layout keyboard-layout)\n                                        (modules (cons nvidia-driver\n                                                       %default-xorg-modules))\n                                        (drivers '("nvidia"))))\n")"
     xorgBlockRegular="$(echo -e "                   (set-xorg-configuration\n                    (xorg-configuration (keyboard-layout keyboard-layout)))\n")"
     if [[ "$userWantsNvidia" == "yes" ]]; then
-        echo -e "             (nongnu packages nvidia)\n             (nongnu services nvidia)\n             (nonguix transformations)\n" >> /tmp/geex.xorg.nvidia.modules.optional.dd
+        echo -e "             (nongnu packages nvidia)\n             (nongnu services nvidia)\n             (nonguix transformations)" >> /tmp/geex.xorg.nvidia.modules.optional.dd
         echo -e "                   (set-xorg-configuration\n                    (xorg-configuration (keyboard-layout keyboard-layout)\n                                        (modules (cons nvidia-driver\n                                                       %default-xorg-modules))\n                                        (drivers '(\"nvidia\"))))\n" >> /tmp/geex.xorg.optional.dd
         if [[ -n "$wroteXorgBlock" ]]; then
             unset wroteXorgBlock
@@ -2858,22 +2864,22 @@ alreadyConnectedHook() {
         activeEthernetConnection=$(nmcli connection show --active | grep "ethernet" | awk '{print $1 " " $4}')
         if [[ "$activeEthernetConnection" == "" ]] || [[ -z "$activeEthernetConnection" ]]; then
             if [[ "$activeWifiConnection" == "" ]] || [[ -z "$activeWifiConnection" ]]; then
-                export connectivitiyStatusCheck="off"
+                export connectivityStatusCheck="off"
             else
-                export connectivitiyStatusCheck="WiFi"
+                export connectivityStatusCheck="WiFi"
             fi
         else
-            export connectivitiyStatusCheck="Ethernet"
+            export connectivityStatusCheck="Ethernet"
         fi
-        if [[ "$connectivitiyStatusCheck" != "off" ]]; then
-            if [[ "$connectivitiyStatusCheck" == "Ethernet" ]]; then
+        if [[ "$connectivityStatusCheck" != "off" ]]; then
+            if [[ "$connectivityStatusCheck" == "Ethernet" ]]; then
                 activeNetwork=$(echo $activeEthernetConnection | awk '{print $1}')
                 activeDevice=$(echo $activeEthernetConnection | awk '{print $2}')
             else
                 activeNetwork=$(echo $activeWifiConnection | awk '{print $1}')
                 activeDevice=$(echo $activeWifiConnection | awk '{print $2}')
             fi
-            connectivityNotice=$(dialog --backtitle "Geex Installer" --title "Network Connection" --msgbox "Already Connected via '$connectivitiyStatusCheck' to Network '$activeNetwork' with Device '$activeDevice'." 8 50 3>&1 1>&2 2>&3)
+            connectivityNotice=$(dialog --backtitle "Geex Installer" --title "Network Connection" --msgbox "Already Connected via '$connectivityStatusCheck' to Network '$activeNetwork' with Device '$activeDevice'." 8 50 3>&1 1>&2 2>&3)
             export GEEX_HAS_INTERNET=1
         fi
     else
@@ -3088,6 +3094,7 @@ manualInternetConfigCreationHook() {
                 unset MANUAL_NETWORK_LOOP_BREAKOUT
             fi
             export MANUAL_NETWORK_LOOP_BREAKOUT=1
+            export connectivityStatusCheck="WiFi (Manual)"
             return 0
         else
             if [[ "$GEEX_HAS_INTERNET" == 1 ]]; then
@@ -3375,7 +3382,21 @@ installerHook() {
     fi
     packageBundlesHook
     addCustomPackageHook
-    summaryTextContents="$(echo -e "(1) Information\nUsername: $username\nHostname: $hostname\nTimezone: $TIMEZONE\nPasswords Set?: $areAllPasswordsSet (Re-Used?: $wasPasswordReUsed)\nDisk: $disk (Parts: $diskPrefixedPartNameTextblock)\nSwap: $formattedWithSwap\nBIOS: $bios (Detected: $detectedBios)\nKeyboard: $keyboardInfo\n\n(2) Multiple-Choice\nServices: $serviceSelection\nDesktops: $deSelection\n\n(3) The Installer Wrote\nSwap Block?: $wroteSwapBlock\nBIOS Block?: $wroteBiosBlock\nFilesystem Block?: $isFilesystemWritten (Type: $filesystemBlockType)\nServices Block?: $areServicesWritten\nDesktop Block?: $areDesktopsWritten\nKeyboard Block?: $wroteKeyboardBlock\nTimezone Block?: $wroteTimezoneBlock\nBundles Block?: $wroteBundles\nXorg Block?: $wroteXorgBlock\nClosing OS Block?: $wroteOSEndBlock (Compose?: $wroteComposeBlock)")"
+    if [[ "$GEEX_HAS_INTERNET" == 1 ]]; then
+        export hasInternetConnection="Yes"
+    elif [[ "$GEEX_HAS_INTERNET" == 2 ]]; then
+        export hasInternetConnection="Mock"
+    else
+        export hasInternetConnection="No"
+    fi
+    if [[ "$connectivityStatusCheck" == "" ]] || [[ -z "$connectivityStatusCheck" ]]; then
+        export connectivityStatusSummary="Unknown"
+    elif [[ "$connectivityStatusCheck" == "off" ]]; then
+        export connectivityStatusSummary="Disabled"
+    else
+        export connectivityStatusSummary=$connectivityStatusCheck
+    fi
+    summaryTextContents="$(echo -e "(1) Information\nUsername: $username\nHostname: $hostname\nTimezone: $TIMEZONE\nPasswords Set?: $areAllPasswordsSet (Re-Used?: $wasPasswordReUsed)\nDisk: $disk (Parts: $diskPrefixedPartNameTextblock)\nSwap: $formattedWithSwap\nBIOS: $bios (Detected: $detectedBios)\nKeyboard: $keyboardInfo\nInternet?: $hasInternetConnection (Via: $connectivityStatusSummary)\n\n(2) Multiple-Choice\nServices: $serviceSelection\nDesktops: $deSelection\n\n(3) The Installer Wrote\nSwap Block?: $wroteSwapBlock\nBIOS Block?: $wroteBiosBlock\nFilesystem Block?: $isFilesystemWritten (Type: $filesystemBlockType)\nServices Block?: $areServicesWritten\nDesktop Block?: $areDesktopsWritten\nKeyboard Block?: $wroteKeyboardBlock\nTimezone Block?: $wroteTimezoneBlock\nBundles Block?: $wroteBundles\nXorg Block?: $wroteXorgBlock\nClosing OS Block?: $wroteOSEndBlock (Compose?: $wroteComposeBlock)")"
     if [ -f "/tmp/geex.summary.dd" ]; then
         rm /tmp/geex.summary.dd
     fi
