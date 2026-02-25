@@ -2747,6 +2747,7 @@ packageBundlesHook() {
 }
 addCustomPackageHook() {
     userPkgList=$(dialog --backtitle "Geex Installer" --title "Extra Packages" --inputbox "Enter Packages Separated by a Comma\n\nExample:\n\`\`\`\npackage-1, package-2, package-3\n\`\`\`\n" 20 64 3>&1 1>&2 2>&3) || exit 1
+    waitNotice=$(dialog --backtitle "Geex Installer" --title "Loading..." --infobox "Querying, Filtering, and De-Duplicating Packages, please wait." 18 70 3>&1 1>&2 2>&3)
     confirmedPkgList=""
     duplicationList=""
     IFS=',' read -ra ADDR <<< "$userPkgList"
