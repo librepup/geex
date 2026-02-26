@@ -12,7 +12,7 @@ This directory contains ready-to-use definitions for Guix Home and Guix System c
 ### Home Containers
  - `emacs.scm` - installs full emacs setup and symlinks emacs configuration files via guix home.
  - Run with:
- -   `guix home container .emacs.scm`
+ -   `guix home container emacs.scm`
 
 ### System Containers
  - `lab.scm` - basic operating system outline with a few basic packages and services.
