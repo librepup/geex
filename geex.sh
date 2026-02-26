@@ -3691,6 +3691,47 @@ bootstrapHook() {
     diskWriteBootstrapperHook
 }
 
+# Container Manager Hooks
+checkForContainers() {
+    filteredContainerFiles=$(find ${compatibleDirectoryPath}/containers -maxdepth 1 -type f -printf "%f\n" | grep -i "scm")
+    duplicatedContainerFiles=$(printf '%s\n' "$filteredContainerFiles" | awk '{ printf "%s %s ", $0, gensub(/\.scm$/, "", 1) }')
+    containerSelection=$(echo $duplicatedContainerFiles | xargs dialog --backtitle "Container Selection" --title "Geex Container Manager" --menu "Select a Container File:" 24 40 10 3>&1 1>&2 2>&3)
+    evalContainerType=$(head -n 1 ${compatibleDirectoryPath}/containers/${containerSelection} | awk '{print $2}')
+    if [[ "$evalContainerType" == "System" ]]; then
+        dialog --clear
+        clear
+        echo -e "${containerSelection} is a Systems Container:
+
+  SETUP for CONTAINER:
+    guix system container -L . ${containerSelection}
+    doas /gnu/store/<hash>-run-container
+    doas guix container exec <PID> /run/current-system/profile/bin/bash --login -c zsh
+
+"
+        exit 1
+    else
+        dialog --clear
+        clear
+        echo -e "${containerSelection} is a Home Container:
+
+  SETUP for CONTAINER:
+    guix home container ${containerSelection}
+
+"
+        exit 1
+    fi
+}
+containerManagerHook() {
+    verifyDirectoryStatusHook
+    if [[ "$compatibleDirectory" != 1 ]]; then
+        dialog --clear
+        clear
+        echo "[ Error ]: Current Directory is Incompatible, please run the Geex Container Manager from within the Full Cloned Geex Repository, Aborting..."
+        exit 1
+    fi
+    checkForContainers
+}
+
 # Installer Hooks
 installerHook() {
     if [[ "$GEEX_HURD_RENDER_WARNING" == 1 ]]; then
@@ -4288,6 +4329,15 @@ for arg in "$@"; do
         d|-d|--d|debug|-debug|--debug)
             export GEEX_DEBUG=1
             export GEEX_DEBUG_MODE=1
+            ;;
+    esac
+done
+
+for arg in "$@"; do
+    case "$arg" in
+        container|-container|--container|con|-con|--con)
+            containerManagerHook
+            exit 1
             ;;
     esac
 done
