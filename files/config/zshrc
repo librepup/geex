@@ -584,6 +584,21 @@ clean() {
   guix gc --optimize
   guix package --delete-generations
 }
+gmf() {
+  mapfile -t options < <(guix system search "$1" | rg -i "name:|location:" | awk '{print $2}' | paste -d " " - - | sed "s/\.scm.*/.scm/g")
+  PS3="Please select an option (1-${#options[@]}): "
+  select choice in "${options[@]}"; do
+    if [[ -n "$choice" ]]; then
+        choice=$(echo "$choice" | awk '{print $2}')
+        chosen="$choice"
+        break
+    else
+        echo "Invalid Selection"
+    fi
+  done
+  guixpath=$(guix build guix --source)
+  cat ${guixpath}/${chosen}
+}
 
 # Guix Profile
 if [ -d "$HOME/.config/guix/current/etc/profile" ] || [ -f "$HOME/.config/guix/current/etc/profile" ]; then
