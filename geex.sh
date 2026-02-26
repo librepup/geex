@@ -45,6 +45,8 @@ ENVIRONMENT can be one of the environment variables listed below:
     GEEX_FORCE_THE_HURD          force installation even if installer is set to GNU Hurd
 
   bootstrapper environment variables
+    GEEX_BOOTSTRAPPER_WRITE      switch from pretending to write, to actually writing
+                                 your image to your selected disk
     BOOTSTRAPPER_FORCE_FORMAT    force the bootstrapper to format and write image to
                                  selected disk, even if escalation error is encountered
 
@@ -387,6 +389,8 @@ ENVIRONMENT can be one of the environment variables listed below:
     GEEX_FORCE_THE_HURD          force installation even if installer is set to GNU Hurd
 
   bootstrapper environment variables
+    GEEX_BOOTSTRAPPER_WRITE      switch from pretending to write, to actually writing
+                                 your image to your selected disk
     BOOTSTRAPPER_FORCE_FORMAT    force the bootstrapper to format and write image to
                                  selected disk, even if escalation error is encountered
 
