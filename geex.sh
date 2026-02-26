@@ -36,6 +36,7 @@ ENVIRONMENT can be one of the environment variables listed below:
                                  the configuration file (if selected)
     GEEX_MANUAL_NET_SETUP_MODE   force the installer to throw you into manual networking
                                  setup mode
+    GEEX_FORCE_AGNOSTIC          force distro agnostic mode, which is highly experimental
 
   experimental environment variables
     GEEX_THE_HURD                force the installer to set your system up with GNU Hurd
@@ -396,6 +397,7 @@ ENVIRONMENT can be one of the environment variables listed below:
                                  the configuration file (if selected)
     GEEX_MANUAL_NET_SETUP_MODE   force the installer to throw you into manual networking
                                  setup mode
+    GEEX_FORCE_AGNOSTIC          force distro agnostic mode, which is highly experimental
 
   experimental environment variables
     GEEX_THE_HURD                force the installer to set your system up with GNU Hurd
@@ -3927,9 +3929,28 @@ detectDistro() {
     export distro=$optName
     export distribution=$optName
 }
+agnosticSetup() {
+    welcome=$(dialog --backtitle "Geex Installer" --title "Welcome" --msgbox "Welcome to the Geex Installers Distro Agnostic Setup. This Mode attempts to bring the declarative System Configuration of GNU Guix (and by extend NixOS) to any Regular, Supported, Distribution.\n\nThis Mode is very Experimental, Proceed at your own Risk!\n\nThe Automatic Distribution Detection System has pinned your Distribution to be: '$distro', if this is Wrong, please Exit the Installer now!" 22 60 3>&1 1>&2 2>&3) || exit 1
+    export GEEX_IN_AGNOSTIC_MODE=1
+}
 
 # Installer Hooks
 installerHook() {
+    detectDistro
+    if [[ ($distro != "unknown" && $distro != "nixos" && $distro != "guix" && $GEEX_MOVER_MODE != 1 && $GEEX_THE_HURD != 1 && $GEEX_THE_HURD_ALLOW != 1 && $GEEX_HURD_RENDER_WARNING != 1) || ($GEEX_FORCE_AGNOSTIC == 1 && $GEEX_THE_HURD != 1 && $GEEX_THE_HURD_ALLOW != 1 && $GEEX_HURD_RENDER_WARNING != 1 && $GEEX_MOVER_MODE != 1) ]]; then
+        if [ -n "$(LC_ALL=C type -t agnosticSetup)" ] && [ "$(LC_ALL=C type -t agnosticSetup)" = function ]; then
+            agnosticQuestion=$(dialog --backtitle "Geex Installer" --title "Distro Agnosticism" --yesno "The Geex Installer has Detected that you are on an Unsupported, but Detected, Distribution. Do you want to start the Distro Agnostic Installation Hook?" 14 75 3>&1 1>&2 2>&3)
+            agnosticQuestion_RESPONSE_CODE=$?
+            if [ "$agnosticQuestion_RESPONSE_CODE" -eq 0 ]; then
+                agnosticSetup
+            else
+                export GEEX_IN_AGNOSTIC_MODE=0
+                echo "[ Status ]: Skipping Distro Agnostic Setup..."
+            fi
+        fi
+    else
+        export GEEX_IN_AGNOSTIC_MODE=0
+    fi
     if [[ "$GEEX_HURD_RENDER_WARNING" == 1 ]]; then
         hurdNotice=$(dialog --backtitle "Geex Installer" --title "Hurd Notice" --infobox "You have forceably enabled GNU Hurd Support for the Geex Installer. This is not intended, and that option merely exists for testing purposes. You SHOULD NOT and DO NOT want to use GNU Hurd as your main Systems Kernel.\n\nIf you are absolutely sure you know what you are doing, select 'Force', otherwise, please select 'Okay'.\n\n3..." 18 70 3>&1 1>&2 2>&3)
         sleep 1
