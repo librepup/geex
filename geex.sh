@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# Version 2
+# Version 3
 
 if [ $# -eq 0 ]; then
     echo -e \
@@ -2738,6 +2738,8 @@ searchForPackageFunction() {
 packageBundlesHook() {
     bundleSelection=$(dialog --backtitle "Geex Installer" --title "Package Bundles" --checklist "Select Package Bundles:" 15 50 5 \
                              office "Office" off \
+                             gaming "Gaming" off \
+                             media "Media Players" on \
                              plan9 "Plan9 Tools" off \
                              archivers "Archiving Tools" off \
                              rescue "Rescue Tools" off \
@@ -2747,6 +2749,22 @@ packageBundlesHook() {
     read -r -a bundleSelectionArray <<< "$bundleSelection"
     bundleSelectionCount="${#bundleSelectionArray[@]}"
     bundleSelectionSummaryText=$(printf '%s\n' "${bundleSelectionArray[@]}")
+    if [ -f "/tmp/geex.bundle.gaming.dd" ]; then
+        rm /tmp/geex.bundle.gaming.dd
+    fi
+    if [[ "$userWantsNvidia" == "yes" ]]; then
+        bundleGamingBlock="$(echo -e "                             \"steam-nvidia\"\n                             \"heroic-nvidia\"\n                             \"protonup\"")"
+    else
+        bundleGamingBlock="$(echo -e "                             \"steam\"\n                             \"heroic\"\n                             \"protonup\"")"
+    fi
+    if [ -f "/tmp/geex.bundle.media.dd" ]; then
+        rm /tmp/geex.bundle.media.dd
+    fi
+    if [[ "$userWantsNvidia" == "yes" ]]; then
+        bundleMediaBlock="$(echo -e "                             \"ffmpeg\"\n                             \"mpv-nvidia\"\n                             \"cmus\"")"
+    else
+        bundleMediaBlock="$(echo -e "                             \"ffmpeg\"\n                             \"mpv\"\n                             \"cmus\"")"
+    fi
     if [ -f "/tmp/geex.bundle.office.dd" ]; then
         rm /tmp/geex.bundle.office.dd
     fi
@@ -2774,6 +2792,12 @@ packageBundlesHook() {
     if [ -f "/tmp/geex.config.${stager}.dd" ]; then
         if [[ "$bundleSelection" == *office* ]]; then
             bundleCombined="$(echo -e "$bundleOfficeBlock\n$bundleCombined\n")"
+        fi
+        if [[ "$bundleSelection" == *gaming* ]]; then
+            bundleCombined="$(echo -e "$bundleGamingBlock\n$bundleCombined\n")"
+        fi
+        if [[ "$bundleSelection" == *media* ]]; then
+            bundleCombined="$(echo -e "$bundleMediaBlock\n$bundleCombined\n")"
         fi
         if [[ "$bundleSelection" == *plan9* ]]; then
             bundleCombined="$(echo -e "$bundlePlan9Block\n$bundleCombined\n")"
