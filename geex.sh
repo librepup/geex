@@ -3962,12 +3962,12 @@ checkGeexVersion() {
     if [[ -f "/tmp/geex.self.update.checkfile.dd" ]]; then
         rm /tmp/geex.self.update.checkfile.dd
     fi
-    curl -o /tmp/geex.self.update.checkfile.dd $remoteSource
+    wget -O /tmp/geex.self.update.checkfile.dd "https://raw.githubusercontent.com/librepup/geex/refs/heads/main/geex.sh"
     export remoteVersion=$(cat /tmp/geex.self.update.checkfile.dd | head -n 2 | grep -i "Version" | awk '{print $3}')
     if [[ "$remoteVersion" -gt "$scriptVersion" ]]; then
         updateSelfHook
     else
-        notice=$(dialog --backtitle "Geex Updater" --title "Update" --msgbox "Your Geex Installer is already Updated to the Latest Version!" 24 40 3>&1 1>&2 2>&3) || exit 1
+        notice=$(dialog --backtitle "Geex Updater" --title "Update" --msgbox "Your Geex Installer is already Updated to the Latest Version ($scriptVersion) (Remote: $remoteVersion)!" 24 40 3>&1 1>&2 2>&3) || exit 1
     fi
 }
 
