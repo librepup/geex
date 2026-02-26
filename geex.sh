@@ -3950,6 +3950,7 @@ updateSelfHook() {
         fi
         cp "$scriptFile" /tmp/geex.outdated.scriptfile.dd
         mv /tmp/geex.self.update.checkfile.dd "$scriptFile"
+        chmod a+x "$scriptFile"
         dialog --clear
         clear
         echo "[ Status ]: Update Complete, the Installer will now Exit so you can Re-Start it with the Latest Version."
