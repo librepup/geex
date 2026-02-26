@@ -1,6 +1,6 @@
 (define %systemchoice
   "desktop")
- ; Available options: "desktop", "laptop", "laptop-full", "minimal", "libre".
+ ; Available options: "desktop", "desktop-full", "laptop", "laptop-full", "minimal", "libre".
 
 (add-to-load-path (dirname (current-filename)))
 
