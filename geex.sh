@@ -175,6 +175,9 @@ CONTACT
 done
 
 cleanHook() {
+    if [ -f "/tmp/geex.self.update.checkfile.dd" ]; then
+        rm /tmp/geex.self.update.checkfile.dd
+    fi
     if [ -f "/tmp/geex.service.tlp.block.dd" ]; then
         rm /tmp/geex.service.tlp.block.dd
     fi
@@ -353,6 +356,9 @@ for arg in "$@"; do
             fi
             if [ -d "/tmp/geex.container.store" ]; then
                 rm -rf /tmp/geex.container.store
+            fi
+            if [ -f "/tmp/geex.outdated.scriptfile.dd" ]; then
+                rm /tmp/geex.outdated.scriptfile.dd
             fi
             echo "Cleaned up extra stores as well."
             exit 1
@@ -3936,7 +3942,7 @@ agnosticSetup() {
 }
 # Update Hooks
 updateSelfHook() {
-    ask=$(dialog --backtitle "Geex Updater" --title "Really Update" --yesno "Do you really want to Update the Geex Installer? This will replace your current copy with the latest remotely fetched copy." 18 75)
+    ask=$(dialog --backtitle "Geex Updater" --title "Really Update" --yesno "Do you really want to Update the Geex Installer? This will replace your current copy with the latest remotely fetched copy." 18 75 3>&1 1>&2 2>&3)
     ask_RESPONSE_CODE=$?
     if [[ "$ask_RESPONSE_CODE" -eq 0 ]]; then
         if [[ -f "/tmp/geex.outdated.scriptfile.dd" ]]; then
@@ -3953,21 +3959,40 @@ updateSelfHook() {
         echo "[ Status ]: Aborting Update..."
     fi
 }
+getRemoteFile() {
+    wget -O /tmp/geex.self.update.checkfile.dd "https://raw.githubusercontent.com/librepup/geex/refs/heads/main/geex.sh"
+    if [[ -f "/tmp/geex.self.update.checkfile.dd" ]]; then
+        export gotFile=1
+    else
+        export gotFile=0
+    fi
+}
 checkGeexVersion() {
     export scriptDirectory=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
     export scriptName=$(basename -- "${BASH_SOURCE[0]}")
     export scriptFile="$scriptDirectory/$scriptName"
     export scriptVersion=$(cat $scriptFile | head -n 2 | grep -i "Version" | awk '{print $3}')
-    export remoteSource="https://raw.githubusercontent.com/librepup/geex/refs/heads/main/geex.sh"
     if [[ -f "/tmp/geex.self.update.checkfile.dd" ]]; then
         rm /tmp/geex.self.update.checkfile.dd
     fi
-    wget -O /tmp/geex.self.update.checkfile.dd "https://raw.githubusercontent.com/librepup/geex/refs/heads/main/geex.sh"
-    export remoteVersion=$(cat /tmp/geex.self.update.checkfile.dd | head -n 2 | grep -i "Version" | awk '{print $3}')
-    if [[ "$remoteVersion" -gt "$scriptVersion" ]]; then
-        updateSelfHook
+    getRemoteFile
+    if [[ "$gotFile" == 1 ]]; then
+        export remoteVersion=$(cat /tmp/geex.self.update.checkfile.dd | head -n 2 | grep -i "Version" | awk '{print $3}')
     else
+        dialog --clear
+        clear
+        echo "[ Error ]: Could not fetch Remote File."
+        exit 1
+    fi
+    if (($remoteVersion > $scriptVersion)); then
+        export outdated=1
+    else
+        export outdated=0
+    fi
+    if [[ "$outdated" == 0 ]]; then
         notice=$(dialog --backtitle "Geex Updater" --title "Update" --msgbox "Your Geex Installer is already Updated to the Latest Version ($scriptVersion) (Remote: $remoteVersion)!" 24 40 3>&1 1>&2 2>&3) || exit 1
+    else
+        updateSelfHook
     fi
 }
 
