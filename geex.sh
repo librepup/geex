@@ -16,6 +16,7 @@ COMMAND must be one of the sub-commands listed below:
     live                         enable live preview mode
     mover                        start the mover mode
     features                     get a list of things the installer configures
+    bootstrap                    launch interactive ISO bootstrapper
 
 ENVIRONMENT can be one of the environment variables listed below:
 
@@ -43,14 +44,20 @@ ENVIRONMENT can be one of the environment variables listed below:
                                  hardware
     GEEX_FORCE_THE_HURD          force installation even if installer is set to GNU Hurd
 
+  bootstrapper environment variables
+    BOOTSTRAPPER_FORCE_FORMAT    force the bootstrapper to format and write image to
+                                 selected disk, even if escalation error is encountered
+
 EXAMPLES that you may consider running yourself listed below:
 
   main examples
+    ./geex.sh i                  run installer
+    ./geex.sh i d                run installer in debug mode
     ./geex.sh d v i              run installer in debug and verbose mode
     ./geex.sh d v i l            run installer in debug, verbose, and live mode
     ./geex.sh d m                run mover in debug mode
-    ./geex.sh i                  run installer (this will modify your system and try to install gnu guix)
-    ./geex.sh i d                run installer in debug mode
+    ./geex.sh c                  clean up any remains
+    ./geex.sh feat               list features of the installer
 
 NOTICE for you to consider:
 
@@ -82,7 +89,7 @@ for arg in "$@"; do
     case "$arg" in
         g|-g|--g|git|-git|--git|github|-github|--github)
             echo -e \
-                 "Information: REPO and CONTACT
+                 "Information: REPO
 
   REPO
     https://github.com/librepup/geex"
@@ -99,6 +106,14 @@ for arg in "$@"; do
 
 FEATURES provided by the Geex Installer:
 
+  automations
+    network discovery and setup
+    bios detection
+    driver detection
+    firmware necessity detection
+    kernel variant detection
+    automatic and dynamic dependency resolution
+
   components
     username
     hostname
@@ -106,7 +121,7 @@ FEATURES provided by the Geex Installer:
     region
     timezone
     keyboard
-    bios type
+    bios
     formatting
     partitioning
     filesystems
@@ -120,7 +135,18 @@ FEATURES provided by the Geex Installer:
     system initialization
     system installation
     password setup
-    home configuration"
+    home configuration
+
+  fallbacks
+    interactive network config creation
+    disk label auto-detection
+    automatic debug mode
+
+  extras
+    live-preview mode
+    legacy mover mode
+    leftover cleaner
+"
             exit 1
             ;;
     esac
@@ -136,7 +162,8 @@ CREATOR
   librepup
 
 CONTACT
-  librepup@member.fsf.org"
+  librepup@member.fsf.org
+"
             exit 1
             ;;
     esac
@@ -331,6 +358,7 @@ COMMAND must be one of the sub-commands listed below:
     live                         enable live preview mode
     mover                        start the mover mode
     features                     get a list of things the installer configures
+    bootstrap                    launch interactive ISO bootstrapper
 
 ENVIRONMENT can be one of the environment variables listed below:
 
@@ -358,14 +386,20 @@ ENVIRONMENT can be one of the environment variables listed below:
                                  hardware
     GEEX_FORCE_THE_HURD          force installation even if installer is set to GNU Hurd
 
+  bootstrapper environment variables
+    BOOTSTRAPPER_FORCE_FORMAT    force the bootstrapper to format and write image to
+                                 selected disk, even if escalation error is encountered
+
 EXAMPLES that you may consider running yourself listed below:
 
   main examples
+    ./geex.sh i                  run installer
+    ./geex.sh i d                run installer in debug mode
     ./geex.sh d v i              run installer in debug and verbose mode
     ./geex.sh d v i l            run installer in debug, verbose, and live mode
     ./geex.sh d m                run mover in debug mode
-    ./geex.sh i                  run installer (this will modify your system and try to install gnu guix)
-    ./geex.sh i d                run installer in debug mode
+    ./geex.sh c                  clean up any remains
+    ./geex.sh feat               list features of the installer
 
 NOTICE for you to consider:
 
@@ -558,24 +592,14 @@ To start a system container, run:
 for arg in "$@"; do
     case "$arg" in
         m|-m|--m|mover|-mover|--mover)
-            export filteredArgs=$(echo -e "$arg" | sed "s/d/1/g" | sed "s/D/1/g")
-            export filteredArgsOrig=$(echo -e "$@" | sed "s/d/1/g" | sed "s/D/1/g")
-            export filterResult="$(echo -e "$filteredArgs $filteredArgsOrig")"
-            if [[ "$filterResult" == *1* ]]; then
-                export GEEX_DEBUG=1
-                export GEEX_DEBUG_MODE=1
-            fi
             export GEEX_MOVER_MODE=1
-            unset filteredArgs
-            unset filteredArgsOrig
-            unset filterResult
             ;;
     esac
 done
 
 # Check if Commands are Missing
 export missingCommandCount=0
-for cmd in cp awk dialog git grep parted lsblk find ps mke2fs lspci wpa_supplicant; do
+for cmd in cp awk dialog git grep parted lsblk find ps mke2fs lspci wpa_supplicant curl wget; do
     if ! command -v "$cmd" >/dev/null 2>&1; then
         echo "[ Warning ]: Missing required binary: $cmd" >&2
         export missingCommandCount=$(($missingCommandCount + 1))
@@ -609,15 +633,15 @@ fi
 
 # If Commands are Missing, Open a Guix Shell with them Present
 if [[ "$missingCommandCount" != 0 ]]; then
-  if [ -z "$GUIX_ENVIRONMENT" ] && echo "[ Status ]: Checking for Guix, then running shell exec hook..." && command -v guix >/dev/null 2>&1 && guix shell coreutils bash gawk grep parted findutils util-linux git-minimal dialog procps e2fsprogs pciutils wpa-supplicant isc-dhcp -- true >/dev/null 2>&1; then
+  if [ -z "$GUIX_ENVIRONMENT" ] && echo "[ Status ]: Checking for Guix, then running shell exec hook..." && command -v guix >/dev/null 2>&1 && guix shell coreutils bash gawk grep parted findutils util-linux git-minimal dialog procps e2fsprogs pciutils wpa-supplicant isc-dhcp curl wget -- true >/dev/null 2>&1; then
       echo "[ Guix ]: Found Guix, running guix shell exec hook..."
       export IN_GUIX_SHELL=1
       export GEEX_RUNNING_IN="guix"
-      exec guix shell coreutils bash gawk grep parted findutils util-linux git-minimal dialog procps e2fsprogs pciutils wpa-supplicant isc-dhcp -- bash "$0" "$@"
-  elif [ -z "$IN_NIX_SHELL" ] && echo "[ Warning ]: Guix not found, checking for Nix, then running shell exec hook..." && command -v nix-shell >/dev/null 2>&1 && nix-shell -p coreutils gawk bash gnugrep parted findutils util-linux git dialog procps e2fsprogs pciutils wpa_supplicant dhcpcd --run true >/dev/null 2>&1; then
+      exec guix shell coreutils bash gawk grep parted findutils util-linux git-minimal dialog procps e2fsprogs pciutils wpa-supplicant isc-dhcp curl wget -- bash "$0" "$@"
+  elif [ -z "$IN_NIX_SHELL" ] && echo "[ Warning ]: Guix not found, checking for Nix, then running shell exec hook..." && command -v nix-shell >/dev/null 2>&1 && nix-shell -p coreutils gawk bash gnugrep parted findutils util-linux git dialog procps e2fsprogs pciutils wpa_supplicant dhcpcd curl wget --run true >/dev/null 2>&1; then
       echo "[ Nix ]: Found Nix, running nix shell exec hook..."
       export GEEX_RUNNING_IN="nix"
-      exec nix-shell -p coreutils bash gawk gnugrep parted findutils util-linux git dialog procps e2fsprogs pciutils wpa_supplicant dhcpcd --run "bash "$0" "$@""
+      exec nix-shell -p coreutils bash gawk gnugrep parted findutils util-linux git dialog procps e2fsprogs pciutils wpa_supplicant dhcpcd curl wget --run "bash "$0" "$@""
   else
       echo -e "[ Warning ]: Commands missing, but found no way to retrieve them temporarily.\nAborting unless Variable 'GEEX_IGNORE_MISSING' is set."
       if [ ! -n "$GEEX_IGNORE_MISSING" ]; then
@@ -823,7 +847,8 @@ EOF
 # Setup Hooks
 escalationUtilHook() {
     if [[ "$USER" == "root" ]]; then
-        export escalationUtil="none"
+        export escalationUtilInfo="root"
+        export escalationUtil="root"
         return 0
     fi
     if command -v doas >/dev/null; then
@@ -837,18 +862,38 @@ escalationUtilHook() {
     fi
 }
 runWithEscalationUtil() {
+    local cmd="$*"
     case "$escalationUtil" in
-        "sudo"|"doas")
-            $escalationUtil "$@"
+        "doas")
+            export escalationUtilInfo="doas"
+            doas sh -c "$cmd"
+            ;;
+        "sudo")
+            export escalationUtilInfo="sudo"
+            sudo -v && sudo sh -c "$cmd"
             ;;
         "su")
-            su root -c "$*"
+            export escalationUtilInfo="su"
+            su root -c "$cmd"
             ;;
         "none")
-            "$@"
+            warning=$(dialog --backtitle "Geex" --title "Warning" --yesno "Geex was unable to detect any valid Escalation Utility on your System, and would like to Quit now.\n\nSelect 'Yes' to Quit, and 'No' to ignore this Warning and Continue despite the missing Escalation Tool." 18 75)
+            escalationWarning_RESPONSE_CODE=$?
+            if [[ ! "$escalationWarning_RESPONSE_CODE" -eq 0 ]]; then
+                dialog --clear
+                clear
+                echo "[ Error ]: No Escalation Tool Available, Aborting..."
+                exit 1
+            fi
+            sh -c "$cmd"
+            ;;
+        "root")
+            export escalationUtilInfo="root"
+            sh -c "$cmd"
             ;;
         *)
-            "$@"
+            export escalationUtilInfo="none"
+            sh -c "$cmd"
             ;;
     esac
 }
@@ -1583,35 +1628,37 @@ disksSetup() {
             export formattedHurd=1
         fi
     else
+        if [[ "$escalationUtilInfo" == "none" ]]; then
+            errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --msgbox "The Installer has encountered an Escalation Error: no valid escalation utility was found, and the current user is also not root. The Installer will forceably quit now." 34 68 3>&1 1>&2 2>&3) || exit 1
+            dialog --clear
+            clear
+            echo "[ Error ]: Escalation Error, Aborting..."
+            exit 1
+        fi
         if [ "$bios" == "legacy" ]; then
             if [[ "$userWantsSwap" == 1 ]] && [[ "$GEEX_THE_HURD" != 1 ]]; then
-                runWithEscalationUtil parted $disk --script \
+                runWithEscalationUtil "parted $disk --script \
                      mklabel msdos \
                      mkpart primary linux-swap 1MiB 4096MiB \
                      mkpart primary ext4 4096MiB 100% \
-                     set 2 boot on
-                runWithEscalationUtil mkswap -L guix-swap ${diskPrefixed}1
-                runWithEscalationUtil swapon ${diskPrefixed}1
-                runWithEscalationUtil mkfs.ext4 -L guix-root ${diskPrefixed}2
-                runWithEscalationUtil mount ${diskPrefixed}2 ${geexMount}
+                     set 2 boot on"
+                runWithEscalationUtil "mkswap -L guix-swap ${diskPrefixed}1 && swapon ${diskPrefixed}1 &&  mkfs.ext4 -L guix-root ${diskPrefixed}2 && mount ${diskPrefixed}2 ${geexMount}"
                 export formattedWithSwap="Yes"
                 export formattedDisksStatus=1
             elif [[ "$userWantsSwap" != 1 ]] && [[ "$GEEX_THE_HURD" != 1 ]]; then
-                runWithEscalationUtil parted $disk --script \
+                runWithEscalationUtil "parted $disk --script \
                   mklabel msdos \
                   mkpart primary ext4 1MiB 100% \
-                  set 1 boot on
-                runWithEscalationUtil mkfs.ext4 -L guix-root ${diskPrefixed}1
-                runWithEscalationUtil mount ${diskPrefixed}1 ${geexMount}
+                  set 1 boot on"
+                runWithEscalationUtil "mkfs.ext4 -L guix-root ${diskPrefixed}1 && mount ${diskPrefixed}1 ${geexMount}"
                 export formattedWithSwap="No"
                 export formattedDisksStatus=1
             else
-                runWithEscalationUtil parted $disk --script \
+                runWithEscalationUtil "parted $disk --script \
                      mklabel msdos \
                      mkpart primary ext2 1MiB 100% \
-                     set 1 boot on
-                runWithEscalationUtil mkfs.ext2 -L guix-root ${diskPrefixed}1
-                runWithEscalationUtil mount ${diskPrefixed}1 ${geexMount}
+                     set 1 boot on"
+                runWithEscalationUtil "mkfs.ext2 -L guix-root ${diskPrefixed}1 && mount ${diskPrefixed}1 ${geexMount}"
                 export formattedDisksStatus=1
                 export formattedWithSwap="No"
                 export formattedHurd=1
@@ -1619,7 +1666,7 @@ disksSetup() {
         else
             # UEFI Logic
             if [[ "$userWantsSwap" == 1 ]] && [[ "$GEEX_THE_HURD" != 1 ]]; then
-                runWithEscalationUtil parted $disk --script \
+                runWithEscalationUtil "parted $disk --script \
                      mklabel gpt \
                      mkpart primary linux-swap 1MiB 4096MiB \
                      name 1 guix-swap \
@@ -1627,45 +1674,31 @@ disksSetup() {
                      name 2 guix-efi \
                      set 2 esp on \
                      mkpart primary ext4 6144MiB 100% \
-                     name 3 guix-root
-                runWithEscalationUtil mkswap -L guix-swap ${diskPrefixed}1
-                runWithEscalationUtil swapon ${diskPrefixed}1
-                runWithEscalationUtil mkfs.fat -F32 -n guix-efi ${diskPrefixed}2
-                runWithEscalationUtil mkfs.ext4 -L guix-root ${diskPrefixed}3
-                runWithEscalationUtil mount ${diskPrefixed}3 ${geexMount}
-                runWithEscalationUtil mkdir -p ${geexMount}/boot/efi
-                runWithEscalationUtil mount ${diskPrefixed}2 ${geexMount}/boot/efi
+                     name 3 guix-root"
+                runWithEscalationUtil "mkswap -L guix-swap ${diskPrefixed}1 && swapon ${diskPrefixed}1 &&  mkfs.fat -F32 -n guix-efi ${diskPrefixed}2 && mkfs.ext4 -L guix-root ${diskPrefixed}3 &&  mount ${diskPrefixed}3 ${geexMount} && mkdir -p ${geexMount}/boot/efi && mount ${diskPrefixed}2 ${geexMount}/boot/efi"
                 export formattedWithSwap="Yes"
                 export formattedDisksStatus=1
             elif [[ "$userWantsSwap" != 1 ]] && [[ "$GEEX_THE_HURD" != 1 ]]; then
-              runWithEscalationUtil parted $disk --script \
+              runWithEscalationUtil "parted $disk --script \
                   mklabel gpt \
                   mkpart ESP fat32 1MiB 2048MiB \
                   name 1 guix-efi \
                   set 1 esp on \
                   mkpart primary ext4 2048MiB 100% \
-                  name 2 guix-root
-                runWithEscalationUtil mkfs.fat -F32 -n guix-efi ${diskPrefixed}1
-                runWithEscalationUtil mkfs.ext4 -L guix-root ${diskPrefixed}2
-                runWithEscalationUtil mount ${diskPrefixed}2 ${geexMount}
-                runWithEscalationUtil mkdir -p ${geexMount}/boot/efi
-                runWithEscalationUtil mount ${diskPrefixed}1 ${geexMount}/boot/efi
+                  name 2 guix-root"
+                runWithEscalationUtil "mkfs.fat -F32 -n guix-efi ${diskPrefixed}1 && mkfs.ext4 -L guix-root ${diskPrefixed}2 &&  mount ${diskPrefixed}2 ${geexMount} && mkdir -p ${geexMount}/boot/efi && mount ${diskPrefixed}1 ${geexMount}/boot/efi"
                 echo -e "\nFinished (U)EFI Formatting and Mounting\n"
                 export formattedDisksStatus=1
                 export formattedWithSwap="No"
             else
-                runWithEscalationUtil parted $disk --script \
+                runWithEscalationUtil "parted $disk --script \
                      mklabel gpt \
                      mkpart ESP fat32 1MiB 2048MiB \
                      set 1 esp on \
                      name 1 guix-efi \
                      mkpart primary ext2 2048MiB 100% \
-                     name 2 guix-root
-                runWithEscalationUtil mkfs.fat -F32 -n guix-efi ${diskPrefixed}1
-                runWithEscalationUtil mkfs.ext2 -L guix-root ${diskPrefixed}2
-                runWithEscalationUtil mount ${diskPrefixed}2 ${geexMount}
-                runWithEscalationUtil mkdir -p ${geexMount}/boot/efi
-                runWithEscalationUtil mount ${diskPrefixed}1 ${geexMount}/boot/efi
+                     name 2 guix-root"
+                runWithEscalationUtil "mkfs.fat -F32 -n guix-efi ${diskPrefixed}1 && mkfs.ext2 -L guix-root ${diskPrefixed}2 && mount ${diskPrefixed}2 ${geexMount} && mkdir -p ${geexMount}/boot/efi && mount ${diskPrefixed}1 ${geexMount}/boot/efi"
                 export formattedDisksStatus=1
                 export formattedWithSwap="No"
                 export formattedHurd=1
@@ -1788,7 +1821,8 @@ biosLegacyEditHook() {
         export diskChoice=${diskPrefixed}2
     fi
     legacyBlock="$(echo -e "    (bootloader (bootloader-configuration\n              (keyboard-layout keyboard-layout)\n              (bootloader grub-bootloader)\n              (targets '(\"${disk}\"))))\n")"
-    legacyBlockVerify=$(dialog --backtitle "Geex Installer" --title "Verify BIOS Block" --menu "Please verify that the BIOS Block below is correct and can be written:\n\n\`\`\`\n$legacyBlock\n\`\`\`\n\n\n  " 28 50 10 \
+    legacyBlockText="$(echo -e "(bootloader (bootloader-configuration\n              (keyboard-layout keyboard-layout)\n              (bootloader grub-bootloader)\n              (targets '(\"${disk}\"))))\n")"
+    legacyBlockVerify=$(dialog --backtitle "Geex Installer" --title "Verify BIOS Block" --menu "Please verify that the BIOS Block below is correct and can be written:\n\n\`\`\`\n$legacyBlockText\n\`\`\`\n\n\n  " 28 50 10 \
                                continue "Continue" \
                                abort "Abort" \
                                3>&1 1>&2 2>&3) || exit 1
@@ -1837,7 +1871,8 @@ biosLegacyEditHook() {
 biosUefiEditHook() {
     export diskPrefixed=$diskPrefixed
     uefiBlock="$(echo -e "    (bootloader (bootloader-configuration\n              (keyboard-layout keyboard-layout)\n              (bootloader grub-efi-bootloader)\n              (targets '(\"/boot/efi\"))))\n")"
-    uefiBlockVerify=$(dialog --backtitle "Geex Installer" --title "Verify BIOS Block" --menu "Please verify that the BIOS Block below is correct and can be written:\n\n\`\`\`\n$uefiBlock\n\`\`\`\n\n\n  " 28 50 10 \
+    uefiBlockText="$(echo -e "(bootloader (bootloader-configuration\n              (keyboard-layout keyboard-layout)\n              (bootloader grub-efi-bootloader)\n              (targets '(\"/boot/efi\"))))\n")"
+    uefiBlockVerify=$(dialog --backtitle "Geex Installer" --title "Verify BIOS Block" --menu "Please verify that the BIOS Block below is correct and can be written:\n\n\`\`\`\n$uefiBlockText\n\`\`\`\n\n\n  " 28 50 10 \
                              continue "Continue" \
                              abort "Abort" \
                              3>&1 1>&2 2>&3) || exit 1
@@ -2427,6 +2462,7 @@ homeHook() {
     fi
 }
 timezoneHook() {
+    dialog --backtitle "Geex Installer" --title "Loading..." --infobox "Loading Timezone Information, please wait..." 10 50
     if [ "$GEEX_RUNNING_IN" == "guix" ]; then
         export ZONEINFO_DIR=$(guix build tzdata)/share/zoneinfo
     elif [ "$GEEX_RUNNING_IN" == "nix" ]; then
@@ -2572,6 +2608,7 @@ keyboardSelectLayoutHook() {
     done
 }
 keyboardHook() {
+    dialog --backtitle "Geex Installer" --title "Loading..." --infobox "Loading Keyboard Layout and Variant List, please wait..." 10 50
     if [ "$GEEX_RUNNING_IN" == "guix" ]; then
         export XKB_BASE=$(guix build xkeyboard-config)/share/X11/xkb
     elif [ "$GEEX_RUNNING_IN" == "nix" ]; then
@@ -3319,6 +3356,337 @@ internetConnectionHook() {
     internetChooseNetwork
 }
 
+# Bootstrap Hooks
+disksHookBootstrapper() {
+    PARTS_WITH_LABELS=$(ls -l /dev/disk/by-label/ | awk '{print $11 " " $9"\\n"}' | sed "s|../../|\n/dev/|g")
+    if [[ "$PARTS_WITH_LABELS" == "" ]] || [[ -z "$PARTS_WITH_LABELS" ]]; then
+        echo "[ Status ]: No partitions with labels found, skipping notice message..."
+    else
+        partitionsNotice=$(dialog --backtitle "Geex Bootstrapper" --title "Partitions Notice" --msgbox "The Bootstrapper has detected the following Partitions with a Label assigned to them, you may want to watch out and make sure you do not overwrite the Disk they are a Part of, if these Partitions are important to you.\n\n$PARTS_WITH_LABELS" 15 50 3>&1 1>&2 2>&3) || exit 1
+    fi
+    DISK_LIST=$(lsblk -dno NAME,SIZE | awk '{print "/dev/"$1, "("$2")"}')
+    SELECTED_DISK=$(dialog --menu "Select Disk" 15 50 10 $DISK_LIST 3>&1 1>&2 2>&3) || exit 1
+    if [[ -z "$SELECTED_DISK" ]]; then
+        errorMessage=$(dialog --backtitle "Geex Installer" --title "Error" --menu "You have not selected a valid (or any) disk, the installer cannot continue and will now abort the installation process." 32 50 10 \
+                              okay "Okay" \
+                              3>&1 1>&2 2>&3) || exit 1
+        if [ "$errorMessage" == "okay" ]; then
+            dialog --clear
+            clear
+            echo "[ Status ]: Aborting..."
+            exit 1
+        else
+            dialog --clear
+            clear
+            echo -e "[ Status ]: You have somehow selected a non-existent option in the error message, this is not intended - please verify that the Geex installer's code has not been tampered with.\n[ Status ]: Aborting..."
+            exit 1
+        fi
+    fi
+    export disk=$SELECTED_DISK
+    if [[ "$disk" == /dev/nvme* ]]; then
+        export diskPrefixed="${disk}p"
+    else
+        export diskPrefixed="$disk"
+    fi
+}
+renderBarHook() {
+    local current=$1
+    local total=$2
+    (( total == 0 )) && return
+    percent=$(( current * 100 / total ))
+    echo "$percent" | dialog --backtitle "Geex Bootstrapper" --title "Downloading" --gauge "Downloading ${filename}" 7 50
+}
+imageSelectionHook() {
+    selectRelease=$(dialog --backtitle "Geex Bootstrapper" --title "Release Selection" --menu "Select which Release/Version of GNU Guix you want to Bootstrap:" 22 60 10 \
+                           official "Official" \
+                           nonguix "NonGuix" \
+                           3>&1 1>&2 2>&3) || exit 1
+    export release=$selectRelease
+    case "$release" in
+        "official")
+            versionList="1.5.0 1.5.0 1.4.0 1.4.0 1.3.0 1.3.0"
+            archList="x86_64 x86_64 i686 i686 aarch64 aarch64"
+            releaseName="Official"
+            downloadName="Guix"
+            ;;
+        "nonguix")
+            releaseName="NonGuix"
+            downloadName="NonGuix"
+            versionList="1.4.0 1.4.0"
+            ;;
+    esac
+    version=$(echo "$versionList" | xargs dialog --menu "Select Version" 15 50 10 3>&1 1>&2 2>&3 >/dev/tty) || exit 1
+    if [[ "$release" == "official" ]]; then
+        arch=$(echo "$archList" | xargs dialog --menu "Select Arch" 15 50 10 3>&1 1>&2 2>&3 >/dev/tty) || exit 1
+    else
+        arch="x86_64"
+    fi
+    case "$release" in
+        "official")
+            isoURL="https://ftpmirror.gnu.org/gnu/guix/guix-system-install-${version}.${arch}-linux.iso"
+            ;;
+        "nonguix")
+            isoURL="https://substitutes.nonguix.org/nonguix-system-install-${version}.${arch}-linux.iso"
+            ;;
+    esac
+    summary=$(dialog --backtitle "Geex Bootstrapper" --title "Summary" --yesno "You have selected GNU Guix Release '$releaseName', at Version '$version', with Arch '$arch'.\n\nIs this correct?" 18 75 3>&1 1>&2 2>&3)
+    summary_RESPONSE_CODE=$?
+    if [ "$summary_RESPONSE_CODE" -eq 0 ]; then
+        export filename="${downloadName}-${version}-${arch}.iso"
+        targetSize=$(wget --spider --server-response $isoURL 2>&1 | awk '/Content-Length/ {print $2}')
+        if [[ -z "$targetSize" ]]; then
+            dialog --clear
+            clear
+            echo "[ Error ]: Could not determine Target Filesize, File possible non-existant, aborting..."
+            echo "[ Report ]: isoURL='$isoURL'"
+            exit 1
+        fi
+        outFile="/tmp/geex.bootstrapper.store/${filename}"
+        if [[ -f "$outFile" ]]; then
+            localSize=$(stat -c %s $outFile)
+        fi
+        if [[ -f "/tmp/geex.bootstrapper.store/${filename}" ]] && [[ "$targetSize" == "$localSize" ]]; then
+            export downloadFinished=1
+            export downloadMethod="localmatch"
+        fi
+        if [[ "$downloadFinished" == 1 ]] && [[ "$downloadMethod" == "localmatch" ]]; then
+            success=$(dialog --backtitle "Geex Bootstrapper" --title "Download Finished" --msgbox "The Geex Bootstrapper has successfully downloaded '${filename}', and will now proceed to the USB Setup Hook." 24 40 3>&1 1>&2 2>&3)
+            return 0
+        fi
+        wget $isoURL -O /tmp/geex.bootstrapper.store/${downloadName}-${version}-${arch}.iso &>/dev/null &
+        wgetPid=$!
+        barWidth=40
+        while kill -0 "$wgetPid" 2>/dev/null; do
+            if [[ -f "$outFile" ]]; then
+                currentSize=$(du -b "$outFile" | awk '{print $1}')
+                renderBarHook "$currentSize" "$targetSize"
+            else
+                echo "0" | dialog --backtitle "Geex Bootstrapper" --title "Downloading" --gauge "Downloading ${filename}" 7 50
+            fi
+            sleep 3
+        done
+        wait "$wgetPid"
+        status=$?
+        currentSize=$(du -b "$outFile" 2>/dev/null | awk '{print $1}')
+        renderBarHook "${currentSize:-0}" "$targetSize"
+        echo
+        if (( status == 0 )); then
+            export downloadFinished=1
+            echo "[ Status ]: Download Completed."
+        else
+            export downloadFinished=0
+            echo "[ Error ]: Download Failed."
+        fi
+        if [[ "$downloadFinished" == 1 ]]; then
+            success=$(dialog --backtitle "Geex Bootstrapper" --title "Download Finished" --msgbox "The Geex Bootstrapper has successfully downloaded '${filename}', and will now proceed to the USB Setup Hook." 24 40 3>&1 1>&2 2>&3)
+        else
+            errorMessage=$(dialog --backtitle "Geex Bootstrapper" --title "Download Error" --msgbox "There was an Error trying to Download '${filename}', please select a different Release, Version, or Arch - and try again." 34 68 3>&1 1>&2 2>&3) || exit 1
+            dialog --clear
+            clear
+            echo "[ Error ]: Download of '${filename}' Failed, Aborting..."
+            echo "[ Report ]: Tried URL: '${isoURL}'."
+            exit 1
+        fi
+    fi
+}
+bootstrapperUnspecifiedExitHook() {
+    dialog --clear
+    clear
+    echo "[ Status ]: Bootstrapper called the Unspecified Exit Hook, Geex will now Quit."
+    exit 1
+}
+diskWriteBootstrapper() {
+    confirmation=$(dialog --backtitle "Geex Bootstrapper" --title "Confirmation" --yesno "Do you really want to write '${filename}' to '${disk}'? This is not reversible!" 18 75 3>&1 1>&2 2>&3)
+    confirmation_RESPONSE_CODE=$?
+    if [ "$confirmation_RESPONSE_CODE" -eq 0 ]; then
+        targetFileFullPath="/tmp/geex.bootstrapper.store/${filename}"
+        totalSize=$(stat -c %s "${targetFileFullPath}")
+        if [[ "$escalationUtil" == "none" ]]; then
+            errorMessage=$(dialog --backtitle "Geex Bootstrapper" --title "Error" --msgbox "The Geex Bootstrapper has encountered an Escalation Error: it could not find any Escalation Tool available on your System, and would like to Quit now.\n\nIf you are absolutely sure you want to circumvent this Forceful Exit, then run the Bootstrapper again with the Environment Variable 'BOOTSTRAPPER_FORCE_FORMAT' set to '1'." 34 75 3>&1 1>&2 2>&3) || exit 1
+            if [[ "$BOOTSTRAPPER_FORCE_FORMAT" != 1 ]]; then
+                dialog --clear
+                clear
+                echo "[ Error ]: Fatal Escalation Error Encountered, Aborting..."
+                exit 1
+            fi
+        fi
+        if [[ "$escalationUtil" == "none" ]] && [[ "$BOOTSTRAPPER_FORCE_FORMAT" == 1 ]]; then
+            export BOOTSTRAPPER_DIRECT_INSTRUCTION="ExecuteRegardless"
+        else
+            export BOOTSTRAPPER_DIRECT_INSTRUCTION="AbortFatally"
+        fi
+        if [[ "$escalationUtil" != "root" ]] && [[ "$escalationUtil" != "none" ]]; then
+            dialog --backtitle "Geex Bootstrapper" --title "Authenticating" --infobox "Please check your Terminal for a Password Prompt." 5 50
+            runWithEscalationUtil true > /dev/tty 2>&1 || bootstrapperUnspecifiedExitHook
+        fi
+        notice=$(dialog --backtitle "Geex Bootstrapper" --title "Escalation Notice" --infobox "The Installer can, for whatever reason, not yet remember Escalation, so please be prepared to enter your Superuser Password one or more times during this process.\n\nPress any Key to Skip this Notice." 18 70 3>&1 1>&2 2>&3)
+        read -r skippingNotice
+        unset skippingNotice
+        if [[ "$escalationUtil" != "root" ]] && [[ "$escalationUtil" != "none" ]]; then
+            runWithEscalationUtil "stdbuf -i0 -o0 -e0 dd if='$targetFileFullPath' of='$disk' bs=4M status=progress" 2>&1 | \
+                while LC_ALL=C read -d $'\r' -r line; do
+                    if [[ "$line" =~ ([0-9]+)\ bytes ]]; then
+                        written=${BASH_REMATCH[1]}
+                        percent=$(( written * 100 / totalSize ))
+                        echo "$percent"
+                    fi
+                done | dialog \
+                           --backtitle "Geex Bootstrapper" \
+                           --title "Writing Image" \
+                           --gauge "Writing '${filename}' to '${disk}'...\nDo not Remove the USB Device!" \
+                           10 60
+            export bootstrapperWroteImageToDisk="Yes"
+        elif [[ "$escalationUtil" == "root" ]]; then
+            dd \
+                if="$targetFileFullPath" \
+                of="$disk" \
+                bs=4M \
+                status=progress 2>&1 | \
+                while LC_ALL=C read -d $'\r' -r line; do
+                    if [[ "$line" =~ ([0-9]+)\ bytes ]]; then
+                        written=${BASH_REMATCH[1]}
+                        percent=$(( written * 100 / totalSize ))
+                        echo "$percent"
+                    fi
+                done | dialog \
+                           --backtitle "Geex Bootstrapper" \
+                           --title "Writing Image" \
+                           --gauge "Writing '${filename}' to '${disk}'...\nDo not Remove the USB Device!" \
+                           10 60
+            export bootstrapperWroteImageToDisk="Yes"
+        elif [[ "$BOOTSTRAPPER_DIRECT_INSTRUCTION" == "ExecuteRegardless" ]] && [[ "$BOOTSTRAPPER_FORCE_FORMAT" == 1 ]]; then
+            dd \
+                if="$targetFileFullPath" \
+                of="$disk" \
+                bs=4M \
+                status=progress 2>&1 | \
+                while LC_ALL=C read -d $'\r' -r line; do
+                    if [[ "$line" =~ ([0-9]+)\ bytes ]]; then
+                        written=${BASH_REMATCH[1]}
+                        percent=$(( written * 100 / totalSize ))
+                        echo "$percent"
+                    fi
+                done | dialog \
+                           --backtitle "Geex Bootstrapper" \
+                           --title "Forceably Writing Image" \
+                           --gauge "Forceably Writing '${filename}' to '${disk}'...\nDo not Remove the USB Device!" \
+                           10 60
+            export bootstrapperWroteImageToDisk="Yes (Force)"
+        elif [[ "$escalationUtil" != "root" ]] && [[ "$escalationUtil" != "none" ]] && [[ "$escalationUtil" != "su" ]] && [[ "$escalationUtil" != "sudo" ]] && [[ "$escalationUtil" != "doas" ]]; then
+            export bootstrapperWroteImageToDisk="No"
+            errorMessage=$(dialog --backtitle "Geex Bootstrapper" --title "Fatal Error" --msgbox "The Geex Bootstrapper has Encountered a Fatal Error: no Escalation Utility has been found available on your System, and the Escalation Detection did not report any of its available Options back to the Bootstrapper.\n\nThis means the Escalation Utility Detection has not been called for some Reason. This Error is un-recoverable, and the Bootstrapper will now Quit." 34 75 3>&1 1>&2 2>&3) || exit 1
+            dialog --clear
+            clear
+            echo "[ Fatal Error ]: Escalation Detection Never Called or Never Responded, Aborting..."
+            exit 1
+        else
+            export bootstrapperWroteImageToDisk="No"
+            errorMessage=$(dialog --backtitle "Geex Bootstrapper" --title "Fatal Error" --msgbox "The Geex Bootstrapper has Encountered an Impossible State: no Escalation Utility was found on your System, the Escalation Detection was Never Called or did not Respond, and all previous Error Handling Failed to Catch the User.\n\nThis Error is un-recoverable and the Bootstrapper will now Quit." 34 75 3>&1 1>&2 2>&3) || exit 1
+            dialog --clear
+            clear
+            echo "[ Fatal Error ]: Impossible Case Encountered, please Investigate this! Aborting..."
+            exit 1
+        fi
+    else
+        dialog --clear
+        clear
+        export bootstrapperWroteImageToDisk="No"
+    fi
+    if [[ "$bootstrapperWroteImageToDisk" == *Yes* ]]; then
+        success=$(dialog --backtitle "Geex Bootstrapper" --title "Success" --msgbox "The Geex Bootstrapper Successfully Wrote '${filename}' to Disk '${disk}'." 24 40 3>&1 1>&2 2>&3)
+    else
+        failure=$(dialog --backtitle "Geex Bootstrapper" --title "Failure" --msgbox "The Geex Bootstrapper Failed to Write '${filename}' to Disk '${disk}', and will Quit now." 24 40 3>&1 1>&2 2>&3) || exit 1
+        dialog --clear
+        clear
+        echo "[ Error ]: Unknown Failure Encountered, Aborting..."
+        exit 1
+    fi
+}
+diskPretendBootstrapper() {
+    targetFileFullPath="/tmp/geex.bootstrapper.store/${filename}"
+    totalSize=$(stat -c %s "${targetFileFullPath}")
+    if [[ "$escalationUtil" != "none" ]] && [[ "$escalationUtil" != "root" ]]; then
+        runWithEscalationUtil true > /dev/tty 2>&1 || bootstrapperUnspecifiedExitHook
+    fi
+    notice=$(dialog --backtitle "Geex Bootstrapper" --title "Escalation Notice" --infobox "The Installer can, for whatever reason, not yet remember Escalation, so please be prepared to enter your Superuser Password one or more times during this process.\n\nPress any Key to Skip this Notice." 18 70 3>&1 1>&2 2>&3)
+    read -r skippingNotice
+    unset skippingNotice
+    if [[ "$escalationUtil" != "none" ]] && [[ "$escalationUtil" != "root" ]]; then
+        count=0
+        maxCount=100
+        while true; do
+            ((count++))
+            sleep 0.1
+            if (( count == 20 )); then
+                runWithEscalationUtil "whoami" >/dev/null 2>&1
+            fi
+            if (( count >= maxCount )); then
+                echo "$count"
+                return 0
+            fi
+            echo "$count"
+        done | dialog \
+                   --backtitle "Geex Bootstrapper" \
+                   --title "Writing Image (Pretend)" \
+                   --gauge "Pretending to Write '${filename}' to '${disk}'...\nThe Escalation Tool used is '$escalationUtil'." \
+                   10 60
+        export bootstrapperWroteImageToDisk="Yes (Pretend)"
+    elif [[ "$escalationUtil" == "root" ]]; then
+        count=0
+        maxCount=100
+        while true; do
+            ((count++))
+            sleep 0.1
+            if (( count >= maxCount )); then
+                echo "$count"
+                return 0
+            fi
+            echo "$count"
+        done | dialog \
+                   --backtitle "Geex Bootstrapper" \
+                   --title "Writing Image (Pretend)" \
+                   --gauge "Pretending to Write '${filename}' to '${disk}'...\nNo Escalation Tool Used, as User is 'root'." \
+                   10 60
+        export bootstrapperWroteImageToDisk="Yes (Pretend)"
+    else
+        errorMessage=$(dialog --backtitle "Geex Bootstrapper" --title "Error" --msgbox "The Geex Bootstrapper has Encountered an Escalation Error: it found no Escalation Tool Available on your System, and would usually Quit now - but since this is the Pretend Write Process, it will continue." 34 75 3>&1 1>&2 2>&3) || exit 1
+        export bootstrapperWroteImageToDisk="No (Pretend)"
+    fi
+    if [[ "$bootstrapperWroteImageToDisk" == *Yes* ]]; then
+        success=$(dialog --backtitle "Geex Bootstrapper" --title "Success" --msgbox "The Geex Bootstrapper successfully pretended to write '${filename}' to Disk '${disk}'." 24 40 3>&1 1>&2 2>&3)
+    else
+        failure=$(dialog --backtitle "Geex Bootstrapper" --title "Failure" --msgbox "The Geex Bootstrapper pretended to write '${filename}' to Disk '${disk}' but Failed, and will Quit now." 24 40 3>&1 1>&2 2>&3) || exit 1
+        dialog --clear
+        clear
+        echo "[ Error ]: Unknown Failure Encountered, Aborting..."
+        exit 1
+    fi
+}
+diskWriteBootstrapperHook() {
+    if [[ "$GEEX_BOOTSTRAPPER_WRITE" == 1 ]]; then
+        diskWriteBootstrapper
+    else
+        diskPretendBootstrapper
+    fi
+}
+bootstrapHook() {
+    escalationUtilHook
+    internetConnectionHook
+    welcome=$(dialog --backtitle "Geex Bootstrapper" --title "Welcome" --menu "The Geex Bootstrapper is an Experimental Addition to the Geex Application. It's purpose is to allow you to easily create various kinds of GNU Guix Live USB Devices, which you can then Boot from.\n\nPlease Note that the Bootstrapper is in very Early-Access, and may cause issues. If you find any behaviour to be suspicious, immediately Exit the Geex Bootstrapper." 22 60 10 \
+                     understood "Understood" \
+                     abort "Abort" \
+                     3>&1 1>&2 2>&3) || exit 1
+    if [[ "$welcome" != "understood" ]]; then
+        dialog --clear
+        clear
+        echo "[ Status ]: Aborting..."
+        exit 1
+    fi
+    imageSelectionHook
+    disksHookBootstrapper
+    diskWriteBootstrapperHook
+}
+
 # Installer Hooks
 installerHook() {
     if [[ "$GEEX_HURD_RENDER_WARNING" == 1 ]]; then
@@ -3582,7 +3950,7 @@ installerHook() {
         exit 1
     fi
     if [ "$installationStatus" == 1 ]; then
-        success=$(dialog --backtitle "Geex Installer" --title "Success" --menu "The Installer successfully installed your GNU Guix System ($systemchoice) to '${geexMount}'. Please verify the installation process actually succeeded. The Installer will now continue on to the Password Setup phase, and then ask for your Guix Home preferences." 32 50 10 \
+        success=$(dialog --backtitle "Geex Installer" --title "Success" --menu "The Installer successfully installed your GNU Guix System to '${geexMount}', attached to Disk '$disk'.\n\nPlease verify whether the installation process actually worked. The Installer will now continue to the Password Application Phase, and then ask you for your Guix Home preferences." 32 50 10 \
                          continue "Continue" \
                          abort "Abort" \
                          3>&1 1>&2 2>&3) || exit 1
@@ -3598,7 +3966,7 @@ installerHook() {
         homeHook
     else
         if [ -n "$GEEX_DEBUG" ] || [ -n "$GEEX_DEBUG_MODE" ]; then
-            noticePopup=$(dialog --backtitle "Geex Installer" --title "Debug Notice" --menu "Debug Mode has been detected by the Installer. Your installation has been running in Debug Mode the entire time.\n\nThe Installer will now continue with a Mock installation success hook." 32 50 10 \
+            noticePopup=$(dialog --backtitle "Geex Installer" --title "Debug Notice" --menu "Debug Mode has been detected by the Installer. Your installation has been running in Debug Mode.\n\nThe Installer will now continue with a Mock installation success hook." 16 50 10 \
                                  okay "Okay" \
                                  abort "Abort" \
                                  3>&1 1>&2 2>&3) || exit 1
@@ -3630,9 +3998,47 @@ installerHook() {
                     hurdNotice=$(dialog --backtitle "Geex Installer" --title "GNU Hurd" --msgbox "Warning: Your disks have been formatted to be compatible with GNU Hurd 'the hurd'. This is not intended, not recommended, and most likely not even supported by your device. It is very likely that, if you GENUINELY set your system up to use GNU Hurd as its Kernel, your system WILL NOT BOOT!\n\nPlease consider this a Warning, exit the installer by pressing 'Ctrl+c' (or selecting 'Abort'/'No' at the next possible opportunity), and try again without variables like 'GEEX_THE_HURD' set." 32 0 3>&1 1>&2 2>&3)
                     export formattedDisksStatus="Hurd"
                 fi
-                export finishedMessage="$(echo -e "Final Report\n============\n(Use Arrow Keys to Scroll)\n\n(1) Information\nUsername: $username\nPasswords Set?: $areAllPasswordsSet (Re-Used?: $wasPasswordReUsed)\nHostname: $hostname\nTimezone: $TIMEZONE\nDisk: $disk (Parts: $diskPrefixedPartNameTextblock)\nBIOS: $bios (Detected: $detectedBios)\nSwap: $formattedWithSwap\nKeyboard: $keyboardInfo\nServices: $serviceSelection\nDesktops: $deSelection\n\n(2) The Installer Wrote\nSwap Block?: $wroteSwapBlock\nBIOS Block?: ${wroteBiosBlock}\nFilesystem Block?: $isFilesystemWritten\nService Block?: $areServicesWritten\nDesktop Block?: $areDesktopsWritten\nKeyboard Block?: $wroteKeyboardBlock\nTimezone Block?: $wroteTimezoneBlock\nBundles Block?: $wroteBundles\nXorg Block?: $wroteXorgBlock\nClosing OS Block?: $wroteOSEndBlock (Compose?: $wroteComposeBlock)\n\n(3) Other\nPulled Channels?: $channelReport\nCopied Home?: $homeStatus\nHome-Get Method?: $homeGetMethod\nFormatted Disks?: $formattedDisksStatus\nInstallation Path: '${geexMount}'\n\nFinish Installation?")"
+                export finishedMessage="$(echo -e "
+(1) Information
+Username: $username
+Hostname: $hostname
+Timezone: $TIMEZONE
+Keyboard: $keyboardInfo
+Passwords Set?: $areAllPasswordsSet (Re-Used?: $wasPasswordReUsed)
+Disk: $disk (Parts: $diskPrefixedPartNameTextblock)
+BIOS: $bios (Detected: $detectedBios)
+Swap: $formattedWithSwap (Part: ${diskPrefixed}1)
+
+(2) Multiple-Choice
+Services: $serviceSelection
+Desktops: $deSelection
+Bundles: $bundleSelection
+
+(3) Wrote Blocks
+Swap Block?: $wroteSwapBlock
+BIOS Block?: $wroteBiosBlock
+Filesystem Block?: $isFilesystemWritten
+Service Block?: $areServicesWritten
+Desktop Block?: $areDesktopsWritten
+Keyboard Block?: $wroteKeyboardBlock
+Timezone Block?: $wroteTimezoneBlock
+Bundles Block?: $wroteBundles
+Xorg Block?: $wroteXorgBlock
+Extra Packages Block?: $wroteCustomPackages
+Closing OS Block?: $wroteOSEndBlock (Compose?: $wroteComposeBlock)
+
+(4) Other
+Internet Connection?: $hasInternetConnection (Via: $connectivityStatusSummary)
+Pulled Channels?: $channelReport
+Copied Home?: $homeStatus
+Home-Get Method?: $homeGetMethod
+Formatted Disks?: $formattedDisksStatus
+Mount-Point?: $geexMount
+
+Complete Installation?
+")"
                 if [ "$systemFinished" == 1 ]; then
-                    finishedNotice=$(dialog --backtitle "Geex Installer" --title "Finalization" --yesno "$finishedMessage" 40 124 \
+                    finishedNotice=$(dialog --backtitle "Geex Installer" --title "Finalization" --yesno "$finishedMessage" 36 100 \
                                             3>&1 1>&2 2>&3)
                     FINISHED_NOTICE_RESPONSE_CODE=$?
 
@@ -3671,14 +4077,58 @@ installerHook() {
                                 echo -e "\n[ Style Notice ]: Styled '/tmp/config.scm'"
                             fi
                         fi
-                        echo -e "[ Status ]: Success! Geex (GNU Guix) was installed to your '$disk' Drive, and mounted at '${geexMount}'.\n[ Result ]: Here are your Files\n  - 'config.scm' -> ${geexMount}/etc/guix/config.scm (and) /tmp/geex.config.${stager}.scm\n - 'home.scm' -> ${geexMount}/etc/guix/home.scm\n[ Info ]: You may want to know about these useful Commands:\n - Rebuild System\n   - guix system reconfigure /etc/guix/config.scm\n - Rebuild Home\n   - guix home reconfigure /etc/guix/home.scm\n - Describe Generation\n   - guix describe\n - Pull Channels\n   - guix pull\n\nThank you for using Geex!"
+                        if [[ "$copiedHome" == 1 ]]; then
+                            export geexHomeStatusBlock="
+[ Geex Home ]
+The Geex Installer copied a set of Guix Home Configuration File(s) to your target System ($disk). The Home Configuration was copied to '${geexMount}/etc/guix/home.scm', and the directories '${geexMount}/etc/guix/files' and '${geexMount}/etc/guix/containers' were also copied/set up.
+
+It fetched these Files via ${homeGetMethod}. (local: from local files, git: cloned from remote source, mock/none: not copied or just pretended to)
+
+To build the Guix Home Configuration once you have booted into/entered your new GNU Guix System, run:
+  'guix home reconfigure /etc/guix/home.scm'
+"
+                        elif [[ "$copiedHome" == 2 ]]; then
+                            export geexHomeStatusBlock="
+[ Geex Home ]
+The Geex Installer pretended to copy a set of Guix Home Configuration File(s) to your target System ($disk). The Home Configuration was copied to '${geexMount}/etc/guix/home.scm', and the directories '${geexMount}/etc/guix/files' and '${geexMount}/etc/guix/containers' were also copied/set up.
+
+It fetched these Files via ${homeGetMethod}. (local: from local files, git: cloned from remote source, mock/none: not copied or just pretended to)
+
+To build the Guix Home Configuration once you have booted into/entered your new GNU Guix System, run:
+  'guix home reconfigure /etc/guix/home.scm'
+"
+                        else
+                            export geexHomeStatusBlock="
+[ Geex Home ]
+The Installer did not copy any Home Files.
+"
+                        fi
+                        printf "
+[ Closing Report ]
+Success! The Geex Installer has successfully installed GNU Guix to your '$disk' Drive, mounted at '$geexMount', and copied your custom configuration to '${geexMount}/etc/guix/config.scm'.
+
+${geexHomeStatusBlock}
+
+[ System Management ]
+To rebuild your GNU Guix System, run the command:
+  '$escalationUtil guix system reconfigure /etc/guix/config.scm'
+from within your new GNU Guix System.
+
+To describe your current system, run 'guix system describe', and to see what channels you have set up, run 'guix describe'.
+
+If you want to pull new channels/update your channels according to a '~/.config/guix/channels.scm' or '/etc/guix/channels.scm' file, run: 'guix pull', or alternatively 'guix pull --channels=/etc/guix/channels.scm'.
+
+[ Goodbye ]
+Thank you for using the Geex Installer!
+
+"
                     fi
                 elif [ "$systemFinished" == 2 ]; then
                     if [ "$formattedHurd" == 1 ]; then
                         hurdNotice=$(dialog --backtitle "Geex Installer" --title "GNU Hurd" --msgbox "Warning: Your disks have been formatted to be compatible with GNU Hurd 'the hurd'. This is not intended, not recommended, and most likely not even supported by your device. It is very likely that, if you GENUINELY set your system up to use GNU Hurd as its Kernel, your system WILL NOT BOOT!\n\nPlease consider this a Warning, exit the installer by pressing 'Ctrl+c' (or selecting 'Abort'/'No' at the next possible opportunity), and try again without variables like 'GEEX_THE_HURD' set." 32 0 3>&1 1>&2 2>&3)
                         export formattedDisksStatus="Hurd"
                     fi
-                    finishedNotice=$(dialog --backtitle "Geex Installer" --title "Finalization" --yesno "$finishedMessage" 40 124 \
+                    finishedNotice=$(dialog --backtitle "Geex Installer" --title "Finalization" --yesno "$finishedMessage" 36 100 \
                                             3>&1 1>&2 2>&3)
                     FINISHED_NOTICE_RESPONSE_CODE=$?
                     if [ $FINISHED_NOTICE_RESPONSE_CODE -eq 0 ]; then
@@ -3694,7 +4144,51 @@ installerHook() {
                     else
                         dialog --clear
                         clear
-                        echo -e "[ Status ]: Success! Geex (GNU Guix) was installed to your '$disk' Drive, and mounted at '${geexMount}'.\n[ Result ]: Here are your Files\n  - 'config.scm' -> ${geexMount}/etc/guix/config.scm (and) /tmp/geex.config.${stager}.scm\n - 'home.scm' -> ${geexMount}/etc/guix/home.scm\n[ Info ]: You may want to know about these useful Commands:\n - Rebuild System\n   - guix system reconfigure /etc/guix/config.scm\n - Rebuild Home\n   - guix home reconfigure /etc/guix/home.scm\n - Describe Generation\n   - guix describe\n - Pull Channels\n   - guix pull\n\nThank you for using Geex!"
+                        if [[ "$copiedHome" == 1 ]]; then
+                            export geexHomeStatusBlock="
+[ Geex Home ]
+The Geex Installer copied a set of Guix Home Configuration File(s) to your target System ($disk). The Home Configuration was copied to '${geexMount}/etc/guix/home.scm', and the directories '${geexMount}/etc/guix/files' and '${geexMount}/etc/guix/containers' were also copied/set up.
+
+It fetched these Files via ${homeGetMethod}. (local: from local files, git: cloned from remote source, mock/none: not copied or just pretended to)
+
+To build the Guix Home Configuration once you have booted into/entered your new GNU Guix System, run:
+  'guix home reconfigure /etc/guix/home.scm'
+"
+                        elif [[ "$copiedHome" == 2 ]]; then
+                            export geexHomeStatusBlock="
+[ Geex Home ]
+The Geex Installer pretended to copy a set of Guix Home Configuration File(s) to your target System ($disk). The Home Configuration was copied to '${geexMount}/etc/guix/home.scm', and the directories '${geexMount}/etc/guix/files' and '${geexMount}/etc/guix/containers' were also copied/set up.
+
+It fetched these Files via ${homeGetMethod}. (local: from local files, git: cloned from remote source, mock/none: not copied or just pretended to)
+
+To build the Guix Home Configuration once you have booted into/entered your new GNU Guix System, run:
+  'guix home reconfigure /etc/guix/home.scm'
+"
+                        else
+                            export geexHomeStatusBlock="
+[ Geex Home ]
+The Installer did not copy any Home Files.
+"
+                        fi
+                        printf "
+[ Closing Report ]
+Success! The Geex Installer has successfully installed GNU Guix to your '$disk' Drive, mounted at '$geexMount', and copied your custom configuration to '${geexMount}/etc/guix/config.scm'.
+
+${geexHomeStatusBlock}
+
+[ System Management ]
+To rebuild your GNU Guix System, run the command:
+  '$escalationUtil guix system reconfigure /etc/guix/config.scm'
+from within your new GNU Guix System.
+
+To describe your current system, run 'guix system describe', and to see what channels you have set up, run 'guix describe'.
+
+If you want to pull new channels/update your channels according to a '~/.config/guix/channels.scm' or '/etc/guix/channels.scm' file, run: 'guix pull', or alternatively 'guix pull --channels=/etc/guix/channels.scm'.
+
+[ Goodbye ]
+Thank you for using the Geex Installer!
+
+"
                         if [[ ! -f "/tmp/config.scm" ]]; then
                             if [ -f "/tmp/geex.config.scm" ]; then
                                 cp /tmp/geex.config.scm /tmp/config.scm
@@ -3767,6 +4261,15 @@ installerHook() {
         exit 1
     fi
 }
+
+for arg in "$@"; do
+    case "$arg" in
+        b|-b|--b|bootstrap|-bootstrap|--bootstrap)
+            bootstrapHook
+            exit 1
+            ;;
+    esac
+done
 
 for arg in "$@"; do
     case "$arg" in
