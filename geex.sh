@@ -3852,6 +3852,81 @@ containerManagerHook() {
     fi
     checkForContainers
 }
+# Extra Hooks (for Future Use)
+detectDistro() {
+    if [[ -f "/etc/os-release" ]]; then
+        optName=$(cat /etc/os-release | grep -i "^NAME=" | sed "s/NAME=//g" | sed "s/\"//g")
+        optName=$(echo "${optName,,}")
+    elif [[ ! -f "/etc/os-release" ]] && [[ -f "/etc/lsb-release" ]]; then
+        optName=$(cat /etc/lsb-release | grep -i "DISTRIB_ID=" | sed "s/DISTRIB_ID=//g" | sed "s/\"//g")
+        optName=$(echo "${optName,,}")
+    elif [[ ! -f "/etc/os-release" ]] && [[ ! -f "/etc/lsb-release" ]] && command -v lsb_release 2>&1; then
+        optName=$(lsb_release -si | sed "s/\"//g")
+        optName=$(echo "${optName,,}")
+    elif command -v apt-get >/dev/null; then
+        optName="debian"
+    elif command -v pacman >/dev/null; then
+        optName="arch"
+    elif command -v emerge >/dev/null; then
+        optName="gentoo"
+    elif command -v apk >/dev/null; then
+        optName="alpine"
+    elif command -v dnf >/dev/null; then
+        optName="fedora"
+    elif [[ -f "/etc/debian_version" ]]; then
+        optName="debian"
+    elif [[ -f "/etc/redhat-release" ]]; then
+        optName="fedora"
+    else
+        optName="unknown"
+    fi
+    case "$optName" in
+        *fedora*|*rhel*|*redhat*|*red-hat*|*red_hat*)
+            optName="fedora"
+            ;;
+        *alpine*)
+            optName="alpine"
+            ;;
+        *guix*)
+            optName="guix"
+            ;;
+        *nix*)
+            optName="nixos"
+            ;;
+        *ubuntu*)
+            optName="ubuntu"
+            ;;
+        *debian*|*pop*|*mint*|*elementary*)
+            optName="debian"
+            ;;
+        *arch*|*cachy*|*parabola*|*artix*|*arco*|*hyperbola*|*endeavour*|*garuda*|*manjaro*)
+            optName="arch"
+            ;;
+        *suse*)
+            optName="opensuse"
+            ;;
+        *gentoo*|*pentoo*|*calculate*)
+            optName="gentoo"
+            ;;
+        *kiss*)
+            optName="kiss"
+            ;;
+        *deriv*)
+            optName="derive"
+            ;;
+        *bsd*)
+            optName="bsd"
+            ;;
+        *void*)
+            optName="void"
+            ;;
+        *)
+            [[ "$optName" == "unknown" ]] && optName="unknown"
+            ;;
+    esac
+    export distro=$optName
+    export distribution=$optName
+}
 
 # Installer Hooks
 installerHook() {
