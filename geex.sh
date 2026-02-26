@@ -1,4 +1,5 @@
 #!/usr/bin/env sh
+# Version 1
 
 if [ $# -eq 0 ]; then
     echo -e \
@@ -3933,9 +3934,40 @@ agnosticSetup() {
     welcome=$(dialog --backtitle "Geex Installer" --title "Welcome" --msgbox "Welcome to the Geex Installers Distro Agnostic Setup. This Mode attempts to bring the declarative System Configuration of GNU Guix (and by extend NixOS) to any Regular, Supported, Distribution.\n\nThis Mode is very Experimental, Proceed at your own Risk!\n\nThe Automatic Distribution Detection System has pinned your Distribution to be: '$distro', if this is Wrong, please Exit the Installer now!" 22 60 3>&1 1>&2 2>&3) || exit 1
     export GEEX_IN_AGNOSTIC_MODE=1
 }
+# Update Hooks
+updateSelfHook() {
+    ask=$(dialog --backtitle "Geex Updater" --title "Really Update" --yesno "Do you really want to Update the Geex Installer? This will replace your current copy with the latest remotely fetched copy." 18 75)
+    ask_RESPONSE_CODE=$?
+    if [[ "$ask_RESPONSE_CODE" -eq 0 ]]; then
+        cp "$scriptFile" /tmp/geex.outdated.scriptfile.dd
+        mv /tmp/geex.self.update.checkfile.dd "$scriptFile"
+    else
+        echo "[ Status ]: Aborting Update..."
+    fi
+}
+checkGeexVersion() {
+    export scriptDirectory=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
+    export scriptName=$(basename -- "${BASH_SOURCE[0]}")
+    export scriptFile="$scriptDirectory/$scriptName"
+    export scriptVersion=$(cat $scriptFile | head -n 2 | grep -i "Version" | awk '{print $3}')
+    export remoteSource="https://raw.githubusercontent.com/librepup/geex/refs/heads/main/geex.sh"
+    if [[ -f "/tmp/geex.self.update.checkfile.dd" ]]; then
+        rm /tmp/geex.self.update.checkfile.dd
+    fi
+    curl -o /tmp/geex.self.update.checkfile.dd $remoteSource
+    export remoteVersion=$(cat /tmp/geex.self.update.checkfile.dd | head -n 2 | grep -i "Version" | awk '{print $3}')
+    if [[ "$remoteVersion" -gt "$scriptVersion" ]]; then
+        updateSelfHook
+    else
+        notice=$(dialog --backtitle "Geex Updater" --title "Update" --msgbox "Your Geex Installer is already Updated to the Latest Version!" 24 40 3>&1 1>&2 2>&3) || exit 1
+    fi
+}
 
 # Installer Hooks
 installerHook() {
+    if [[ "$GEEX_UPDATE" == 1 ]]; then
+        checkGeexVersion
+    fi
     detectDistro
     if [[ ($distro != "unknown" && $distro != "nixos" && $distro != "guix" && $GEEX_MOVER_MODE != 1 && $GEEX_THE_HURD != 1 && $GEEX_THE_HURD_ALLOW != 1 && $GEEX_HURD_RENDER_WARNING != 1) || ($GEEX_FORCE_AGNOSTIC == 1 && $GEEX_THE_HURD != 1 && $GEEX_THE_HURD_ALLOW != 1 && $GEEX_HURD_RENDER_WARNING != 1 && $GEEX_MOVER_MODE != 1) ]]; then
         if [ -n "$(LC_ALL=C type -t agnosticSetup)" ] && [ "$(LC_ALL=C type -t agnosticSetup)" = function ]; then
@@ -4537,6 +4569,14 @@ for arg in "$@"; do
     case "$arg" in
         v|-v|--v|verbose|-verbose|--verbose)
             export GEEX_VERBOSE_MODE=1
+            ;;
+    esac
+done
+
+for arg in "$@"; do
+    case "$arg" in
+        u|-u|--u|update|-update|--update)
+            export GEEX_UPDATE=1
             ;;
     esac
 done
