@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# Version 3
+# Version 4
 
 if [ $# -eq 0 ]; then
     echo -e \
@@ -2739,6 +2739,7 @@ packageBundlesHook() {
     bundleSelection=$(dialog --backtitle "Geex Installer" --title "Package Bundles" --checklist "Select Package Bundles:" 15 50 5 \
                              office "Office" off \
                              gaming "Gaming" off \
+                             wine "Wine" off \
                              media "Media Players" on \
                              plan9 "Plan9 Tools" off \
                              archivers "Archiving Tools" off \
@@ -2749,6 +2750,10 @@ packageBundlesHook() {
     read -r -a bundleSelectionArray <<< "$bundleSelection"
     bundleSelectionCount="${#bundleSelectionArray[@]}"
     bundleSelectionSummaryText=$(printf '%s\n' "${bundleSelectionArray[@]}")
+    if [ -f "/tmp/geex.bundle.wine.dd" ]; then
+        rm /tmp/geex.bundle.wine.dd
+    fi
+    bundleWineBlock="$(echo -e "                             \"wine\"\n                             \"winetricks\"\n                             \"wine64\"\n                             \"wine64-staging\"")"
     if [ -f "/tmp/geex.bundle.gaming.dd" ]; then
         rm /tmp/geex.bundle.gaming.dd
     fi
@@ -2792,6 +2797,9 @@ packageBundlesHook() {
     if [ -f "/tmp/geex.config.${stager}.dd" ]; then
         if [[ "$bundleSelection" == *office* ]]; then
             bundleCombined="$(echo -e "$bundleOfficeBlock\n$bundleCombined\n")"
+        fi
+        if [[ "$bundleSelection" == *wine* ]]; then
+            bundleCombined="$(echo -e "$bundleWineBlock\n$bundleCombined\n")"
         fi
         if [[ "$bundleSelection" == *gaming* ]]; then
             bundleCombined="$(echo -e "$bundleGamingBlock\n$bundleCombined\n")"
