@@ -21,6 +21,7 @@
              (guix gexp)
              (ice-9 ftw)
              (ice-9 rdelim)
+             (srfi srfi-1)
              (guix git-download)
              (guix build utils)
              (guix build-system emacs)
@@ -54,11 +55,15 @@
                      version-control
                      xorg)
 
+;; Definitions
 (define zsh
   (specification->package "zsh"))
 (define zsh-autosuggestions
   (specification->package "zsh-autosuggestions"))
+(define bash
+  (specification->package "bash"))
 
+;; Operating System
 (define %guix-os
   (operating-system
    (kernel linux)
@@ -67,7 +72,7 @@
    (host-name "guix")
    (timezone "Europe/Berlin")
    (locale "en_US.utf8")
-   (keyboard-layout (keyboard-layout "us"))
+   (keyboard-layout (keyboard-layout "us" "altgr-intl"))
 
    ;; Bootloader
    (bootloader (bootloader-configuration
@@ -87,10 +92,11 @@
                    (target (file-system-label "guix-swap")))))
 
    ;; Users
-   (users (cons (user-account
+   (users (cons* (user-account
                   (name "puppy")
                   (comment "Puppy")
                   (group "users")
+                  (password (crypt "netbsd" "$6$abc"))
                   (home-directory "/home/puppy")
                   (supplementary-groups '("wheel"
                                           "netdev"
@@ -100,20 +106,21 @@
                                           "tty"
                                           "nixbld"))
                   (shell (file-append zsh "/bin/zsh")))
-                (user-account
-                 (name "labrat")
-                 (comment "Labrat User")
-                 (group "users")
-                 (home-directory "/home/labrat")
-                 (supplementary-groups '("wheel"
-                                         "netdev"
-                                         "audio"
-                                         "video"
-                                         "input"
-                                         "tty"
-                                         "nixbld"))
-                 (shell (file-append bash "/bin/bash")))
-                %base-user-accounts))
+                 (user-account
+                  (name "labrat")
+                  (comment "Labrat User")
+                  (group "users")
+                  (password (crypt "netbsd" "$6$abc"))
+                  (home-directory "/home/labrat")
+                  (supplementary-groups '("wheel"
+                                          "netdev"
+                                          "audio"
+                                          "video"
+                                          "input"
+                                          "tty"
+                                          "nixbld"))
+                  (shell (file-append bash "/bin/bash")))
+                 %base-user-accounts))
 
    ;; Packages
    (packages (append (map specification->package
@@ -156,12 +163,12 @@
                             "procps"
                             "wget"
                             "curl"
-                            "nss-certs"
                             "bash"
                             "sed"
                             "font-jonafonts"
                             "font-dejavu"
                             "font-google-noto-emoji"
+                            "font-bitstream-vera"
                             "unrar-free"
                             "unzip"
                             "7zip"
@@ -187,7 +194,6 @@
                             "xwayland-satellite"
                             "xwayland-run"
                             "cliphist"
-                            "xdg-desktop-portal"
                             "xdg-desktop-portal-wlr"
                             "sway-audio-idle-inhibit"
                             "gammastep"
@@ -195,7 +201,8 @@
                             "fastfetch"
                             "plan9port"
                             "ffmpeg"
-                            "kitty"))))
+                            "kitty"))
+                     %base-packages))
 
    ;; Services
    (services
