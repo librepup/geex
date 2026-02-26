@@ -3693,6 +3693,37 @@ bootstrapHook() {
 
 # Container Manager Hooks
 containerExecuteSystem() {
+    warning=$(dialog --backtitle "Geex Container Manager" --title "Warning" --yesno "The Systems Container Execution Hook is incredibly fragile, and incredibly experimental. It currently requires that you have the 'kitty' Terminal Emulator Installed, and operates on multilple windows simultaneously.\n\nAre you sure you want to run the Execution Hook?\n\nSelect 'Yes' to run the experimental Execution Hook, and 'No' to print a Guide on how to manually start your container, then exit." 14 75 3>&1 1>&2 2>&3)
+    warning_RESPONSE_CODE=$?
+    if [[ ! "$warning_RESPONSE_CODE" -eq 0 ]]; then
+        cd "$selectedContainerPath"
+        dialog --clear
+        clear
+        echo "[ Status ]: Building your Container for you..."
+        builtContainerPath=$(guix system container -L . "${selectedContainer}" 2>/dev/null | tail -n 1)
+        clear
+        echo -e "Running your Container:
+
+Run COMMANDS in ORDER of NUMBERS:
+  1. 'cd $selectedContainerPath'
+  2. 'guix system container -L . ${selectedContainer} 2>/dev/null | tail -n 1'
+  2.1. Copy Output of Previous Command ('/gnu/store/<hash>-run-container').
+  3. 'sudo /gnu/store/<hash>-run-container'
+  3.1. Copy PID of Executed Container (Printed out Near the Top).
+  4. 'sudo guix container exec <PID> /run/current-system/profile/bin/bash --login'
+  OR
+  4. 'sudo guix container exec <PID> /run/current-system/profile/bin/bash --login -c zsh'
+
+Running COMMAND with OUTPUT as CONTAINER:
+  guix system container -L . ${selectedContainer} 2>/dev/null | tail -n 1
+
+OUTPUT as CONTAINER:
+  $builtContainerPath
+
+"
+        exit 1
+    fi
+
     cd "$selectedContainerPath"
     sudo -v || return 1
     buildContainer=$(guix system container -L . "${selectedContainer}" 2>/dev/null | tail -n 1)
@@ -3759,7 +3790,7 @@ checkForContainers() {
         exit 1
     fi
     if [[ "$containerType" == "System" ]]; then
-        typeNotice=$(dialog --backtitle "Geex Container Manager" --title "Container Type" --yesno "Container ${selectedContainerName} is of Type 'System'.\n\nAttempt to Run the Container?" 18 75 3>&1 1>&2 2>&3)
+        typeNotice=$(dialog --backtitle "Geex Container Manager" --title "Container Type" --yesno "Container ${selectedContainerName} is of Type 'System'.\n\nAttempt to Run the Container?" 12 75 3>&1 1>&2 2>&3)
         typeNotice_RESPONSE_CODE=$?
         if [[ "$typeNotice_RESPONSE_CODE" -eq 0 ]]; then
             containerExecuteSystem
