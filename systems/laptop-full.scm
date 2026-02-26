@@ -208,14 +208,14 @@
    (services
     (append (list (service gnome-desktop-service-type)
                   (simple-service 'zsh-config etc-service-type
-                                  `(("zshrc" ,(local-file "files/config/zshrc"))))
+                                  `(("zshrc" ,(local-file "../files/config/zshrc"))))
                   (service nix-service-type)
                   (service tlp-service-type
                            (tlp-configuration (cpu-scaling-governor-on-ac '("performace"))
                                               (cpu-scaling-governor-on-bat '("powersave"))
                                               (sched-powersave-on-bat? #t)))
                   (simple-service 'doas-config etc-service-type
-                                  `(("doas.conf" ,(local-file "files/config/doas/doas.conf"))))
+                                  `(("doas.conf" ,(local-file "../files/config/doas/doas.conf"))))
                   (set-xorg-configuration
                    (xorg-configuration
                     (keyboard-layout keyboard-layout))))
@@ -238,7 +238,7 @@
                                                      ;; Authorize via 'sudo guix archive --authorize < /etc/guix/files/keys/nonguix.pub'
                                                      (authorized-keys (append
                                                                        (list (local-file
-                                                                              "/etc/guix/files/keys/nonguix.pub"))
+                                                                              "../files/keys/nonguix.pub"))
                                                                        %default-authorized-guix-keys))))
               (mingetty-service-type config =>
                                      (mingetty-configuration (inherit config)

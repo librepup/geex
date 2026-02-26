@@ -220,8 +220,10 @@
                    (service libvirt-service-type)
                    (service virtlog-service-type)
                    (service nix-service-type)
+                   (simple-service 'zsh-config etc-service-type
+                                   `(("zshrc" ,(local-file "../files/config/zshrc"))))
                    (simple-service 'doas-config etc-service-type
-                                   `(("doas.conf" ,(local-file "files/config/doas/doas.conf"))))
+                                   `(("doas.conf" ,(local-file "../files/config/doas/doas.conf"))))
                    (set-xorg-configuration
                     (xorg-configuration (keyboard-layout keyboard-layout)
                                         (modules (cons nvidia-driver
@@ -246,7 +248,7 @@
                                                       ;; Authorize via 'sudo guix archive --authorize < /etc/guix/files/keys/nonguix.pub'
                                                       (authorized-keys (append
                                                                         (list (local-file
-                                                                               "/etc/guix/files/keys/nonguix.pub"))
+                                                                               "../files/keys/nonguix.pub"))
                                                                         %default-authorized-guix-keys))))
                (mingetty-service-type config =>
                                       (mingetty-configuration (inherit config)

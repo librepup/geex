@@ -104,7 +104,7 @@ permit persist keepenv setenv :wheel"))))
                                                             (authorized-keys (append
                                                                               (list
                                                                                (local-file
-                                                                                "/etc/guix/files/keys/nonguix.pub"))
+                                                                                "../files/keys/nonguix.pub"))
                                                                               %default-authorized-guix-keys))))))))))
 
 %guix-os

@@ -160,7 +160,7 @@ permit persist keepenv setenv :wheel"))))
                                                       ;; Authorize via 'sudo guix archive --authorize < /etc/guix/files/keys/nonguix.pub'
                                                       (authorized-keys (append
                                                                         (list (local-file
-                                                                               "/etc/guix/files/keys/nonguix.pub"))
+                                                                               "../files/keys/nonguix.pub"))
                                                                         %default-authorized-guix-keys))))
                (mingetty-service-type config =>
                                       (mingetty-configuration (inherit config)
