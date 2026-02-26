@@ -17,15 +17,29 @@
              (gnu services virtualization)
              (guix)
              (guix utils)
+             (guix packages)
+             (guix gexp)
+             (ice-9 ftw)
+             (ice-9 rdelim)
+             (srfi srfi-1)
+             (guix git-download)
+             (guix build utils)
+             (guix build-system emacs)
              ;; Nongnu & Nonguix
              (nongnu packages linux)
              (nongnu packages nvidia)
              (nongnu services nvidia)
              (nongnu system linux-initrd)
              (nonguix transformations)
+             ;; Emacs
+             (emacs packages melpa)
              ;; Jonabron
              (jonabron packages wm)
              (jonabron packages fonts)
+             (jonabron packages ai)
+             (jonabron packages shells)
+             (jonabron packages entertainment)
+             (jonabron packages emacs)
              (jonabron packages games)
              (jonabron packages communication))
 
@@ -35,7 +49,8 @@
                      networking
                      ssh
                      xorg
-                     dbus)
+                     dbus
+                     pm)
 (use-package-modules wm
                      bootloaders
                      certs
@@ -43,6 +58,15 @@
                      version-control
                      xorg)
 
+;; Definitions
+(define zsh
+  (specification->package "zsh"))
+(define zsh-autosuggestions
+  (specification->package "zsh-autosuggestions"))
+(define bash
+  (specification->package "bash"))
+
+;; Operating System
 (define %guix-os
   (operating-system
     (kernel linux)
@@ -54,7 +78,6 @@
     (keyboard-layout (keyboard-layout "us" "colemak"))
 
     ;; Bootloader
-    ;; - (U)EFI
     (bootloader (bootloader-configuration
                   (keyboard-layout keyboard-layout)
                   (bootloader grub-efi-bootloader)
@@ -68,7 +91,6 @@
                          (file-system
                            (mount-point "/boot/efi")
                            (device (file-system-label "guix-efi"))
-                           ;; or: (device (uuid "PARTITION_UUID" 'fat32))
                            (type "vfat")) %base-file-systems))
 
     ;; Swap
@@ -77,25 +99,49 @@
                     (target (file-system-label "guix-swap")))))
 
     ;; Users
-    (users (cons (user-account
+    (users (cons* (user-account
                    (name "puppy")
                    (comment "Puppy")
                    (group "users")
                    (home-directory "/home/puppy")
-                   (supplementary-groups '("wheel" "netdev"
+                   (supplementary-groups '("wheel"
+                                           "netdev"
                                            "audio"
                                            "video"
                                            "input"
                                            "tty"
                                            "nixbld"))
-                   (shell (file-append zsh "/bin/zsh"))) %base-user-accounts))
+                   (shell (file-append zsh "/bin/zsh")))
+                  (user-account
+                   (name "labrat")
+                   (comment "Labrat User")
+                   (group "users")
+                   (supplementary-groups '("wheel"
+                                           "netdev"
+                                           "audio"
+                                           "video"
+                                           "input"
+                                           "tty"
+                                           "nixbld"))
+                   (shell (file-append bash "/bin/bash")))
+                  %base-user-accounts))
 
     ;; Packages
     (packages (append (map specification->package
-                           '("eza" "bat"
+                           '("eza"
+                             "bat"
                              "zoxide"
+                             "opendoas"
+                             "naitre"
+                             "vicinae"
+                             "wofi"
+                             "waybar"
+                             "dank-material-shell"
+                             "swaybg"
+                             "wl-clipboard"
                              "ripgrep"
                              "grep"
+                             "xset"
                              "coreutils"
                              "util-linux"
                              "file"
@@ -104,22 +150,65 @@
                              "glibc-locales"
                              "ncurses"
                              "zsh"
+                             "zsh-autosuggestions"
+                             "zsh-syntax-highlighting"
                              "git-minimal"
-                             "emacs-no-x"
+                             "xinput"
+                             "xmodmap"
+                             "gsettings-desktop-schemas"
+                             "setxkbmap"
+                             "dmenu"
+                             "libnotify"
+                             "emacs-pgtk"
                              "usbutils"
                              "pciutils"
                              "wpa-supplicant"
+                             "isc-dhcp"
+                             "network-manager"
                              "dhcpcd"
-                             "naitre"
-                             "xmonad"
-                             "ghc-xmonad-contrib"
                              "procps"
                              "wget"
                              "curl"
-                             "nss-certs"
                              "bash"
                              "sed"
-                             "kitty"))))
+                             "font-jonafonts"
+                             "font-dejavu"
+                             "font-google-noto-emoji"
+                             "font-bitstream-vera"
+                             "unrar-free"
+                             "unzip"
+                             "7zip"
+                             "nix"
+                             "fzf"
+                             "rsync"
+                             "redshift"
+                             "flameshot"
+                             "grim"
+                             "grimblast"
+                             "openssl"
+                             "tumbler"
+                             "dbus"
+                             "dmidecode"
+                             "alsa-utils"
+                             "pavucontrol"
+                             "pamixer"
+                             "pulseaudio"
+                             "pulsemixer"
+                             "imagemagick"
+                             "swayidle"
+                             "wlsunset"
+                             "xwayland-satellite"
+                             "xwayland-run"
+                             "cliphist"
+                             "xdg-desktop-portal-wlr"
+                             "sway-audio-idle-inhibit"
+                             "gammastep"
+                             "shadow"
+                             "fastfetch"
+                             "plan9port"
+                             "ffmpeg"
+                             "kitty"))
+                      %base-packages))
 
     ;; Services
     (services
@@ -132,10 +221,7 @@
                    (service virtlog-service-type)
                    (service nix-service-type)
                    (simple-service 'doas-config etc-service-type
-                                   (list `("doas.conf" ,(plain-file
-                                                         "doas.conf"
-                                                         "permit nopass keepenv root
-permit persist keepenv setenv :wheel"))))
+                                   `(("doas.conf" ,(local-file "files/config/doas/doas.conf"))))
                    (set-xorg-configuration
                     (xorg-configuration (keyboard-layout keyboard-layout)
                                         (modules (cons nvidia-driver
