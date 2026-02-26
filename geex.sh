@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# Version 1
+# Version 2
 
 if [ $# -eq 0 ]; then
     echo -e \
@@ -3939,8 +3939,16 @@ updateSelfHook() {
     ask=$(dialog --backtitle "Geex Updater" --title "Really Update" --yesno "Do you really want to Update the Geex Installer? This will replace your current copy with the latest remotely fetched copy." 18 75)
     ask_RESPONSE_CODE=$?
     if [[ "$ask_RESPONSE_CODE" -eq 0 ]]; then
+        if [[ -f "/tmp/geex.outdated.scriptfile.dd" ]]; then
+            rm /tmp/geex.outdated.scriptfile.dd
+        fi
         cp "$scriptFile" /tmp/geex.outdated.scriptfile.dd
         mv /tmp/geex.self.update.checkfile.dd "$scriptFile"
+        dialog --clear
+        clear
+        echo "[ Status ]: Update Complete, the Installer will now Exit so you can Re-Start it with the Latest Version."
+        echo "[ Info ]: Your Outdated Version was Backed Up to '/tmp/geex.outdated.scriptfile.dd'."
+        exit 1
     else
         echo "[ Status ]: Aborting Update..."
     fi
