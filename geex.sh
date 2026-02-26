@@ -172,172 +172,187 @@ CONTACT
     esac
 done
 
+cleanHook() {
+    if [ -f "/tmp/geex.service.tlp.block.dd" ]; then
+        rm /tmp/geex.service.tlp.block.dd
+    fi
+    if [ -f "/tmp/geex.manual.network.config.conf" ]; then
+        rm /tmp/geex.manual.network.config.conf
+    fi
+    if [ -f "/tmp/geex.bundle.combined.dd" ]; then
+        rm /tmp/geex.bundle.combined.dd
+    fi
+    if [ -f "/tmp/geex.config.scm" ]; then
+        rm /tmp/geex.config.scm
+    fi
+    if [ -f "/tmp/geex.config.custom.template.dd" ]; then
+        rm /tmp/geex.config.custom.template.dd
+    fi
+    if [ -f "/tmp/geex.config.custom.dd" ]; then
+        rm /tmp/geex.config.custom.dd
+    fi
+    if [ -f "/tmp/geex.xorg.optional.dd" ]; then
+       rm /tmp/geex.xorg.optional.dd
+    fi
+    if [ -f "/tmp/geex.compose.block.dd" ]; then
+        rm /tmp/geex.compose.block.dd
+    fi
+    if [ -f "/tmp/geex.xorg.optional.dd" ]; then
+        rm /tmp/geex.xorg.optional.dd
+    fi
+    if [ -f "/tmp/geex.xorg.nvidia.modules.optional.dd" ]; then
+        rm /tmp/geex.xorg.nvidia.modules.optional.dd
+    fi
+    if [ -f "/tmp/geex.kernel.modules.block.dd" ]; then
+        rm /tmp/geex.kernel.modules.block.dd
+    fi
+    if [ -f "/tmp/geex.kernel.block.dd" ]; then
+        rm /tmp/geex.kernel.block.dd
+    fi
+    if [ -f "/tmp/geex.swap.block.dd" ]; then
+        rm /tmp/geex.swap.block.dd
+    fi
+    if [ -f "/tmp/config.scm" ]; then
+        rm /tmp/config.scm
+    fi
+    if [ -f "/tmp/geex.extra.packages.insertable.dd" ]; then
+        rm /tmp/geex.extra.packages.insertable.dd
+    fi
+    if [ -f "/tmp/geex.guix.channel.pull.check.file.dd" ]; then
+        rm /tmp/geex.guix.channel.pull.check.file.dd
+    fi
+    if [ -f "/tmp/geex.guix.system.init.check.file.dd" ]; then
+        rm /tmp/geex.guix.system.init.check.file.dd
+    fi
+    if [ -f "/tmp/geex.guix.style.check.file.dd" ]; then
+        rm /tmp/geex.guix.style.check.file.dd
+    fi
+    if [ -f "/tmp/geex.keyboard.variants.dd" ]; then
+        rm /tmp/geex.keyboard.variants.dd
+    fi
+    if [ -f "/tmp/geex.keyboard.layout.variants.dd" ]; then
+        rm /tmp/geex.keyboard.layout.variants.dd
+    fi
+    if [ -f "/tmp/geex.disk.prefixed.text.block.dd" ]; then
+        rm /tmp/geex.disk.prefixed.text.block.dd
+    fi
+    if [ -f "/tmp/geex.timezone.success.dd" ]; then
+        rm /tmp/geex.timezone.success.dd
+    fi
+    if [ -f "/tmp/geex.timezone.notice.dd" ]; then
+        rm /tmp/geex.timezone.notice.dd
+    fi
+    if [ -f "/tmp/geex.config.desktop.dd" ]; then
+        rm /tmp/geex.config.desktop.dd
+    fi
+    if [ -f "/tmp/geex.config.laptop.dd" ]; then
+        rm /tmp/geex.config.laptop.dd
+    fi
+    if [ -f "/tmp/geex.config.libre.dd" ]; then
+        rm /tmp/geex.config.libre.dd
+    fi
+    if [ -f "/tmp/geex.config.minimal.dd" ]; then
+        rm /tmp/geex.config.minimal.dd
+    fi
+    if [ -f "/tmp/geex.config.desktop.template.dd" ]; then
+        rm /tmp/geex.config.desktop.template.dd
+    fi
+    if [ -f "/tmp/geex.config.laptop.template.dd" ]; then
+        rm /tmp/geex.config.laptop.template.dd
+    fi
+    if [ -f "/tmp/geex.config.libre.template.dd" ]; then
+        rm /tmp/geex.config.libre.template.dd
+    fi
+    if [ -f "/tmp/geex.config.minimal.template.dd" ]; then
+        rm /tmp/geex.config.minimal.template.dd
+    fi
+    if [ -f "/tmp/geex.summary.dd" ]; then
+        rm /tmp/geex.summary.dd
+    fi
+    if [ -f "/tmp/geex.keyboardstatus.dd" ]; then
+        rm /tmp/geex.keyboardstatus.dd
+    fi
+    if [ -f "/tmp/geex.detecteddisks.dd" ]; then
+        rm /tmp/geex.detecteddisks.dd
+    fi
+    if [ -f "/tmp/geex.detectedbios.dd" ]; then
+        rm /tmp/geex.detectedbios.dd
+    fi
+    if [ -f "/tmp/geex.home.scm" ]; then
+        rm /tmp/geex.home.scm
+    fi
+    if [ -f "/tmp/geex.bios.block.dd" ]; then
+        rm /tmp/geex.bios.block.dd
+    fi
+    if [ -f "/tmp/geex.filesystem.block.dd" ]; then
+        rm /tmp/geex.filesystem.block.dd
+    fi
+    if [ -f "/tmp/geex.service.hurd.block.dd" ]; then
+        rm /tmp/geex.service.hurd.block.dd
+    fi
+    if [ -f "/tmp/geex.service.nix.block.dd" ]; then
+        rm /tmp/geex.service.nix.block.dd
+    fi
+    if [ -f "/tmp/geex.group.nix.block.dd" ]; then
+        rm /tmp/geex.group.nix.block.dd
+    fi
+    if [ -f "/tmp/geex.package.doas.block.dd" ]; then
+        rm /tmp/geex.package.doas.block.dd
+    fi
+    if [ -f "/tmp/geex.service.doas.block.dd" ]; then
+        rm /tmp/geex.service.doas.block.dd
+    fi
+    if [ -f "/tmp/geex.wm.i3.packages.dd" ]; then
+        rm /tmp/geex.wm.i3.packages.dd
+    fi
+    if [ -f "/tmp/geex.wm.gnome.service.dd" ]; then
+        rm /tmp/geex.wm.gnome.service.dd
+    fi
+    if [ -f "/tmp/geex.wm.naitre.packages.dd" ]; then
+        rm /tmp/geex.wm.naitre.packages.dd
+    fi
+    if [ -f "/tmp/geex.wm.xmonad.packages.dd" ]; then
+        rm /tmp/geex.wm.xmonad.packages.dd
+    fi
+    if [ -d "/tmp/geex.git.storage" ]; then
+        rm -rf /tmp/geex.git.storage
+    fi
+    if [ -f "/tmp/geex.channels.dd" ]; then
+        rm /tmp/geex.channels.dd
+    fi
+    if [ -f "/tmp/channels.scm" ]; then
+        rm /tmp/channels.scm
+    fi
+    if [ -f "/tmp/geex.config.desktop.template.dd" ]; then
+        rm /tmp/geex.config.desktop.template.dd
+    fi
+    if [ -f "/tmp/geex.config.minimal.template.dd" ]; then
+        rm /tmp/geex.config.minimal.template.dd
+    fi
+    if [ -f "/tmp/geex.config.libre.template.dd" ]; then
+        rm /tmp/geex.config.libre.template.dd
+    fi
+    if [ -f "/tmp/geex.config.laptop.template.dd" ]; then
+        rm /tmp/geex.config.laptop.template.dd
+    fi
+    echo -e "Successfully cleaned up all possible leftovers."
+}
+
 for arg in "$@"; do
     case "$arg" in
         c|-c|--c|clean|-clean|--clean)
-            if [ -f "/tmp/geex.service.tlp.block.dd" ]; then
-                rm /tmp/geex.service.tlp.block.dd
+            cleanHook
+            exit 1
+            ;;
+        ca|-ca|--ca|cleanall|-cleanall|--cleanall)
+            cleanHook
+            if [ -d "/tmp/geex.bootstrapper.store" ]; then
+                rm -rf /tmp/geex.bootstrapper.store
             fi
-            if [ -f "/tmp/geex.manual.network.config.conf" ]; then
-                rm /tmp/geex.manual.network.config.conf
+            if [ -d "/tmp/geex.container.store" ]; then
+                rm -rf /tmp/geex.container.store
             fi
-            if [ -f "/tmp/geex.bundle.combined.dd" ]; then
-                rm /tmp/geex.bundle.combined.dd
-            fi
-            if [ -f "/tmp/geex.config.scm" ]; then
-                rm /tmp/geex.config.scm
-            fi
-            if [ -f "/tmp/geex.config.custom.template.dd" ]; then
-                rm /tmp/geex.config.custom.template.dd
-            fi
-            if [ -f "/tmp/geex.config.custom.dd" ]; then
-                rm /tmp/geex.config.custom.dd
-            fi
-            if [ -f "/tmp/geex.xorg.optional.dd" ]; then
-               rm /tmp/geex.xorg.optional.dd
-            fi
-            if [ -f "/tmp/geex.compose.block.dd" ]; then
-                rm /tmp/geex.compose.block.dd
-            fi
-            if [ -f "/tmp/geex.xorg.optional.dd" ]; then
-                rm /tmp/geex.xorg.optional.dd
-            fi
-            if [ -f "/tmp/geex.xorg.nvidia.modules.optional.dd" ]; then
-                rm /tmp/geex.xorg.nvidia.modules.optional.dd
-            fi
-            if [ -f "/tmp/geex.kernel.modules.block.dd" ]; then
-                rm /tmp/geex.kernel.modules.block.dd
-            fi
-            if [ -f "/tmp/geex.kernel.block.dd" ]; then
-                rm /tmp/geex.kernel.block.dd
-            fi
-            if [ -f "/tmp/geex.swap.block.dd" ]; then
-                rm /tmp/geex.swap.block.dd
-            fi
-            if [ -f "/tmp/config.scm" ]; then
-                rm /tmp/config.scm
-            fi
-            if [ -f "/tmp/geex.extra.packages.insertable.dd" ]; then
-                rm /tmp/geex.extra.packages.insertable.dd
-            fi
-            if [ -f "/tmp/geex.guix.channel.pull.check.file.dd" ]; then
-                rm /tmp/geex.guix.channel.pull.check.file.dd
-            fi
-            if [ -f "/tmp/geex.guix.system.init.check.file.dd" ]; then
-                rm /tmp/geex.guix.system.init.check.file.dd
-            fi
-            if [ -f "/tmp/geex.guix.style.check.file.dd" ]; then
-                rm /tmp/geex.guix.style.check.file.dd
-            fi
-            if [ -f "/tmp/geex.keyboard.variants.dd" ]; then
-                rm /tmp/geex.keyboard.variants.dd
-            fi
-            if [ -f "/tmp/geex.keyboard.layout.variants.dd" ]; then
-                rm /tmp/geex.keyboard.layout.variants.dd
-            fi
-            if [ -f "/tmp/geex.disk.prefixed.text.block.dd" ]; then
-                rm /tmp/geex.disk.prefixed.text.block.dd
-            fi
-            if [ -f "/tmp/geex.timezone.success.dd" ]; then
-                rm /tmp/geex.timezone.success.dd
-            fi
-            if [ -f "/tmp/geex.timezone.notice.dd" ]; then
-                rm /tmp/geex.timezone.notice.dd
-            fi
-            if [ -f "/tmp/geex.config.desktop.dd" ]; then
-                rm /tmp/geex.config.desktop.dd
-            fi
-            if [ -f "/tmp/geex.config.laptop.dd" ]; then
-                rm /tmp/geex.config.laptop.dd
-            fi
-            if [ -f "/tmp/geex.config.libre.dd" ]; then
-                rm /tmp/geex.config.libre.dd
-            fi
-            if [ -f "/tmp/geex.config.minimal.dd" ]; then
-                rm /tmp/geex.config.minimal.dd
-            fi
-            if [ -f "/tmp/geex.config.desktop.template.dd" ]; then
-                rm /tmp/geex.config.desktop.template.dd
-            fi
-            if [ -f "/tmp/geex.config.laptop.template.dd" ]; then
-                rm /tmp/geex.config.laptop.template.dd
-            fi
-            if [ -f "/tmp/geex.config.libre.template.dd" ]; then
-                rm /tmp/geex.config.libre.template.dd
-            fi
-            if [ -f "/tmp/geex.config.minimal.template.dd" ]; then
-                rm /tmp/geex.config.minimal.template.dd
-            fi
-            if [ -f "/tmp/geex.summary.dd" ]; then
-                rm /tmp/geex.summary.dd
-            fi
-            if [ -f "/tmp/geex.keyboardstatus.dd" ]; then
-                rm /tmp/geex.keyboardstatus.dd
-            fi
-            if [ -f "/tmp/geex.detecteddisks.dd" ]; then
-                rm /tmp/geex.detecteddisks.dd
-            fi
-            if [ -f "/tmp/geex.detectedbios.dd" ]; then
-                rm /tmp/geex.detectedbios.dd
-            fi
-            if [ -f "/tmp/geex.home.scm" ]; then
-                rm /tmp/geex.home.scm
-            fi
-            if [ -f "/tmp/geex.bios.block.dd" ]; then
-                rm /tmp/geex.bios.block.dd
-            fi
-            if [ -f "/tmp/geex.filesystem.block.dd" ]; then
-                rm /tmp/geex.filesystem.block.dd
-            fi
-            if [ -f "/tmp/geex.service.hurd.block.dd" ]; then
-                rm /tmp/geex.service.hurd.block.dd
-            fi
-            if [ -f "/tmp/geex.service.nix.block.dd" ]; then
-                rm /tmp/geex.service.nix.block.dd
-            fi
-            if [ -f "/tmp/geex.group.nix.block.dd" ]; then
-                rm /tmp/geex.group.nix.block.dd
-            fi
-            if [ -f "/tmp/geex.package.doas.block.dd" ]; then
-                rm /tmp/geex.package.doas.block.dd
-            fi
-            if [ -f "/tmp/geex.service.doas.block.dd" ]; then
-                rm /tmp/geex.service.doas.block.dd
-            fi
-            if [ -f "/tmp/geex.wm.i3.packages.dd" ]; then
-                rm /tmp/geex.wm.i3.packages.dd
-            fi
-            if [ -f "/tmp/geex.wm.gnome.service.dd" ]; then
-                rm /tmp/geex.wm.gnome.service.dd
-            fi
-            if [ -f "/tmp/geex.wm.naitre.packages.dd" ]; then
-                rm /tmp/geex.wm.naitre.packages.dd
-            fi
-            if [ -f "/tmp/geex.wm.xmonad.packages.dd" ]; then
-                rm /tmp/geex.wm.xmonad.packages.dd
-            fi
-            if [ -d "/tmp/geex.git.storage" ]; then
-                rm -rf /tmp/geex.git.storage
-            fi
-            if [ -f "/tmp/geex.channels.dd" ]; then
-                rm /tmp/geex.channels.dd
-            fi
-            if [ -f "/tmp/channels.scm" ]; then
-                rm /tmp/channels.scm
-            fi
-            if [ -f "/tmp/geex.config.desktop.template.dd" ]; then
-                rm /tmp/geex.config.desktop.template.dd
-            fi
-            if [ -f "/tmp/geex.config.minimal.template.dd" ]; then
-                rm /tmp/geex.config.minimal.template.dd
-            fi
-            if [ -f "/tmp/geex.config.libre.template.dd" ]; then
-                rm /tmp/geex.config.libre.template.dd
-            fi
-            if [ -f "/tmp/geex.config.laptop.template.dd" ]; then
-                rm /tmp/geex.config.laptop.template.dd
-            fi
-            echo -e "Successfully cleaned up all possible leftovers."
+            echo "Cleaned up extra stores as well."
             exit 1
             ;;
     esac
