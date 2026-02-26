@@ -3701,13 +3701,16 @@ containerExecuteSystem() {
         return 1
     fi
     kitty --app-id GuixBoot --class GuixBoot --name GuixBoot --os-window-tag GuixBoot --title "GuixBoot" sh -c "sudo stdbuf -oL -eL $buildContainer" &>/dev/null >/dev/null 2>&1 &
+    local kittyPid=$!
 
+    clear
     printf "[ PID ]: Please Enter the Container PID from the newly Opened Terminal Window: "
     read -r containerPid
+    clear
     sudo guix container exec $containerPid /run/current-system/profile/bin/bash --login -c zsh
     sudo kill $containerPid
-    toKill=$(ps aux | grep "[G]uixBoot" | grep kitty | awk '{print $2}')
-    sudo kill $toKill
+    kill "$kittyPid" 2>/dev/null
+    clear
     echo "[ Status ]: Successfully Ended all Container Processes."
     exit 1
 }
