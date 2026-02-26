@@ -3692,33 +3692,103 @@ bootstrapHook() {
 }
 
 # Container Manager Hooks
+containerExecuteSystem() {
+    cd "$selectedContainerPath"
+    sudo -v || return 1
+    buildContainer=$(guix system container -L . "${selectedContainer}" 2>/dev/null | tail -n 1)
+    if [[ ! "$buildContainer" =~ ^/gnu/store/ ]]; then
+        echo "[ Error ]: Build failed."
+        return 1
+    fi
+    kitty --app-id GuixBoot --class GuixBoot --name GuixBoot --os-window-tag GuixBoot --title "GuixBoot" sh -c "sudo stdbuf -oL -eL $buildContainer" &>/dev/null >/dev/null 2>&1 &
+
+    printf "[ PID ]: Please Enter the Container PID from the newly Opened Terminal Window: "
+    read -r containerPid
+    sudo guix container exec $containerPid /run/current-system/profile/bin/bash --login -c zsh
+    sudo kill $containerPid
+    toKill=$(ps aux | grep "[G]uixBoot" | grep kitty | awk '{print $2}')
+    sudo kill $toKill
+    echo "[ Status ]: Successfully Ended all Container Processes."
+    exit 1
+}
+containerExecuteHome() {
+    cd $selectedContainerPath
+    trap '' SIGTTOU SIGTTIN
+    dialog --backtitle "Geex Container Manager" --title "Loading" --infobox "Loading Container, please be patient..." 10 50
+    command guix home container "${selectedContainer}"
+    local exit_status=$?
+    stty sane
+    set -m
+    dialog --clear
+    clear
+    echo "[ Status ]: Container Exited with ${exit_status}."
+    echo "[ Status ]: Successfully Executed Container."
+    trap - SIGTTOU SIGTTIN
+    exit 1
+}
 checkForContainers() {
-    filteredContainerFiles=$(find ${compatibleDirectoryPath}/containers -maxdepth 1 -type f -printf "%f\n" | grep -i "scm")
-    duplicatedContainerFiles=$(printf '%s\n' "$filteredContainerFiles" | awk '{ printf "%s %s ", $0, gensub(/\.scm$/, "", 1) }')
-    containerSelection=$(echo $duplicatedContainerFiles | xargs dialog --backtitle "Container Selection" --title "Geex Container Manager" --menu "Select a Container File:" 24 40 10 3>&1 1>&2 2>&3)
-    evalContainerType=$(head -n 1 ${compatibleDirectoryPath}/containers/${containerSelection} | awk '{print $2}')
-    if [[ "$evalContainerType" == "System" ]]; then
+    filteredContainerFiles=$(find ${compatibleDirectoryPath}/containers -maxdepth 1 -type f -printf "%f-local %f\n" | grep -i "scm" | sed "s/.scm-/-/g")
+    if [[ -d "/tmp/geex.container.store" ]]; then
+        containerStoreFiles=$(find /tmp/geex.container.store -maxdepth 1 -type f -printf "%f-store %f\n" | grep -i "scm" | sed "s/.scm-/-/g")
+        if [[ "$containerStoreFiles" != "" ]] && [[ -n "$containerStoreFiles" ]]; then
+            filteredContainerFiles=$(printf "$filteredContainerFiles $containerStoreFiles")
+        fi
+    fi
+    containerSelection=$(echo $filteredContainerFiles | xargs dialog --backtitle "Container Selection" --title "Geex Container Manager" --menu "Select a Container File:" 24 40 10 3>&1 1>&2 2>&3)
+    if [[ "$containerSelection" == *local* ]]; then
+        selectedContainerName=$(printf "$containerSelection" | sed "s/-local/.scm/g")
+        selectedContainer=$(echo "${compatibleDirectoryPath}/containers/${selectedContainerName}")
+        export selectedContainerPath=$(echo "${compatibleDirectoryPath}/containers")
+    else
+        selectedContainerName=$(printf "$containerSelection" | sed "s/-store/.scm/g")
+        selectedContainer=$(echo "/tmp/geex.container.store/${selectedContainerName}")
+        export selectedContainerPath=$(echo "/tmp/geex.container.store")
+    fi
+    summary=$(dialog --backtitle "Geex Container Manager" --title "Summary" --msgbox "You Selected the Container '${selectedContainerName}', located at '${selectedContainer}'." 12 74 3>&1 1>&2 2>&3)
+    if cat ${selectedContainer} | grep -i "operating-system"; then
+        export containerType="System"
+    elif cat ${selectedContainer} | grep -i "home-environment"; then
+        export containerType="Home"
+    else
         dialog --clear
         clear
-        echo -e "${containerSelection} is a Systems Container:
+        echo "[ Error ]: Unable to Determine Container Type, Aborting..."
+        exit 1
+    fi
+    if [[ "$containerType" == "System" ]]; then
+        typeNotice=$(dialog --backtitle "Geex Container Manager" --title "Container Type" --yesno "Container ${selectedContainerName} is of Type 'System'.\n\nAttempt to Run the Container?" 18 75 3>&1 1>&2 2>&3)
+        typeNotice_RESPONSE_CODE=$?
+        if [[ "$typeNotice_RESPONSE_CODE" -eq 0 ]]; then
+            containerExecuteSystem
+        else
+            dialog --clear
+            clear
+            echo -e "${selectedContainerName} is a Systems Container:
 
   SETUP for CONTAINER:
-    guix system container -L . ${containerSelection}
+    guix system container -L . ${selectedContainerName}
     doas /gnu/store/<hash>-run-container
     doas guix container exec <PID> /run/current-system/profile/bin/bash --login -c zsh
 
 "
-        exit 1
+            exit 1
+        fi
     else
-        dialog --clear
-        clear
-        echo -e "${containerSelection} is a Home Container:
+        typeNotice=$(dialog --backtitle "Geex Container Manager" --title "Container Type" --yesno "Container ${selectedContainerName} is of Type 'Home'.\n\nAttempt to Run the Container?" 18 75 3>&1 1>&2 2>&3)
+        typeNotice_RESPONSE_CODE=$?
+        if [[ "$typeNotice_RESPONSE_CODE" -eq 0 ]]; then
+            containerExecuteHome
+        else
+            dialog --clear
+            clear
+            echo -e "${selectedContainerName} is a Home Container:
 
   SETUP for CONTAINER:
-    guix home container ${containerSelection}
+    guix home container ${selectedContainerName}
 
 "
-        exit 1
+            exit 1
+        fi
     fi
 }
 containerManagerHook() {
