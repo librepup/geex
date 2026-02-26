@@ -17,6 +17,7 @@ COMMAND must be one of the sub-commands listed below:
     mover                        start the mover mode
     features                     get a list of things the installer configures
     bootstrap                    launch interactive ISO bootstrapper
+    container                    launch VERY experimental container manager
 
 ENVIRONMENT can be one of the environment variables listed below:
 
@@ -361,6 +362,7 @@ COMMAND must be one of the sub-commands listed below:
     mover                        start the mover mode
     features                     get a list of things the installer configures
     bootstrap                    launch interactive ISO bootstrapper
+    container                    launch VERY experimental container manager
 
 ENVIRONMENT can be one of the environment variables listed below:
 
