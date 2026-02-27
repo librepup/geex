@@ -7,6 +7,7 @@
              (gnu packages shells)
              (gnu packages admin)
              (gnu packages base)
+             (gnu packages plan9)
              (gnu services)
              (gnu services xorg)
              (gnu services desktop)
@@ -62,6 +63,8 @@
   (specification->package "zsh-autosuggestions"))
 (define bash
   (specification->package "bash"))
+(define plan9-rc-shell
+  (specification->package "plan9-rc-shell"))
 
 ;; Operating System
 (define %guix-os
@@ -120,6 +123,20 @@
                                           "tty"
                                           "nixbld"))
                   (shell (file-append bash "/bin/bash")))
+                 (user-account
+                  (name "glenda")
+                  (comment "Glenda User")
+                  (group "users")
+                  (password (crypt "netbsd" "$6$abc"))
+                  (home-directory "/home/glenda")
+                  (supplementary-groups '("wheel"
+                                          "netdev"
+                                          "audio"
+                                          "video"
+                                          "input"
+                                          "tty"
+                                          "nixbld"))
+                  (shell (file-append plan9-rc-shell "/bin/rc")))
                  %base-user-accounts))
 
    ;; Packages
@@ -201,6 +218,7 @@
                             "fastfetch"
                             "plan9port"
                             "plan9-rio-session"
+                            "plan9-rc-shell"
                             "ffmpeg"
                             "kitty"))
                      %base-packages))
