@@ -33,6 +33,7 @@
              (emacs packages melpa)
              ;; Jonabron
              (jonabron packages wm)
+             (jonabron packages terminals)
              (jonabron packages fonts)
              (jonabron packages communication)
              (jonabron packages games)
@@ -221,6 +222,7 @@
                             "plan9-rio-session"
                             "plan9-rc-shell"
                             "plan9-acme"
+                            "plan9-term"
                             "ffmpeg"
                             "kitty"))
                      %base-packages))

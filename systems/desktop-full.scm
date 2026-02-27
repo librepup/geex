@@ -36,6 +36,7 @@
              ;; Jonabron
              (jonabron packages wm)
              (jonabron packages fonts)
+             (jonabrok packages terminals)
              (jonabron packages ai)
              (jonabron packages shells)
              (jonabron packages entertainment)
@@ -206,6 +207,10 @@
                              "shadow"
                              "fastfetch"
                              "plan9port"
+                             "plan9-rc-shell"
+                             "plan9-rio-session"
+                             "plan9-acme"
+                             "plan9-term"
                              "ffmpeg"
                              "kitty"))
                       %base-packages))
