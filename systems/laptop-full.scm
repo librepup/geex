@@ -200,6 +200,7 @@
                             "shadow"
                             "fastfetch"
                             "plan9port"
+                            "plan9-rio-session"
                             "ffmpeg"
                             "kitty"))
                      %base-packages))
