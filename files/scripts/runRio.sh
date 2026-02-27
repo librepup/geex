@@ -28,5 +28,4 @@ rioPid=$!
 echo "EDITOR=${NINEEDITOR} HOME=${NINEHOME} SHELL=${NINESHELL} TERM=${NINETERM} DISPLAY=${NINEDISPLAY} &>/dev/null &"
 
 wait $xephyrPid
-if [[ -d "$NINEHOME" ]]; then rm -rf $NINEHOME; fi
 exit 0
