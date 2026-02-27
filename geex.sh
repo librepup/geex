@@ -756,6 +756,12 @@ cat > /tmp/geex.config.custom.template.dd <<'EOF'
              GEEX_NONFREE_MODULES_OPTIONAL
              GEEX_NVIDIA_MODULES_OPTIONAL
              (jonabron packages wm)
+             (jonabron packages terminals)
+             (jonabron packages editors)
+             (jonabron packages shells)
+             (jonabron packages ai)
+             (jonabron packages emacs)
+             (jonabrok packages entertainment)
              (jonabron packages fonts)
              (jonabron packages games)
              (jonabron packages communication))
@@ -2781,7 +2787,7 @@ packageBundlesHook() {
     if [ -f "/tmp/geex.bundle.networking.dd" ]; then
         rm /tmp/geex.bundle.networking.dd
     fi
-    bundlePlan9Block="$(echo -e "                             \"plan9port\"")"
+    bundlePlan9Block="$(echo -e "                             \"plan9port\"\n                             \"plan9-term\"\n                             \"plan9-rc-shell\"\n                             \"plan9-acme\"\n                             \"plan9-rio-session\"")"
     if [ -f "/tmp/geex.bundle.archivers.dd" ]; then
         rm /tmp/geex.bundle.archivers.dd
     fi
