@@ -39,6 +39,7 @@
              (jonabron packages ai)
              (jonabron packages shells)
              (jonabron packages entertainment)
+             (jonabron packages editors)
              (jonabron packages emacs))
 
 (use-service-modules desktop
@@ -219,6 +220,7 @@
                             "plan9port"
                             "plan9-rio-session"
                             "plan9-rc-shell"
+                            "plan9-acme"
                             "ffmpeg"
                             "kitty"))
                      %base-packages))
