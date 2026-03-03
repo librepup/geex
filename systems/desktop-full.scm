@@ -36,10 +36,10 @@
              ;; Jonabron
              (jonabron packages wm)
              (jonabron packages fonts)
-             (jonabrok packages terminals)
              (jonabron packages ai)
              (jonabron packages shells)
              (jonabron packages entertainment)
+             (jonabron packages terminals)
              (jonabron packages emacs)
              (jonabron packages games)
              (jonabron packages communication))
@@ -201,6 +201,7 @@
                              "xwayland-satellite"
                              "xwayland-run"
                              "cliphist"
+                             "wlr-randr"
                              "xdg-desktop-portal-wlr"
                              "sway-audio-idle-inhibit"
                              "gammastep"

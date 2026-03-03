@@ -28,6 +28,10 @@
              (jonabron packages fonts)
              (jonabron packages communication)
              (jonabron packages games)
+             (jonabron packages shells)
+             (jonabron packages entertainment)
+             (jonabron packages ai)
+             (jonabron packages terminals)
              (jonabron packages wm)
              (nongnu packages video)
              (nongnu packages game-client)
@@ -124,7 +128,11 @@
                                             "emacs-dmenu"
                                             ;; Tools
                                             "plan9port"
+                                            "plan9-term"
+                                            "plan9-acme"
+                                            "plan9-rc-shell"
                                             "xinput"
+                                            "wlr-randr"
                                             "xmodmap"
                                             "jami"
                                             "gsettings-desktop-schemas"
