@@ -19,7 +19,7 @@ fn storage {
 		}
 	}
 	if(~ $anydisk -c 'false')
-		echo Running in the diskless
+    echo Running inside GNU+Linux environment
 }
 
 fn fs {
