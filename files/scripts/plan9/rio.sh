@@ -1,8 +1,17 @@
-#!/usr/bin/env -S guix shell plan9port -- sh
+#!/usr/bin/env -S guix shell plan9port -- bash
+
+unalias -m 9
+
+export NINEBIN=$(ls -la $(which 9) | awk '{print $11}' | sed "s/\/bin\/9/\/plan9\/bin/g")
+export TERMBIN="${NINEBIN}/9term"
+export SHELLBIN="${NINEBIN}/rc"
+
+export TERM=$TERMBIN
+export SHELL=$SHELLBIN
 
 # Start Xephyr
 echo "Starting Xephyr..."
-Xephyr -br -ac -noreset -screen 1280x720 :9956 &>/dev/null &
+Xephyr -br -ac -noreset -screen 1920x1080 :9956 &>/dev/null &
 
 # Set Display for Rio
 export DISPLAY=:9956
@@ -11,8 +20,9 @@ export DISPLAY=:9956
 sleep 1
 echo "Starting Rio..."
 9 rio &
-echo "Setting Wallpaper..."
-feh --bg-fill ~/Pictures/Wallpapers/guix_wp_02.png
+#echo "Setting Wallpaper..."
+#feh --bg-fill ~/Pictures/Wallpapers/dangeroooous_jungle_wp.png &
+9 stats -W 640x120 -E -l -m -s &
 
 export rioPid=$(pidof rio)
 echo "Waiting for Rio to die..."
