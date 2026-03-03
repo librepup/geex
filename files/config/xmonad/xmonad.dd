@@ -1,0 +1,23 @@
+Old Mouse Setup Commands:
+```
+spawnOnce "xinput set-prop 'Mad Catz Global MADCATZ R.A.T. 8+ gaming mouse' 'libinput Accel Profile Enabled' 0 1 0"
+spawnOnce "xinput set-prop 'Mad Catz Global MADCATZ R.A.T. 8+ gaming mouse' 'libinput Accel Speed' 0.3"
+spawnOnce "xinput set-prop 'Mad Catz Global' 'libinput Accel Profile Enabled' 0 1 0"
+spawnOnce "xinput set-prop 'Mad Catz Global' 'libinput Accel Speed' 0.3"
+```
+
+Polybar Commands:
+1. Old Command
+```
+spawnOnce "$HOME/.scripts/polybar.sh &"
+```
+2. Multi-Line Command
+```
+spawnOnce "if type xrandr > /dev/null; then \
+         \ for m in $(xrandr --query | grep ' connected' | cut -d' ' -f1); do \
+         \   MONITOR=$m polybar --reload example & \
+         \ done; \
+         \else \
+         \  polybar --reload example & \
+         \fi"
+```

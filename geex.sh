@@ -667,10 +667,12 @@ if [[ "$missingCommandCount" != 0 ]]; then
       echo "[ Guix ]: Found Guix, running guix shell exec hook..."
       export IN_GUIX_SHELL=1
       export GEEX_RUNNING_IN="guix"
+      echo "[ Geex ]: Please wait while the Guix Shell initializes itself..."
       exec guix shell coreutils bash gawk grep parted findutils util-linux git-minimal dialog procps e2fsprogs pciutils wpa-supplicant isc-dhcp curl wget -- bash "$0" "$@"
   elif [ -z "$IN_NIX_SHELL" ] && echo "[ Warning ]: Guix not found, checking for Nix, then running shell exec hook..." && command -v nix-shell >/dev/null 2>&1 && nix-shell -p coreutils gawk bash gnugrep parted findutils util-linux git dialog procps e2fsprogs pciutils wpa_supplicant dhcpcd curl wget --run true >/dev/null 2>&1; then
       echo "[ Nix ]: Found Nix, running nix shell exec hook..."
       export GEEX_RUNNING_IN="nix"
+      echo "[ Geex ]: Please wait while the Nix Shell initializes itself..."
       exec nix-shell -p coreutils bash gawk gnugrep parted findutils util-linux git dialog procps e2fsprogs pciutils wpa_supplicant dhcpcd curl wget --run "bash "$0" "$@""
   else
       echo -e "[ Warning ]: Commands missing, but found no way to retrieve them temporarily.\nAborting unless Variable 'GEEX_IGNORE_MISSING' is set."

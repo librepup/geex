@@ -222,7 +222,8 @@ myManageHook = composeAll
     [ className =? "discord"              --> doShift "2"          -- Move "discord" and "vesktop" to Workspace 2.
     , className =? "vesktop"              --> doShift "2"          -- ...
     , title =? "FLOAT_MP"                 --> doCenterFloat        -- Float and Center Windows where Title equals "FLOAT_MP".
-    , title =? "Volume Control"           --> doFloat              -- Float Windows where Title equals "Volume Control".
+    , title =? "Volume Control"           --> doFloat              -- Float Volume Control Windows.
+    , title =? "Lautstärkeregler"         --> doFloat              -- ...
     , isDialog                            --> doCenterFloat        -- Float and Center Dialog Windows.
     , title =? "emote"                    --> (doFocus <+> doWarp) -- Focus and Warp Mouse to "emote" Window.
     , className =? "emote"                --> (doFocus <+> doWarp) -- ...
@@ -250,7 +251,8 @@ myStartupHook = do
     spawnOnce "xrandr --output HDMI-0 --primary --mode 1920x1080 --rate 144.00 --output DP-0 --mode 2560x1440 --right-of HDMI-0"
 
     -- Polybar
-    spawnOnce "pkill polybar; if type xrandr > /dev/null; then for m in $(xrandr --query | grep ' connected' | cut -d' ' -f1); do MONITOR=$m polybar --reload example & done; else polybar --reload example & fi"
+    spawnOnce "geex-bar"
+    --spawnOnce "pkill polybar; if type xrandr > /dev/null; then for m in $(xrandr --query | grep ' connected' | cut -d' ' -f1); do MONITOR=$m polybar --reload main & done; else polybar --reload main & fi"
 
     -- Mouse Settings
     let myMice = ["Mad Catz Global", "Mad Catz Global MADCATZ R.A.T. 8+ gaming mouse"]
