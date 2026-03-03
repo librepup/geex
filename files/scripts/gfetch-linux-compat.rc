@@ -1,0 +1,73 @@
+#!/var/guix/profiles/per-user/puppy/guix-profile/bin/rc
+#!/bin/rc
+# Warning, parts of this script have been STOLEN!
+
+# TODO:
+# fs usage
+# kernel
+
+fn storage {
+	disks = `{ls -d /dev/sd* | uniq}
+	anydisk = 'false'
+	for(i in $disks){
+		if(test -f $i/data){
+			full = `{ls -l $i/data}
+			disk = `{echo $full | awk -F '/' '{print $3}'}
+			size = `{echo $full | awk '{print $6}'}
+			echo $disk^': '^`{echo $size^' / 1024 / 1024 /1024' | bc}^GB
+			anydisk = 'true'
+		}
+	}
+	if(~ $anydisk -c 'false')
+		echo Running in the diskless
+}
+
+fn fs {
+	if(ls /srv | grep -s '*.cmd')
+		ls /srv/*.cmd | sed 's/.cmd//g' | sed 's/\/srv\///g'
+	if(test -f /srv/fscons)
+		echo fossil
+	# Logic from storage to scrape for venti arenas
+	v='false'
+	disks = `{ls -d /dev/sd* | uniq}
+	for(i in $disks){
+		if(ls $i | grep -s arena)
+			v='true'
+	}
+	if(~ $v -c 'true')
+		echo venti
+}
+
+fn cpuid {
+	if(test -f /bin/aux/cpuid)
+		aux/cpuid >[2]/dev/null | grep procname | sed 's/.*procname//'
+}
+
+os=`{
+  echo Bell Labs
+}
+
+arch=`{echo $cputype}
+shell=/bin/rc
+uptime=`{uptime | awk '{print $3}' | sed 's/,/ minutes/g' | sed 's/:/ hours, /g'}
+if(test -f /dev/screen) scr=`{dd -count 1 < /dev/screen|[2];}
+scr=(`{echo '1920x1080'})
+ram=(`{free --giga --human | grep -i 'Mem:' | awk '{print $2}'})
+free=(`{free --giga --human | grep -i 'Mem:' | awk '{print (($2 - $3))}'})
+used=(`{free --giga --human | grep -i 'Mem:' | awk '{print $3}'})
+cpu=(`{cat /proc/cpuinfo | grep -i 'model name.*:' | uniq | awk '{print $4 $5 $6}'})
+files=`{fs}
+strg=`{storage}
+
+cat <<EOF
+             $USER@cirno
+    (\(\     -----------
+   j". ..    os: Plan 9 from $os/$arch
+   (  . .)   shell: $shell
+   |   ° ¡   uptime: $uptime
+   ¿     ;   ram: $used/$ram
+   c?".UJ    cpu: $cputype $cpu
+             resolution: $scr
+             fs: / (ext4)
+             $strg
+EOF
