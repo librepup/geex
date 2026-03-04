@@ -294,7 +294,8 @@ myLogHook = dynamicLogWithPP $ def
 ------------------------------------------------------------------------
 myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
     -- Terminals
-    [ ((modm .|. shiftMask, xK_Return), spawn $ XMonad.terminal conf)
+    [ ((modm, xK_Return), spawn $ XMonad.terminal conf)
+    , ((modm .|. shiftMask, xK_Return), spawn "kitty -o font_family=TempleOS -o font_size=12")
     , ((myWinMask .|. shiftMask, xK_Return), spawn "term rc")
     -- Dmenu
     , ((modm, xK_t), spawn $ "dmenu_run" ++ dmenuArgs jungleDmenuTheme ++ " -p '%:'")
@@ -330,8 +331,6 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
     -- Toggle Fullscreen
     , ((modm .|. shiftMask, xK_t), sendMessage ToggleStruts >> sendMessage (Toggle NBFULL))
     -- Switch Layouts
-    , ((modm, xK_r), sendMessage $ JumpToLayout "Accordion")
-    , ((modm, xK_u), sendMessage $ JumpToLayout "Tabbed")
     , ((modm, xK_y), sendMessage NextLayout)
     -- Applications
     , ((modm .|. shiftMask, xK_f), spawn "nixmacs")
@@ -345,9 +344,9 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
     , ((modm .|. shiftMask, xK_e), confirmPrompt myXPConfig "Type 'yes' to exit:" $ io (exitWith ExitSuccess))
     , ((myWinMask .|. shiftMask, xK_x), io (exitWith ExitSuccess))
     -- Restart XMonad
-    , ((modm .|. shiftMask, xK_p), spawn "notify-send 'XMonad' 'Recompiling...' -i /home/puppy/Pictures/xmonad_logo.png; xmonad --recompile; xmonad --restart; notify-send 'XMonad' 'Restarted Successfully!' -i /home/puppy/Pictures/xmonad_logo.png")
+    , ((modm .|. shiftMask, xK_p), spawn "notify-send 'XMonad' 'Recompiling...' -i $HOME/Pictures/xmonad_logo.png; xmonad --recompile; xmonad --restart; notify-send 'XMonad' 'Restarted Successfully!' -i $HOME/Pictures/xmonad_logo.png")
     -- Reload XMonad
-    , ((modm .|. shiftMask, xK_c), spawn "notify-send 'XMonad' 'Recompiling...' -i /home/puppy/Pictures/xmonad_logo.png; xmonad --recompile; xmonad --restart; notify-send 'XMonad' 'Restarted Successfully!' -i /home/puppy/Pictures/xmonad_logo.png")
+    , ((modm .|. shiftMask, xK_c), spawn "notify-send 'XMonad' 'Recompiling...' -i $HOME/Pictures/xmonad_logo.png; xmonad --recompile; xmonad --restart; notify-send 'XMonad' 'Restarted Successfully!' -i $HOME/Pictures/xmonad_logo.png")
     ]
     ++
     -- WinMod (Super key) Bindings
@@ -356,7 +355,7 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
     , ((myWinMask, xK_t), spawn "vicinae open")
     , ((myWinMask .|. shiftMask, xK_t), spawn "compgen -c | sort -u | vicinae dmenu --placeholder '%:' | sh")
     , ((myWinMask, xK_period), spawn "emote")
-    , ((myWinMask, xK_v), spawn "/home/puppy/.scripts/viewScreenshot.sh")
+    , ((myWinMask, xK_v), spawn "$HOME/.scripts/viewScreenshot.sh")
     -- Move Cursor
     , ((myWinMask, xK_Left), warpToScreen 0 0.5 0.5)  -- Main screen (center)
     , ((myWinMask, xK_Right), warpToScreen 1 0.5 0.5)  -- Second screen (center)
@@ -364,8 +363,8 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
     , ((myWinMask, xK_Up), sendMessage MirrorExpand)
     , ((myWinMask, xK_Down), sendMessage MirrorShrink)
     -- Screensaver controls
-    , ((myWinMask, xK_1), spawn "xset s off -dpms s noblank && notify-send 'Screensaver' 'Turned OFF.' -i /home/puppy/Pictures/no.png")
-    , ((myWinMask, xK_2), spawn "xset s on +dpms s blank && notify-send 'Screensaver' 'Turned ON.' -i /home/puppy/Pictures/yes.png")
+    , ((myWinMask, xK_1), spawn "xset s off -dpms s noblank && notify-send 'Screensaver' 'Turned OFF.' -i $HOME/Pictures/no.png")
+    , ((myWinMask, xK_2), spawn "xset s on +dpms s blank && notify-send 'Screensaver' 'Turned ON.' -i $HOME/Pictures/yes.png")
     ]
     ++
     -- Switch Workspaces
