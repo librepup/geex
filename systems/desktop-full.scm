@@ -95,44 +95,42 @@
                            (type "vfat")) %base-file-systems))
 
     ;; Swap
-    (swap-devices (list
-                   (swap-space
-                    (target (file-system-label "guix-swap")))))
+    (swap-devices (list (swap-space
+                          (target (file-system-label "guix-swap")))))
 
     ;; Users
     (users (cons* (user-account
-                   (name "puppy")
-                   (comment "Puppy")
-                   (group "users")
-                   (home-directory "/home/puppy")
-                   (supplementary-groups '("wheel"
-                                           "netdev"
-                                           "audio"
-                                           "video"
-                                           "input"
-                                           "tty"
-                                           "nixbld"))
-                   (shell (file-append zsh "/bin/zsh")))
+                    (name "puppy")
+                    (comment "Puppy")
+                    (group "users")
+                    (home-directory "/home/puppy")
+                    (supplementary-groups '("wheel" "netdev"
+                                            "audio"
+                                            "video"
+                                            "input"
+                                            "tty"
+                                            "nixbld"))
+                    (shell (file-append zsh "/bin/zsh")))
                   (user-account
-                   (name "labrat")
-                   (comment "Labrat User")
-                   (group "users")
-                   (supplementary-groups '("wheel"
-                                           "netdev"
-                                           "audio"
-                                           "video"
-                                           "input"
-                                           "tty"
-                                           "nixbld"))
-                   (shell (file-append bash "/bin/bash")))
+                    (name "labrat")
+                    (comment "Labrat User")
+                    (group "users")
+                    (supplementary-groups '("wheel" "netdev"
+                                            "audio"
+                                            "video"
+                                            "input"
+                                            "tty"
+                                            "nixbld"))
+                    (shell (file-append bash "/bin/bash")))
                   %base-user-accounts))
 
     ;; Packages
     (packages (append (map specification->package
-                           '("eza"
-                             "bat"
+                           '("eza" "bat"
                              "zoxide"
                              "opendoas"
+                             "xmonad"
+                             "ghc-xmonad-contrib"
                              "naitre"
                              "vicinae"
                              "wofi"
@@ -213,8 +211,7 @@
                              "plan9-acme"
                              "plan9-term"
                              "ffmpeg"
-                             "kitty"))
-                      %base-packages))
+                             "kitty")) %base-packages))
 
     ;; Services
     (services
@@ -223,13 +220,17 @@
                                                    (secret-directory
                                                     "/etc/guix/hurd-secrets")))
                    (service gnome-desktop-service-type)
+                   (service sddm-service-type
+                            (sddm-configuration (display-server "wayland")))
                    (service libvirt-service-type)
                    (service virtlog-service-type)
                    (service nix-service-type)
                    (simple-service 'zsh-config etc-service-type
-                                   `(("zshrc" ,(local-file "../files/config/zshrc"))))
+                                   `(("zshrc" ,(local-file
+                                                "../files/config/zshrc"))))
                    (simple-service 'doas-config etc-service-type
-                                   `(("doas.conf" ,(local-file "../files/config/doas/doas.conf"))))
+                                   `(("doas.conf" ,(local-file
+                                                    "../files/config/doas/doas.conf"))))
                    (set-xorg-configuration
                     (xorg-configuration (keyboard-layout keyboard-layout)
                                         (modules (cons nvidia-driver
@@ -237,29 +238,28 @@
                                         (drivers '("nvidia")))))
 
              (modify-services %desktop-services
-               (gdm-service-type config =>
-                                 (gdm-configuration (inherit config)
-                                                    (wayland? #t)))
-               (guix-service-type config =>
-                                  (guix-configuration (inherit config)
-                                                      (substitute-urls (append
-                                                                        (list
-                                                                         "https://ci.guix.gnu.org"
-                                                                         "https://berlin.guix.gnu.org"
-                                                                         "https://bordeaux.guix.gnu.org"
-                                                                         "https://substitutes.nonguix.org"
-                                                                         "https://hydra-guix-129.guix.gnu.org"
-                                                                         "https://substitutes.guix.gofranz.com")
-                                                                        %default-substitute-urls))
-                                                      ;; Authorize via 'sudo guix archive --authorize < /etc/guix/files/keys/nonguix.pub'
-                                                      (authorized-keys (append
+                              (delete gdm-service-type)
+                              (guix-service-type config =>
+                                                 (guix-configuration (inherit config)
+                                                                     (substitute-urls (append
+                                                                                       (list
+                                                                                        "https://ci.guix.gnu.org"
+                                                                                        "https://berlin.guix.gnu.org"
+                                                                                        "https://bordeaux.guix.gnu.org"
+                                                                                        "https://substitutes.nonguix.org"
+                                                                                        "https://hydra-guix-129.guix.gnu.org"
+                                                                                        "https://substitutes.guix.gofranz.com")
+                                                                                       %default-substitute-urls))
+                                                                     ;; Authorize via:
+                                                                     ;; 'sudo guix archive --authorize < /etc/guix/files/keys/nonguix.pub'
+                                                                     (authorized-keys (append
                                                                         (list (local-file
                                                                                "../files/keys/nonguix.pub"))
                                                                         %default-authorized-guix-keys))))
-               (mingetty-service-type config =>
-                                      (mingetty-configuration (inherit config)
-                                                              (auto-login
-                                                               "puppy"))))))))
+                              (mingetty-service-type config =>
+                                                     (mingetty-configuration (inherit config)
+                                                                             (auto-login
+                                                                              "puppy"))))))))
 
 ((compose (nonguix-transformation-nvidia))
  %guix-os)
