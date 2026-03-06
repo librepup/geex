@@ -21,3 +21,87 @@ spawnOnce "if type xrandr > /dev/null; then \
          \  polybar --reload example & \
          \fi"
 ```
+Search Function:
+```
+    , ((myWinMask, xK_space), do
+        spawn "notify-send 'Search' 'g=Google\nd=DuckDuckGo\ny=YouTube\ni=Images\nm=Maps\nn=Nix'"
+        submapDefault (spawn "dunstctl close-all") . M.fromList $
+            [ ((0, xK_d), spawn "dunstctl close-all" >> S.promptSearch myXPConfig S.duckduckgo)
+            , ((0, xK_y), spawn "dunstctl close-all" >> S.promptSearch myXPConfig S.youtube)
+            , ((0, xK_m), spawn "dunstctl close-all" >> S.promptSearch myXPConfig S.maps)
+            , ((0, xK_g), spawn "dunstctl close-all" >> S.promptSearch myXPConfig S.google)
+            , ((0, xK_i), spawn "dunstctl close-all" >> S.promptSearch myXPConfig S.images)
+            , ((0, xK_n), S.promptSearch myXPConfig (S.searchEngine "nixpkgs" "https://search.nixos.org/packages?query="))
+            ])
+```
+Help Screen:
+```
+    -- Help Screen
+    , ((myWinMask, xK_h), spawn $
+        "kitty " ++
+          "-o initial_window_width=1040 " ++
+          "-o initial_window_height=860 " ++
+          "--title FLOATING_HELP_SCREEN " ++
+          "-o font_family=TempleOS " ++
+          "-o font_size=8 " ++
+        "bash -c '" ++
+          "center_block() { " ++
+            "local width=$(tput cols); " ++
+            "mapfile -t lines; " ++
+            "local max=0; " ++
+            "for l in \"${lines[@]}\"; do " ++
+              "(( ${#l} > max )) && max=${#l}; " ++
+            "done; " ++
+            "local pad=$(( (width - max) / 2 )); " ++
+            "(( pad < 0 )) && pad=0; " ++
+            "for l in \"${lines[@]}\"; do " ++
+              "printf \"%*s%s\n\" \"$pad\" \"\" \"$l\"; " ++
+            "done " ++
+            "}; " ++
+          "cat <<\"EOF\" | center_block \n" ++
+            "\nXMonad Help Screen\n==================\n\n" ++
+            "Alt+Shift+Return -> Open Kitty Terminal\n" ++
+            "Alt+Return -> Open Unchanged Kitty Terminal\n" ++
+            "Win+Shift+Return -> Open 9term Terminal\n" ++
+            "\nAlt+t -> Run DMenu\n" ++
+            "\nAlt+Shift+q -> Kill Current Window\n" ++
+            "\nAlt+Space -> Switch to Next Layout\n" ++
+            "Alt+Left/Right/Up/Down -> Change Focused Window\n" ++
+            "Alt+Shift+Left/Right -> Swap Window Positions\n" ++
+            "Alt+Shift+Up/Down -> Shrink or Expand Stack\n" ++
+            "\nAlt+Ctrl+Left/RIght -> Shrink or Expand Stack\n" ++
+            "Alt+Ctrl+Up/Down -> Resize Stack Vertically\n" ++
+            "Alt+Comma/Period -> Add or Remove Window to/from Master\n" ++
+            "Alt+Tab -> Switch between Current and Previous Workspace\n" ++
+            "\nAlt+Shift+Space -> Toggle Floating\n" ++
+            "Alt+Shift+t -> Toggle Fullscreen\n" ++
+            "\nAlt+Shift+f -> Open NixMacs\n" ++
+            "Alt+Ctrl+f -> Open EmacsClient\n" ++
+            "Win+Shift+f -> Open Acme Editor\n" ++
+            "Alt+Shift+s -> Open Microsoft Edge\n" ++
+            "Alt+s -> Open Firefox\n" ++
+            "Alt+a -> Take Screenshot\n" ++
+            "Alt+d -> Open IceDove\n" ++
+            "\nAlt+Shift+e -> Exit XMonad with Confirm Prompt\n" ++
+            "Win+Shift+x -> Force Quit XMonad\n\n" ++
+            "Alt+Shift+p -> Restart XMonad\n" ++
+            "Alt+Shift+c -> Reload XMonad\n\n" ++
+            "Win+l -> Lock Screen\n" ++
+            "Win+e -> Open File Explorer\n" ++
+            "Win+t -> Open Vicinae\n" ++
+            "Win+Shift+t -> Open Vicinae DMenu Run\n" ++
+            "Win+Period -> Open Emoji Picker\n\n" ++
+            "Win+Left/Right -> Switch Monitor Focus\n\n" ++
+            "Win+1 -> Disable Screensaver\n" ++
+            "Win+2 -> Enable Screensaver\n\n" ++
+            "Alt+0..9 -> Switch to Workspace\n" ++
+            "Alt+Shift+0..9 -> Move Window to Workspace\n\n" ++
+            "Win+Ctrl+Up/Down/Left/Right -> Create Tabbed Stack with Window\n" ++
+            "Win+Ctrl+u -> Unstack Window\n" ++
+            "Win+Ctrl+Shift+u -> Unstall All Windows\n\n" ++
+            "Win+i -> Minimize Window\n" ++
+            "Win+Shift+i -> Un-Minimize Window\n\n" ++
+            "Win+Space -> Open Interactive Web Search\n" ++
+          "EOF\n" ++
+        "read -n 1 -s'")
+```
