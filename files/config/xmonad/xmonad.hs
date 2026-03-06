@@ -500,7 +500,9 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
             "Win+Ctrl+Shift+u -> Unstall All Windows\n\n" ++
             "Win+i -> Minimize Window\n" ++
             "Win+Shift+i -> Un-Minimize Window\n\n" ++
-            "Win+Space -> Open Interactive Web Search\n" ++
+            "Win+Space -> Open Interactive Web Search\n\n" ++
+            "Win+w -> Copy Selected Text\n" ++
+            "Win+y -> Paste from Clipboard\n" ++
           "EOF\n" ++
         "read -n 1 -s'")
     -- Cycle Layouts
@@ -597,6 +599,8 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
       "else " ++
         "notify-send \"Error\" \"No Volume Application Found\"; " ++
       "fi")
+    , ((myWinMask, xK_w), spawn "xclip -o selection primary | xclip -selection clipboard")
+    , ((myWinMask, xK_y), spawn "xdotool keyup Super_L Super_R; sleep 0.1; xclip -o -selection clipboard; xdotool key --clearmodifiers shift+Insert")
     -- Move Cursor
     , ((myWinMask, xK_Left), warpToScreen 0 0.5 0.5)
     , ((myWinMask, xK_Right), warpToScreen 1 0.5 0.5)
