@@ -242,9 +242,9 @@ myLayoutHook = smartBorders
                  $ ResizableTall 1 (3/100) (1/2) []
                  )
              -- Spiral
-             ||| spacingWithEdge 4 (spiral (6/7))
+             ||| spacingWithEdge 4 (minimize $ spiral (6/7))
              -- Accordion
-             ||| spacingWithEdge 4 Accordion
+             ||| spacingWithEdge 4 (minimize $ Accordion)
              -- Circle
              ||| spacingWithEdge 4 (minimize $ circle)
              -- Fullscreen
@@ -554,9 +554,25 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
     , ((modm .|. shiftMask, xK_e), confirmPrompt myXPConfig "Type 'yes' to exit:" $ io (exitWith ExitSuccess))
     , ((myWinMask .|. shiftMask, xK_x), io (exitWith ExitSuccess))
     -- Restart XMonad
-    , ((modm .|. shiftMask, xK_p), spawn "notify-send 'XMonad' 'Recompiling...' -i $HOME/Pictures/xmonad_logo.png; xmonad --recompile; xmonad --restart; notify-send 'XMonad' 'Restarted Successfully!' -i $HOME/Pictures/xmonad_logo.png")
+    , ((modm .|. shiftMask, xK_p), spawn $
+        "if command -v notify-send > /dev/null; then " ++
+          "notify-send 'XMonad' 'Recompiling...' -i $HOME/Pictures/xmonad_logo.png; " ++
+        "fi; " ++
+        "xmonad --recompile; " ++
+        "xmonad --restart; " ++
+        "if command -v notify-send > /dev/null; then " ++
+          "notify-send 'XMonad' 'Restarted Successfully!' -i $HOME/Pictures/xmonad_logo.png; " ++
+        "fi;")
     -- Reload XMonad
-    , ((modm .|. shiftMask, xK_c), spawn "notify-send 'XMonad' 'Recompiling...' -i $HOME/Pictures/xmonad_logo.png; xmonad --recompile; xmonad --restart; notify-send 'XMonad' 'Restarted Successfully!' -i $HOME/Pictures/xmonad_logo.png")
+    , ((modm .|. shiftMask, xK_c), spawn $
+        "if command -v notify-send > /dev/null; then " ++
+          "notify-send 'XMonad' 'Recompiling...' -i $HOME/Pictures/xmonad_logo.png; " ++
+        "fi; " ++
+        "xmonad --recompile; " ++
+        "xmonad --restart; " ++
+        "if command -v notify-send > /dev/null; then " ++
+          "notify-send 'XMonad' 'Restarted Successfully!' -i $HOME/Pictures/xmonad_logo.png; " ++
+        "fi;")
     -- Sub-Layout Tabbing
     , ((myWinMask .|. controlMask, xK_Left), sendMessage $ pullGroup L)
     , ((myWinMask .|. controlMask, xK_Right), sendMessage $ pullGroup R)
@@ -569,7 +585,7 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
     , ((myWinMask, xK_i), withFocused minimizeWindow)
     , ((myWinMask .|. shiftMask, xK_i), withLastMinimized maximizeWindowAndFocus)
     -- Search
-    , ((myWinMask, xK_space), do -- Interactive Web Search
+    , ((myWinMask, xK_space), do
         choice <- runProcessWithInput "dmenu"
             [ "-nb", normalBackground jungleDmenuTheme
             , "-nf", normalForeground jungleDmenuTheme
@@ -578,9 +594,10 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
             , "-fn", selectedFont jungleDmenuTheme
             , "-p", "Search:"
             ]
-            "YT\nNix\nDuck\nGoogle\nImages\nMaps\n"
+            "YT\nNix\nDuck\nGoogle\nImages\nMaps\nTwitter\n"
         case trimWS choice of
             "Google"     -> S.promptSearch myXPConfig S.google
+            "Twitter"    -> S.promptSearch myXPConfig (S.searchEngine "twitter" "https://x.com/search?q=")
             "Duck"       -> S.promptSearch myXPConfig S.duckduckgo
             "YT"         -> S.promptSearch myXPConfig S.youtube
             "Images"     -> S.promptSearch myXPConfig S.images
@@ -601,7 +618,16 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
             "notify-send 'Error' 'No Lockscreen Found' -i $HOME/Pictures/error.png; " ++
           "fi; " ++
         "fi")
-    , ((myWinMask, xK_e), spawn "nautilus")
+    , ((myWinMask, xK_e), spawn $
+        "if command -v nautilus > /dev/null; then " ++
+          "nautilus; " ++
+        "elif command -v thunar > /dev/null; then " ++
+          "thunar; " ++
+        "else " ++
+          "if command -v notify-send > /dev/null; then " ++
+            "notify-send 'Error' 'No Explorer Application Found' -i $HOME/Pictures/error.png; " ++
+          "fi; " ++
+        "fi")
     , ((myWinMask, xK_t), spawn "vicinae open")
     , ((myWinMask .|. shiftMask, xK_t), spawn "compgen -c | sort -u | vicinae dmenu --placeholder '%:' | sh")
     , ((myWinMask, xK_period), spawn "emote")
@@ -612,7 +638,9 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
       "elif command -v pavucontrol > /dev/null; then " ++
         "pavucontrol; " ++
       "else " ++
-        "notify-send 'Error' 'No Volume Application Found' -i $HOME/Pictures/error.png; " ++
+        "if command -v notify-send > /dev/null; then " ++
+          "notify-send 'Error' 'No Volume Application Found' -i $HOME/Pictures/error.png; " ++
+        "fi; " ++
       "fi")
     , ((myWinMask, xK_w), spawn $
         "if command -v xclip > /dev/null; then " ++
