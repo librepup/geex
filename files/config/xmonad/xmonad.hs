@@ -48,10 +48,7 @@ import XMonad.Util.SpawnOnce
 import XMonad.Util.Run
 import XMonad.Util.Loggers
 import XMonad.Util.NamedActions
-import XMonad.Prompt
-import XMonad.Prompt.ConfirmPrompt
 import XMonad.Util.Cursor (setDefaultCursor)
-import Graphics.X11.Xlib (xC_left_ptr)
 -- Actions
 import XMonad.Actions.FloatKeys
 import XMonad.Actions.WithAll
@@ -63,15 +60,24 @@ import XMonad.Actions.Minimize
 import qualified XMonad.Actions.Search as S
 import XMonad.Actions.Submap (submap, submapDefault)
 import XMonad.Actions.ShowText
--- Control
-import Control.Monad (when)
+import XMonad.Actions.PhysicalScreens
 -- X11
+import Graphics.X11.Xlib (xC_left_ptr)
 import Graphics.X11.Xlib (warpPointer)
 import Graphics.X11.Xlib.Extras (none, getWindowAttributes, wa_width, wa_height)
+-- Prompt
+import XMonad.Prompt
+import XMonad.Prompt.ConfirmPrompt
 
 ------------------------------------------------------------------------
 -- Definitions
 ------------------------------------------------------------------------
+-- Move and Follow to Screen
+moveAndFollow :: ScreenId -> X ()
+moveAndFollow sc = do
+  screenWorkspace sc >>= flip whenJust (\w ->
+    windows (W.view w . W.shift w))
+  warpToScreen sc 0.5 0.5
 -- Trim Helper
 trimWS :: String -> String
 trimWS = reverse . dropWhile isSpace . reverse . dropWhile isSpace
@@ -622,6 +628,8 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
     -- Move Cursor
     , ((myWinMask, xK_Left), warpToScreen 0 0.5 0.5)
     , ((myWinMask, xK_Right), warpToScreen 1 0.5 0.5)
+    , ((myWinMask .|. shiftMask, xK_Right), screenBy 1 >>= moveAndFollow)
+    , ((myWinMask .|. shiftMask, xK_Left), screenBy (-1) >>= moveAndFollow)
     -- Resize
     , ((myWinMask, xK_Up), sendMessage MirrorExpand)
     , ((myWinMask, xK_Down), sendMessage MirrorShrink)
