@@ -585,7 +585,16 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
     ]
     ++
     -- WinMod (Super key) Bindings
-    [ ((myWinMask, xK_l), spawn "betterlockscreen --lock")
+    [ ((myWinMask, xK_l), spawn $
+        "if command -v betterlockscreen > /dev/null; then " ++
+          "betterlockscreen --lock; " ++
+        "elif command -v i3lock > /dev/null; then " ++
+          "i3lock -i $HOME/Pictures/Wallpapers/dangeroooous_jungle_wp.png --ignore-empty-password; " ++
+        "else " ++
+          "if command -v notify-send > /dev/null; then " ++
+            "notify-send 'Error' 'No Lockscreen Found' -i $HOME/Pictures/error.png; " ++
+          "fi; " ++
+        "fi")
     , ((myWinMask, xK_e), spawn "nautilus")
     , ((myWinMask, xK_t), spawn "vicinae open")
     , ((myWinMask .|. shiftMask, xK_t), spawn "compgen -c | sort -u | vicinae dmenu --placeholder '%:' | sh")
@@ -597,10 +606,19 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
       "elif command -v pavucontrol > /dev/null; then " ++
         "pavucontrol; " ++
       "else " ++
-        "notify-send \"Error\" \"No Volume Application Found\"; " ++
+        "notify-send 'Error' 'No Volume Application Found' -i $HOME/Pictures/error.png; " ++
       "fi")
-    , ((myWinMask, xK_w), spawn "xclip -o selection primary | xclip -selection clipboard")
-    , ((myWinMask, xK_y), spawn "xdotool keyup Super_L Super_R; sleep 0.1; xclip -o -selection clipboard; xdotool key --clearmodifiers shift+Insert")
+    , ((myWinMask, xK_w), spawn $
+        "if command -v xclip > /dev/null; then " ++
+          "xclip -o selection primary | xclip -selection clipboard; " ++
+        "fi")
+    , ((myWinMask, xK_y), spawn $
+        "if command -v xdotool > /dev/null && command -v xclip > /dev/null; then " ++
+          "xdotool keyup Super_L Super_R; " ++
+          "sleep 0.1; " ++
+          "xclip -o -selection clipboard; " ++
+          "xdotool key --clearmodifiers shift+Insert; " ++
+        "fi")
     -- Move Cursor
     , ((myWinMask, xK_Left), warpToScreen 0 0.5 0.5)
     , ((myWinMask, xK_Right), warpToScreen 1 0.5 0.5)
