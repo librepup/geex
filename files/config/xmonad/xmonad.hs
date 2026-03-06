@@ -588,7 +588,15 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
     , ((myWinMask, xK_t), spawn "vicinae open")
     , ((myWinMask .|. shiftMask, xK_t), spawn "compgen -c | sort -u | vicinae dmenu --placeholder '%:' | sh")
     , ((myWinMask, xK_period), spawn "emote")
-    , ((myWinMask, xK_v), spawn "$HOME/.scripts/viewScreenshot.sh")
+    , ((myWinMask, xK_v), spawn $
+      "if command -v pactl > /dev/null && command -v dmenu > /dev/null; then " ++
+        "chosen=$(seq 0 5 150 | awk '{print $1 \"%\"}' | dmenu -nb '#0A0A05' -nf '#D4921A' -sf '#4CBF5A' -sb '#C23FAD' -fn 'TempleOS:size=14' -p '%:'); " ++
+        "[ -n \"$chosen\" ] && pactl set-sink-volume @DEFAULT_SINK@ \"$chosen\"; " ++
+      "elif command -v pavucontrol > /dev/null; then " ++
+        "pavucontrol; " ++
+      "else " ++
+        "notify-send \"Error\" \"No Volume Application Found\"; " ++
+      "fi")
     -- Move Cursor
     , ((myWinMask, xK_Left), warpToScreen 0 0.5 0.5)
     , ((myWinMask, xK_Right), warpToScreen 1 0.5 0.5)
