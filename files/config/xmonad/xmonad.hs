@@ -315,7 +315,10 @@ myAutostart = do
     spawnOnce $
       "if pgrep picom > /dev/null; then" ++
         " pkill -9 picom;" ++
-       " fi"
+       " fi; " ++
+       "if command -v picom > /dev/null; then " ++
+         "picom & " ++
+       "fi"
     -- Polybar
     spawnOnce $
       "if pgrep polybar > /dev/null; then pkill polybar; fi;" ++
