@@ -269,6 +269,8 @@ myManageHook = composeAll
     , title =? "FLOAT_ME_NOW"             --> doRectFloat (W.RationalRect 0.15 0.1 0.7 0.8)
     , title =? "FLOATING_HELP_SCREEN"     --> doRectFloat (W.RationalRect 0.275 0.1 0.485 0.75)
     , title =? "Library"                  --> doCenterFloat
+    , className =? "Steam"                --> doShift "2"
+    , title =? "Steam"                    --> doShift "2"
     ]
 
 ------------------------------------------------------------------------
