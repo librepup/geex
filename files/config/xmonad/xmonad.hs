@@ -626,6 +626,8 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
           "nautilus; " ++
         "elif command -v thunar > /dev/null; then " ++
           "thunar; " ++
+        "elif command -v konqueror > /dev/null; then " ++
+          "konqueror; " ++
         "else " ++
           "if command -v notify-send > /dev/null; then " ++
             "notify-send 'Error' 'No Explorer Application Found' -i $HOME/Pictures/error.png; " ++
